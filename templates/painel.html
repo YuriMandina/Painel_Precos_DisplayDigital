@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-R">
+    <title>Painel de Preços</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/painel.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <div class="tv-wrapper">
+        <header class="painel-header">
+            <h1 class="painel-titulo">Cortes Bovinos</h1>
+        </header>
+
+        <main class="painel-conteudo" id="painel-conteudo">
+            </main>
+        
+        <footer class="painel-footer">
+            <p>Preços válidos para hoje. Confira a disponibilidade.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Todos os produtos
+        const TODOS_PRODUTOS = {{ produtos_json|safe }}; 
+        // Quantidade por página
+        const PRODUTOS_POR_PAGINA = {{ produtos_por_pagina }}; 
+    </script>
+    
+    <script src="{{ url_for('static', filename='js/painel.js') }}"></script>
+</body>
+</html>
