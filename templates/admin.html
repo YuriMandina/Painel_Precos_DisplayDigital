@@ -88,6 +88,17 @@
                 <h2 class="h4 mb-0">Produtos Cadastrados ({{ produtos|length }})</h2>
             </div>
             <div class="card-body">
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label for="filtro-codigo" class="form-label">Filtrar por Código:</label>
+                        <input type="text" id="filtro-codigo" class="form-control" placeholder="Digite o código...">
+                    </div>
+                    <div class="col-md-8">
+                        <label for="filtro-nome" class="form-label">Filtrar por Nome:</label>
+                        <input type="text" id="filtro-nome" class="form-control" placeholder="Digite o nome...">
+                    </div>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-striped table-hover align-middle">
                         <thead class="table-dark">
@@ -100,13 +111,19 @@
                                 <th style="width: 180px;">Ações</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        
+                        <tbody id="tabela-produtos-corpo">
                             {% for produto in produtos %}
-                            <tr>
+                            
+                            <tr class="produto-item">
                                 <form action="{{ url_for('update_produto', id=produto.id) }}" method="POST">
-                                    <td>{{ produto.codigo }}</td>
-                                    <td><input type="text" name="nome" value="{{ produto.nome }}" class="form-control form-control-sm"></td>
+                                    
+                                    <td class="produto-codigo">{{ produto.codigo }}</td>
+                                    
+                                    <td class="produto-nome"><input type="text" name="nome" value="{{ produto.nome }}" class="form-control form-control-sm"></td>
+                                    
                                     <td><input type="text" name="preco" value="{{ '%.2f'|format(produto.preco) }}" class="form-control form-control-sm"></td>
+                                    
                                     <td class="text-center">
                                         <div class="form-check d-flex justify-content-center">
                                             <input type="checkbox" name="no_painel" class="form-check-input" {% if produto.no_painel %}checked{% endif %}>
@@ -129,6 +146,11 @@
                 </div>
             </div>
         </div>
-    </div><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+
 </body>
 </html>
