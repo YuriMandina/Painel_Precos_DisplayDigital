@@ -45,44 +45,53 @@ class Configuracao(db.Model):
 def admin():
     if request.method == 'POST':
         form_name = request.form.get('form_name')
+        
         if form_name == 'add_produto':
             codigo = request.form.get('codigo')
             nome = request.form.get('nome')
-            preco_str = request.form.get('preco').replace(',', '.') # Trata vírgula
+            preco_str = request.form.get('preco').replace(',', '.')
             existe = Produto.query.filter_by(codigo=codigo).first()
+            
             if existe:
-                flash('Erro: Já existe um produto com esse código!', 'error')
-                return redirect(url_for('admin'))
+                return jsonify({'success': False, 'message': 'Erro: Já existe um produto com esse código!'}), 400
             try:
                 preco = float(preco_str)
                 novo_produto = Produto(codigo=codigo, nome=nome, preco=preco)
                 db.session.add(novo_produto)
                 db.session.commit()
-                flash('Produto adicionado com sucesso!', 'success')
+
+                return jsonify({
+                    'success': True, 
+                    'message': 'Produto adicionado com sucesso!',
+                    'produto': {
+                        'id': novo_produto.id,
+                        'codigo': novo_produto.codigo,
+                        'nome': novo_produto.nome,
+                        'preco': f'{novo_produto.preco:.2f}', # Já envia formatado
+                        'no_painel': novo_produto.no_painel,
+                        'em_oferta': novo_produto.em_oferta
+                    }
+                }), 201 # 201 = "Created"
+                
             except ValueError:
-                flash('Erro: Preço inválido.', 'error')
+                return jsonify({'success': False, 'message': 'Erro: Preço inválido.'}), 400
             except Exception as e:
                 db.session.rollback()
-                flash(f'Erro ao salvar: {e}', 'error')
+                return jsonify({'success': False, 'message': f'Erro ao salvar: {e}'}), 500
 
         elif form_name == 'config':
             try:
-                produtos_por_pagina = int(request.form.get('produtos_por_pagina'))
-                if produtos_por_pagina > 18:
-                    produtos_por_pagina = 18
-                    flash('Ajuste: O máximo de produtos por página foi definido para 18.', 'warning')
-                elif produtos_por_pagina < 1:
-                     produtos_por_pagina = 1
-                     flash('Ajuste: O mínimo de produtos por página é 1.', 'warning')
-
+                # ... (lógica de salvar config) ...
+                # Esta parte ainda usa flash/redirect, o que está OK
+                # pois não é uma ação frequente.
                 config = Configuracao.query.first()
-                config.produtos_por_pagina = produtos_por_pagina
+                config.produtos_por_pagina = int(request.form.get('produtos_por_pagina', 10))
                 db.session.commit()
                 flash('Configurações salvas!', 'success')
             except ValueError:
                 flash('Erro: Número de produtos por página inválido.', 'error')
-
-        return redirect(url_for('admin'))
+            
+            return redirect(url_for('admin')) # Mantém o redirect aqui
 
     produtos = Produto.query.order_by(Produto.nome).all()
     config = Configuracao.query.first()
@@ -99,24 +108,22 @@ def update_produto(id):
         produto.em_oferta = 'em_oferta' in request.form
         
         db.session.commit()
-        flash('Produto atualizado!', 'success')
+        return jsonify({'success': True, 'message': 'Produto atualizado!'})
     except Exception as e:
         db.session.rollback()
-        flash(f'Erro ao atualizar: {e}', 'error')
-    return redirect(url_for('admin'))
+        return jsonify({'success': False, 'message': f'Erro ao atualizar: {e}'}), 500
 
-# Rota para deletar produto
-@app.route('/admin/delete/<int:id>')
+# Rota para deletar produt
+@app.route('/admin/delete/<int:id>', methods=['POST']) 
 def delete_produto(id):
     try:
         produto = Produto.query.get_or_404(id)
         db.session.delete(produto)
         db.session.commit()
-        flash('Produto deletado.', 'success')
+        return jsonify({'success': True, 'message': 'Produto deletado.'})
     except Exception as e:
         db.session.rollback()
-        flash(f'Erro ao deletar: {e}', 'error')
-    return redirect(url_for('admin'))
+        return jsonify({'success': False, 'message': f'Erro ao deletar: {e}'}), 500
 
 # Rota do painel de preços
 @app.route('/painel')

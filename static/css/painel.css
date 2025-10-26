@@ -115,14 +115,17 @@ body {
 /* Tag de Promoção */
 .item-produto .tag-oferta {
     display: none;
-    font-size: 2.3vh;
-    padding: 0.5vh 1vh;
+    font-size: 1vh;
+    padding: 0.1vh 0.1vh;
     background: #E53935;
     color: white;
     border-radius: 4px;
-    margin-left: 1vw;
-    font-weight: 700;
-    vertical-align: middle;
+    margin-left: 0.1vw;
+    margin-top: 0.3vw;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    vertical-align: top;
+    transform: scaleX(2);
 }
 
 .item-produto.em-oferta .nome {
