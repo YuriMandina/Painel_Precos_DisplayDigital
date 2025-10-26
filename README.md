@@ -29,17 +29,17 @@ O sistema é composto por duas partes principais:
 
 * **Backend:**
     * Python 3
-    * Flask (Micro-framework web)
-    * Flask-SQLAlchemy (ORM para o banco de dados)
+    * [cite_start]Flask (Micro-framework web) [cite: 1]
+    * [cite_start]Flask-SQLAlchemy (ORM para o banco de dados) [cite: 1]
     * SQLite (Banco de dados leve, baseado em arquivo)
 * **Frontend (Admin):**
     * HTML5
-    * Jinja2 (Template Engine)
+    * [cite_start]Jinja2 (Template Engine) [cite: 1]
     * Bootstrap 5 (CSS Framework)
     * Bootstrap Icons
 * **Frontend (Painel):**
     * HTML5
-    * Jinja2
+    * [cite_start]Jinja2 [cite: 1]
     * CSS3 (Grid Layout, Flexbox, Animações)
     * JavaScript (ES6+)
 
@@ -47,7 +47,7 @@ O sistema é composto por duas partes principais:
 
 1.  **Clone o repositório:**
     ```bash
-    git clone https://github.com/YuriMandina/Painel_Precos_DisplayDigital.git
+    git clone [https://github.com/YuriMandina/Painel_Precos_DisplayDigital.git](https://github.com/YuriMandina/Painel_Precos_DisplayDigital.git)
     cd Painel_Precos_DisplayDigital
     ```
 
@@ -65,7 +65,7 @@ O sistema é composto por duas partes principais:
 
 3.  **Instale as dependências:**
     ```bash
-    pip install Flask Flask-SQLAlchemy
+    pip install -r requirements.txt
     ```
 
 4.  **Execute a aplicação:**
@@ -76,4 +76,4 @@ O sistema é composto por duas partes principais:
 
 5.  **Acesse as rotas no seu navegador:**
     * **Painel Admin:** `http://127.0.0.1:5000/admin`
-    * **Painel de Exibição:** `http://127.0.0.1:5000/painel``
+    * **Painel de Exibição:** `http://127.0.0.1:5000/painel`
