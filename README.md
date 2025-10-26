@@ -29,17 +29,17 @@ O sistema é composto por duas partes principais:
 
 * **Backend:**
     * Python 3
-    * [cite_start]Flask (Micro-framework web) [cite: 1]
-    * [cite_start]Flask-SQLAlchemy (ORM para o banco de dados) [cite: 1]
+    * Flask (Micro-framework web)
+    * Flask-SQLAlchemy (ORM para o banco de dados)
     * SQLite (Banco de dados leve, baseado em arquivo)
 * **Frontend (Admin):**
     * HTML5
-    * [cite_start]Jinja2 (Template Engine) [cite: 1]
+    * Jinja2 (Template Engine)
     * Bootstrap 5 (CSS Framework)
     * Bootstrap Icons
 * **Frontend (Painel):**
     * HTML5
-    * [cite_start]Jinja2 [cite: 1]
+    * Jinja2
     * CSS3 (Grid Layout, Flexbox, Animações)
     * JavaScript (ES6+)
 
