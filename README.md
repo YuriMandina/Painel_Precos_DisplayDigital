@@ -47,7 +47,7 @@ O sistema é composto por duas partes principais:
 
 1.  **Clone o repositório:**
     ```bash
-    git clone [https://github.com/YuriMandina/Painel_Precos_DisplayDigital.git](https://github.com/YuriMandina/Painel_Precos_DisplayDigital.git)
+    git clone https://github.com/YuriMandina/Painel_Precos_DisplayDigital.git
     cd Painel_Precos_DisplayDigital
     ```
 
