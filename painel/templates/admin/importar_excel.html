@@ -1,0 +1,18 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<div style="padding: 20px; max-width: 600px;">
+    <h2>Importar Produtos via Excel</h2>
+    <p>O arquivo deve conter as colunas: <strong>CÓDIGO DO PRODUTO</strong>, <strong>DESCRIÇÃO DO PRODUTO</strong>, <strong>VALOR DO PRODUTO</strong>, <strong>FAMÍLIA</strong>.</p>
+    
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div style="margin-bottom: 20px;">
+            {{ form.as_p }}
+        </div>
+        <div>
+            <input type="submit" value="Fazer Upload e Processar" class="default" style="padding: 10px 20px; background: #417690; color: white; border: none; cursor: pointer;">
+            <a href="../" style="margin-left: 10px; color: #666;">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
