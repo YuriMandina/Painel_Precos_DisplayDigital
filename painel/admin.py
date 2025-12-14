@@ -132,5 +132,12 @@ class VideoTemplateAdmin(admin.ModelAdmin):
 
 @admin.register(Dispositivo)
 class DispositivoAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'uuid', 'modo_exibicao')
-    readonly_fields = ('uuid',)
+    # Mostra o código direto na tabela de listagem
+    list_display = ('nome', 'codigo_acesso', 'uuid', 'modo_exibicao') 
+    
+    # Adiciona o campo aos campos de leitura obrigatória
+    # Isso faz ele aparecer no formulário, mesmo sendo editable=False
+    readonly_fields = ('uuid', 'codigo_acesso') 
+    
+    # (Opcional) Se quiser organizar a ordem dos campos no formulário:
+    fields = ('nome', 'codigo_acesso', 'uuid', 'modo_exibicao', 'exibir_apenas_familias')

@@ -1,4 +1,6 @@
 import uuid
+import random
+import string
 from django.db import models
 from django.core.exceptions import ValidationError
 
@@ -83,15 +85,17 @@ class Produto(models.Model):
         return f"{self.codigo} - {self.descricao}"
 
 
+def gerar_codigo_curto():
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
 class Dispositivo(models.Model):
-    """
-    Gerencia o pareamento das TVs.
-    """
     nome = models.CharField(max_length=100, help_text="Ex: TV do Açougue")
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     
-    # O que essa TV deve mostrar?
-    exibir_apenas_familias = models.ManyToManyField(FamiliaProduto, blank=True, help_text="Se vazio, mostra tudo. Se selecionado, filtra apenas essas categorias.")
+    # NOVO CAMPO: Código curto para digitar na TV
+    codigo_acesso = models.CharField(max_length=6, default=gerar_codigo_curto, unique=True, editable=False)
+
+    exibir_apenas_familias = models.ManyToManyField(FamiliaProduto, blank=True)
     
     modo_exibicao = models.CharField(max_length=20, choices=[
         ('TABELA', 'Apenas Tabela de Preços'),
@@ -102,4 +106,4 @@ class Dispositivo(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.nome} ({str(self.uuid)[:8]})"
+        return f"{self.nome} - CÓD: {self.codigo_acesso}"

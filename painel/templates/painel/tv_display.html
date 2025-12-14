@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Digital</title>
+    <link rel="stylesheet" href="{% static 'css/painel.css' %}">
+</head>
+<body>
+
+    <div id="setup-screen" style="display:none;">
+        <h1>Configuração da TV</h1>
+        <p>Digite o UUID do dispositivo gerado no Admin:</p>
+        <input type="text" id="input-uuid" placeholder="ex: 550e8400-e29b..." style="width: 60%;">
+        <button id="btn-salvar">CONECTAR</button>
+    </div>
+
+    <div class="tv-wrapper" id="app-screen" style="display:none;">
+        <header class="painel-header">
+            <h1 class="painel-titulo" id="titulo-painel">Ofertas do Dia</h1>
+        </header>
+
+        <main class="painel-conteudo" id="painel-conteudo">
+            </main>
+        
+        <div id="video-overlay-container"></div>
+    </div>
+
+    <script src="{% static 'js/tv_app.js' %}"></script>
+</body>
+</html>
