@@ -54,39 +54,56 @@ class ProdutoAdmin(admin.ModelAdmin):
         # Lê o Excel usando Pandas
         df = pd.read_excel(arquivo)
         
-        # Normaliza nomes das colunas (remove espaços extras e converte para maiúsculas)
-        df.columns = [c.strip().upper() for c in df.columns]
+        # Normaliza nomes das colunas:
+        # 1. Remove espaços extras antes/depois (strip)
+        # 2. Converte tudo para maiúsculo (upper)
+        # Isso evita erro se estiver escrito "Código do produto" ou "CÓDIGO DO PRODUTO "
+        df.columns = [str(c).strip().upper() for c in df.columns]
 
-        colunas_esperadas = ['CÓDIGO DO PRODUTO', 'DESCRIÇÃO DO PRODUTO', 'VALOR DO PRODUTO', 'FAMÍLIA']
+        # --- Nomes exatos conforme sua imagem ---
+        col_codigo = 'CÓDIGO DO PRODUTO'
+        col_descricao = 'DESCRIÇÃO DO PRODUTO'
+        col_preco = 'PREÇO UNITÁRIO DE VENDA'
+        col_familia = 'FAMÍLIA DE PRODUTO'
+        
+        colunas_esperadas = [col_codigo, col_descricao, col_preco, col_familia]
         
         # Verifica se as colunas existem
         for col in colunas_esperadas:
             if col not in df.columns:
-                raise ValueError(f"A coluna '{col}' não foi encontrada no Excel.")
+                # Mostra quais colunas ele achou para ajudar no debug
+                colunas_encontradas = ", ".join(df.columns)
+                raise ValueError(f"A coluna '{col}' não foi encontrada. Colunas lidas: {colunas_encontradas}")
 
         produtos_atualizados = 0
         produtos_criados = 0
 
         for index, row in df.iterrows():
-            codigo = str(row['CÓDIGO DO PRODUTO']).strip()
-            descricao = str(row['DESCRIÇÃO DO PRODUTO']).strip()
-            familia_nome = str(row['FAMÍLIA']).strip().upper()
+            # Pega os dados usando as colunas corretas
+            codigo = str(row[col_codigo]).strip()
+            descricao = str(row[col_descricao]).strip()
+            familia_nome = str(row[col_familia]).strip().upper()
             
-            # Tratamento de Preço (R$ 1.200,50 -> 1200.50)
-            valor_raw = row['VALOR DO PRODUTO']
+            # Tratamento de Preço (R$ 38,99 -> 38.99)
+            valor_raw = row[col_preco]
+            
+            # Se vier vazio ou nulo, pula
+            if pd.isna(valor_raw):
+                continue
+
             if isinstance(valor_raw, str):
-                valor_raw = valor_raw.replace('R$', '').replace('.', '').replace(',', '.').strip()
+                # Remove R$, espaços, troca vírgula por ponto
+                valor_raw = valor_raw.replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
             
             try:
                 preco = float(valor_raw)
             except ValueError:
-                continue # Pula se o preço for inválido
+                continue # Pula se o preço for inválido (texto mal formatado)
 
-            # 1. Garante que a Família existe
+            # 1. Garante que a Família existe (Ex: BOVINO, SUÍNO)
             familia_obj, _ = FamiliaProduto.objects.get_or_create(nome=familia_nome)
 
             # 2. Cria ou Atualiza o Produto
-            # update_or_create tenta buscar pelo código. Se achar, atualiza os defaults. Se não, cria.
             obj, created = Produto.objects.update_or_create(
                 codigo=codigo,
                 defaults={
