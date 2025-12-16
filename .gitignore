@@ -10,6 +10,7 @@ db.sqlite3
 # Mídia (uploads locais não vão pro git)
 media/
 staticfiles/
+templates_video/
 
 # VS Code
 .vscode/
