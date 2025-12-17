@@ -150,3 +150,56 @@ body { display: flex; justify-content: center; align-items: center; }
 #video-bg { width: 100%; height: 100%; object-fit: cover; }
 .pop-in { animation: popIn 0.5s forwards; opacity: 0; transform: scale(0.5); }
 @keyframes popIn { to { opacity: 1; transform: scale(1) translate(-50%, -50%); } }
+
+/* --- SISTEMA DE ROTAÇÃO (VERTICAL MODE) --- */
+
+/* Lógica: Se a TV está de lado, mas o sistema operacional (Windows/Android) 
+   ainda manda sinal 1920x1080 (Landscape), nós rotacionamos o conteúdo via CSS.
+*/
+
+/* Rotação 90 Graus (Topo da TV virado para a Direita) */
+body.rotacao-90 .tv-wrapper {
+    transform: rotate(90deg);
+    transform-origin: center;
+    
+    /* Inverte as dimensões para preencher a tela */
+    width: 100vh; 
+    height: 100vw;
+    
+    /* Reposiciona para o centro, pois a rotação tira do eixo */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+    
+    /* Ajuste fino de borda para não vazar */
+    max-width: none; 
+    max-height: none;
+}
+
+/* Rotação -90/270 Graus (Topo da TV virado para a Esquerda) */
+body.rotacao-270 .tv-wrapper {
+    transform: rotate(-90deg); /* ou 270deg */
+    transform-origin: center;
+    
+    width: 100vh;
+    height: 100vw;
+    
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+    
+    max-width: none; 
+    max-height: none;
+}
+
+/* AJUSTE DE LAYOUT PARA MODO VERTICAL (OPCIONAL) 
+   Se ficar muito apertado 2 colunas, podemos forçar 1 coluna aqui.
+   Por enquanto, vamos manter o grid, mas ajustando a proporção.
+*/
+body.rotacao-90 .coluna,
+body.rotacao-270 .coluna {
+    /* Em vertical, talvez queira ajustar o padding */
+    padding: 0 1vw;
+}

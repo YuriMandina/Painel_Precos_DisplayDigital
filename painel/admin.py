@@ -140,4 +140,4 @@ class DispositivoAdmin(admin.ModelAdmin):
     readonly_fields = ('uuid', 'codigo_acesso') 
     
     # (Opcional) Se quiser organizar a ordem dos campos no formulário:
-    fields = ('nome', 'codigo_acesso', 'uuid', 'modo_exibicao', 'exibir_apenas_familias')
+    fields = ('nome', 'codigo_acesso', 'uuid', 'modo_exibicao', 'orientacao', 'exibir_apenas_familias')

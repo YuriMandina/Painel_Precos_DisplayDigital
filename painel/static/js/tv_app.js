@@ -78,12 +78,25 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error("Erro API");
             const data = await response.json();
 
+            // 1. Atualiza Título
             if (data.config && data.config.titulo_exibicao) {
                 elTitulo.innerText = data.config.titulo_exibicao;
             }
 
-            const hashNovo = JSON.stringify(data.produtos) + JSON.stringify(data.ofertas_destaque) + data.config.modo_exibicao;
-            const hashAntigo = dadosCache ? (JSON.stringify(dadosCache.produtos) + JSON.stringify(dadosCache.ofertas_destaque) + dadosCache.config.modo_exibicao) : "";
+            // 2. APLICA A ROTAÇÃO (NOVO CÓDIGO) ---
+            document.body.classList.remove('rotacao-90', 'rotacao-270');
+            
+            if (data.config.orientacao === 'VERTICAL_DIR') {
+                document.body.classList.add('rotacao-90');
+            } else if (data.config.orientacao === 'VERTICAL_ESQ') {
+                document.body.classList.add('rotacao-270');
+            }
+            // ------------------------------------
+
+            // Verifica mudanças (inclua orientação no hash para atualizar se mudar no admin)
+            const hashNovo = JSON.stringify(data.produtos) + JSON.stringify(data.ofertas_destaque) + data.config.modo_exibicao + data.config.orientacao;
+            // Linha do Hash atualizada:
+            const hashAntigo = dadosCache ? (JSON.stringify(dadosCache.produtos) + JSON.stringify(dadosCache.ofertas_destaque) + dadosCache.config.modo_exibicao + dadosCache.config.orientacao) : "";
 
             if (hashNovo !== hashAntigo) {
                 console.log("Novos dados/configuração recebidos!");

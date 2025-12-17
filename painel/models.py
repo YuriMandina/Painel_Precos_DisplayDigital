@@ -91,12 +91,17 @@ def gerar_codigo_curto():
 class Dispositivo(models.Model):
     nome = models.CharField(max_length=100, help_text="Ex: TV do Açougue")
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    
-    # NOVO CAMPO: Código curto para digitar na TV
     codigo_acesso = models.CharField(max_length=6, default=gerar_codigo_curto, unique=True, editable=False)
 
     exibir_apenas_familias = models.ManyToManyField(FamiliaProduto, blank=True)
     
+    # NOVO CAMPO DE ORIENTAÇÃO
+    orientacao = models.CharField(max_length=20, choices=[
+        ('HORIZONTAL', 'Horizontal (Padrão 16:9)'),
+        ('VERTICAL_DIR', 'Vertical 9:16 (Giro 90° Direita)'),
+        ('VERTICAL_ESQ', 'Vertical 9:16 (Giro 90° Esquerda)')
+    ], default='HORIZONTAL', help_text="Escolha conforme a instalação física da TV")
+
     modo_exibicao = models.CharField(max_length=20, choices=[
         ('TABELA', 'Apenas Tabela de Preços'),
         ('VIDEO', 'Apenas Vídeos de Oferta'),
@@ -106,4 +111,4 @@ class Dispositivo(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.nome} - CÓD: {self.codigo_acesso}"
+        return f"{self.nome} ({self.get_orientacao_display()})"

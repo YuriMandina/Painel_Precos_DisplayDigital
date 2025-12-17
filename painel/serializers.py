@@ -33,4 +33,4 @@ class DispositivoConfigSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Dispositivo
-        fields = ['nome', 'modo_exibicao', 'uuid']
+        fields = ['nome', 'modo_exibicao', 'uuid', 'orientacao']
