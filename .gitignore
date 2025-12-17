@@ -11,6 +11,7 @@ db.sqlite3
 media/
 staticfiles/
 templates_video/
+produtos/
 
 # VS Code
 .vscode/

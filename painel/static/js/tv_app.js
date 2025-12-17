@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
         div.className = `item-produto ${produto.em_oferta ? 'em-oferta' : ''}`;
         
         const preco = parseFloat(produto.preco).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
-        const nomeClass = produto.descricao.length > 18 ? 'nome-container marquee' : 'nome-container';
+        const nomeClass = produto.descricao.length > 23 ? 'nome-container marquee' : 'nome-container';
 
         div.innerHTML = `
             <div class="${nomeClass}"><span class="nome">${produto.descricao}</span></div>
