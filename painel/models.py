@@ -25,33 +25,27 @@ class FamiliaProduto(models.Model):
 
 
 class VideoTemplate(models.Model):
-    """
-    Define o layout do vídeo promocional.
-    O vídeo roda no fundo e usamos coordenadas CSS (%) para posicionar texto/imagem por cima.
-    """
-    nome = models.CharField(max_length=100, help_text="Ex: Oferta Fundo Vermelho")
-    arquivo_video = models.FileField(upload_to='templates_video/', help_text="Vídeo de fundo (MP4 leve)")
+    nome = models.CharField(max_length=100)
+    arquivo_video = models.FileField(upload_to='templates_video/')
     
-    # --- Coordenadas do Título do Produto ---
-    titulo_top = models.IntegerField(default=10, validators=[validar_porcentagem], help_text="% do topo para o Título")
-    titulo_left = models.IntegerField(default=50, validators=[validar_porcentagem], help_text="% da esquerda para o Título")
-    titulo_cor = models.CharField(max_length=7, default="#FFFFFF", help_text="Cor Hexadecimal (Ex: #FFFFFF)")
-    titulo_tamanho = models.CharField(max_length=10, default="5vw", help_text="Tamanho da fonte (ex: 5vw, 40px)")
+    # --- Mudamos de IntegerField para FloatField para precisão no Editor Visual ---
+    titulo_top = models.FloatField(default=10, validators=[validar_porcentagem])
+    titulo_left = models.FloatField(default=50, validators=[validar_porcentagem])
+    titulo_cor = models.CharField(max_length=7, default="#FFFFFF")
+    titulo_tamanho = models.CharField(max_length=10, default="5vw")
 
-    # --- Coordenadas do Preço ---
-    preco_top = models.IntegerField(default=50, validators=[validar_porcentagem], help_text="% do topo para o Preço")
-    preco_left = models.IntegerField(default=50, validators=[validar_porcentagem], help_text="% da esquerda para o Preço")
-    preco_cor = models.CharField(max_length=7, default="#FFD700", help_text="Cor Hexadecimal (Ex: #FFD700)")
-    preco_tamanho = models.CharField(max_length=10, default="8vw", help_text="Tamanho da fonte (ex: 8vw)")
+    preco_top = models.FloatField(default=50, validators=[validar_porcentagem])
+    preco_left = models.FloatField(default=50, validators=[validar_porcentagem])
+    preco_cor = models.CharField(max_length=7, default="#FFD700")
+    preco_tamanho = models.CharField(max_length=10, default="8vw")
 
-    # --- Coordenadas da Imagem do Produto ---
-    img_top = models.IntegerField(default=30, validators=[validar_porcentagem], help_text="% do topo para a Imagem")
-    img_left = models.IntegerField(default=10, validators=[validar_porcentagem], help_text="% da esquerda para a Imagem")
-    img_width = models.IntegerField(default=20, validators=[validar_porcentagem], help_text="Largura da imagem em % da tela")
+    img_top = models.FloatField(default=30, validators=[validar_porcentagem])
+    img_left = models.FloatField(default=10, validators=[validar_porcentagem])
+    img_width = models.FloatField(default=20, validators=[validar_porcentagem])
 
-    class Meta:
-        verbose_name = "Template de Vídeo"
-        verbose_name_plural = "Templates de Vídeo"
+    # Onde salvaremos a Rotação, Negrito, Itálico, etc.
+    estilos_css = models.JSONField(default=dict, blank=True)
+    elementos_extras = models.JSONField(default=list, blank=True)
 
     def __str__(self):
         return self.nome

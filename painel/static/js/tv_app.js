@@ -288,49 +288,96 @@ document.addEventListener('DOMContentLoaded', () => {
         elVideoContainer.innerHTML = '';
         elVideoContainer.style.display = 'block';
 
+        // 1. Vídeo de Fundo
         const video = document.createElement('video');
         video.id = 'video-bg';
         video.src = template.arquivo_video;
-        video.muted = true;
-        video.autoplay = true;
-        video.playsInline = true;
+        video.muted = true; video.autoplay = true; video.playsInline = true;
         
-        // Timeout de segurança: Se o vídeo travar ou não carregar em 15s, pula
         const safetyTimeout = setTimeout(onComplete, 15000);
-
         video.onerror = () => { clearTimeout(safetyTimeout); onComplete(); };
         video.onended = () => { clearTimeout(safetyTimeout); onComplete(); };
-
         elVideoContainer.appendChild(video);
 
-        // Função auxiliar para criar elementos
-        const createEl = (cls, txt, top, left, col, size, delay) => {
+        // Função auxiliar ajustada para CENTRO-CENTRO
+        const createEl = (conteudo, top, left, styleBase, estilosExtras) => {
             const el = document.createElement('div');
-            el.className = `overlay-element ${cls}`;
-            el.innerText = txt;
+            el.className = 'overlay-element pop-in';
+            
+            if (conteudo.startsWith('<img')) el.innerHTML = conteudo;
+            else el.innerText = conteudo;
+
+            // Posição Absoluta (Centro do elemento)
             el.style.top = top + '%';
             el.style.left = left + '%';
-            el.style.color = col;
-            el.style.fontSize = size;
-            el.style.transform = 'translate(-50%, -50%)';
-            if(delay) el.style.animationDelay = delay;
+            
+            // Aplica estilos base
+            if (styleBase) Object.assign(el.style, styleBase);
+
+            // Aplica estilos extras
+            let rotation = 0;
+            if (estilosExtras) {
+                Object.assign(el.style, estilosExtras);
+                if (estilosExtras.rotation) rotation = estilosExtras.rotation;
+            }
+
+            // A MÁGICA FINAL: Sempre centraliza e depois roda
+            // Isso garante que a posição na TV seja idêntica ao Editor
+            el.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+            
+            // Remove transformações conflitantes que possam vir do styleBase ou estilosExtras
+            // (Pois acabamos de definir o transform manual acima)
+            
             return el;
         };
 
-        elVideoContainer.appendChild(createEl('pop-in', oferta.descricao, template.titulo_top, template.titulo_left, template.titulo_cor, template.titulo_tamanho));
-        
-        const precoVal = parseFloat(oferta.preco).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
-        elVideoContainer.appendChild(createEl('pop-in', precoVal, template.preco_top, template.preco_left, template.preco_cor, template.preco_tamanho, '0.3s'));
+        // Pega estilos salvos (pode vir vazio se template antigo)
+        const css = template.estilos_css || {};
 
+        // 2. Título
+        elVideoContainer.appendChild(createEl(
+            oferta.descricao, 
+            template.titulo_top, 
+            template.titulo_left, 
+            { color: template.titulo_cor, fontSize: template.titulo_tamanho },
+            css['el-titulo'] // Rotação, Bold, etc.
+        ));
+        
+        // 3. Preço
+        const precoVal = parseFloat(oferta.preco).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+        elVideoContainer.appendChild(createEl(
+            precoVal, 
+            template.preco_top, 
+            template.preco_left, 
+            { color: template.preco_cor, fontSize: template.preco_tamanho },
+            css['el-preco']
+        ));
+
+        // 4. Imagem
         if (oferta.imagem) {
-            const img = document.createElement('img');
-            img.className = 'overlay-img pop-in';
-            img.src = oferta.imagem;
-            img.style.top = template.img_top + '%';
-            img.style.left = template.img_left + '%';
-            img.style.width = template.img_width + '%';
-            img.style.transform = 'translate(-50%, -50%)';
-            elVideoContainer.appendChild(img);
+            // Imagem precisa de tratamento especial de tamanho
+            const imgHTML = `<img src="${oferta.imagem}" style="width:100%; height:100%; object-fit:contain;">`;
+            const elImg = createEl(
+                imgHTML,
+                template.img_top,
+                template.img_left,
+                { width: template.img_width + '%' },
+                css['el-imagem']
+            );
+            elVideoContainer.appendChild(elImg);
+        }
+
+        // 5. ELEMENTOS EXTRAS (Textos livres adicionados no Editor)
+        if (template.elementos_extras && Array.isArray(template.elementos_extras)) {
+            template.elementos_extras.forEach(extra => {
+                elVideoContainer.appendChild(createEl(
+                    extra.texto,
+                    extra.top,
+                    extra.left,
+                    {}, // sem base
+                    extra.style // estilo completo + rotação
+                ));
+            });
         }
     }
 

@@ -1,0 +1,445 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Editor Visual - {{ template.nome }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { margin: 0; display: flex; height: 100vh; font-family: sans-serif; overflow: hidden; background: #222; color: white; }
+        
+        /* SIDEBAR */
+        #sidebar { width: 320px; background: #333; padding: 20px; border-right: 1px solid #444; overflow-y: auto; display: flex; flex-direction: column; gap: 15px;}
+        h2 { font-size: 14px; color: #aaa; text-transform: uppercase; border-bottom: 1px solid #555; padding-bottom: 5px; margin-top: 10px;}
+        
+        .control-group { margin-bottom: 10px; }
+        label { display: block; font-size: 12px; margin-bottom: 5px; color: #ccc; }
+        input[type="color"] { width: 100%; height: 40px; border: none; cursor: pointer; }
+        input[type="number"], input[type="text"], select { width: 100%; padding: 8px; background: #222; border: 1px solid #555; color: white; border-radius: 4px; }
+        input[type=range] { width: 100%; cursor: pointer; }
+
+        .btn { padding: 10px; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; width: 100%; margin-top: 5px;}
+        .btn-save { background: #4CAF50; color: white; font-size: 16px;}
+        .btn-add { background: #2196F3; color: white; margin-bottom: 15px; } /* Movidopara cima */
+        .btn-style { width: 30%; background: #444; color: white; cursor: pointer; padding: 5px;}
+        .btn-style.active { background: #FFD700; color: black; }
+        .btn-delete { background: #E53935; color: white; display: none; } /* Começa oculto */
+
+        /* CANVAS AREA */
+        #canvas-area { flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #111; position: relative; padding: 20px; }
+        
+        #video-stage {
+            position: relative; background: black;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5); border: 2px solid #444;
+            overflow: hidden; user-select: none;
+            transition: all 0.3s ease;
+        }
+
+        .stage-landscape { width: 70vw; aspect-ratio: 16/9; }
+        .stage-portrait { height: 90vh; aspect-ratio: 9/16; }
+        
+        #bg-video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+
+        .drag-element {
+            position: absolute; cursor: grab; 
+            border: 1px dashed rgba(255, 255, 255, 0.3); 
+            font-family: 'Roboto Condensed', sans-serif; 
+            font-weight: 400; /* Padrão normal para o Bold funcionar */
+            line-height: 1.2;
+            white-space: nowrap;
+            transform: translate(-50%, -50%); /* Centro */
+            transform-origin: center center;
+        }
+        
+        .drag-element:hover { border-color: rgba(255, 255, 255, 0.8); }
+        .drag-element.selected { border: 2px solid #00FFFF; z-index: 1000; }
+        .placeholder-img { background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 10px; }
+
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button class="btn btn-save" onclick="salvarLayout()">💾 SALVAR TUDO</button>
+            <p id="save-status" style="font-size: 12px; color: #aaa; margin-top: 5px;"></p>
+        </div>
+
+        <button class="btn btn-add" onclick="adicionarTextoExtra()">+ Adicionar Texto</button>
+
+        <div class="control-group" style="background: #444; padding: 10px; border-radius: 5px;">
+            <label style="color: #fff; font-weight: bold;">📺 Formato do Canvas</label>
+            <select id="canvas-mode" onchange="mudarOrientacaoCanvas()">
+                <option value="landscape">Horizontal (16:9)</option>
+                <option value="portrait">Vertical (9:16)</option>
+            </select>
+        </div>
+        <hr style="border-color: #444;">
+
+        <div id="no-selection">
+            <p style="text-align: center; color: #888; margin-top: 30px;">Clique em um elemento para editar.</p>
+        </div>
+
+        <div id="propriedades" style="display:none;">
+            <h2>Conteúdo</h2>
+            <div class="control-group">
+                <label>Texto</label>
+                <input type="text" id="prop-texto" oninput="atualizarElemento()">
+            </div>
+            
+            <h2>Aparência</h2>
+            <div class="control-group">
+                <label>Tamanho da Fonte (px)</label>
+                <input type="number" id="prop-size" oninput="atualizarElemento()">
+            </div>
+            <div class="control-group">
+                <label>Cor do Texto</label>
+                <input type="color" id="prop-color" oninput="atualizarElemento()">
+            </div>
+            
+            <h2>Fundo & Opacidade</h2>
+            <div class="control-group">
+                <label>Cor do Fundo</label>
+                <input type="color" id="prop-bg-color" oninput="atualizarFundo()">
+            </div>
+            <div class="control-group">
+                <label>Opacidade do Fundo: <span id="opacity-val">100%</span></label>
+                <input type="range" id="prop-bg-opacity" min="0" max="1" step="0.01" value="1" oninput="atualizarFundo()">
+            </div>
+
+            <h2>Estilo</h2>
+            <div class="control-group" style="display: flex; gap: 5px;">
+                <button class="btn btn-style" id="btn-bold" onclick="toggleStyle('fontWeight', 'bold')">B</button>
+                <button class="btn btn-style" id="btn-italic" onclick="toggleStyle('fontStyle', 'italic')">I</button>
+                <button class="btn btn-style" id="btn-underline" onclick="toggleStyle('textDecoration', 'underline')">U</button>
+            </div>
+            
+            <div class="control-group" style="margin-top: 20px;">
+                <button class="btn btn-delete" id="btn-excluir" onclick="removerElemento()">Excluir Elemento</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-area">
+        <div id="video-stage" class="stage-landscape">
+            {% if template.arquivo_video %}
+                <video id="bg-video" src="{{ template.arquivo_video.url }}" muted loop autoplay></video>
+            {% else %}
+                <div style="width:100%; height:100%; background: #333; display:flex; align-items:center; justify-content:center;">Sem Vídeo</div>
+            {% endif %}
+
+            <div class="drag-element" id="el-titulo" data-type="titulo">{{ produto.descricao }}</div>
+            <div class="drag-element" id="el-preco" data-type="preco">R$ {{ produto.preco|floatformat:2 }}</div>
+            <div class="drag-element placeholder-img" id="el-imagem" data-type="imagem">
+                {% if produto.imagem %}
+                    <img src="{{ produto.imagem.url }}" style="width:100%; height:100%; object-fit:contain; pointer-events: none;">
+                {% else %}
+                    FOTO
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const templateId = "{{ template.id }}";
+        const stylesDB = {
+            'el-titulo': { 
+                top: {{ template.titulo_top }}, left: {{ template.titulo_left }}, 
+                color: "{{ template.titulo_cor }}", fontSize: "{{ template.titulo_tamanho }}" 
+            },
+            'el-preco': { 
+                top: {{ template.preco_top }}, left: {{ template.preco_left }}, 
+                color: "{{ template.preco_cor }}", fontSize: "{{ template.preco_tamanho }}" 
+            },
+            'el-imagem': { 
+                top: {{ template.img_top }}, left: {{ template.img_left }}, width: {{ template.img_width }} 
+            }
+        };
+        const estilosExtrasDB = {{ template.estilos_css|default:"{}"|safe }};
+        const elementosExtrasDB = {{ template.elementos_extras|default:"[]"|safe }};
+        
+        let elSelecionado = null;
+        const stage = document.getElementById('video-stage');
+
+        window.onload = function() {
+            ['el-titulo', 'el-preco', 'el-imagem'].forEach(id => {
+                const el = document.getElementById(id);
+                const base = stylesDB[id];
+                const extra = estilosExtrasDB[id] || {};
+                aplicarEstadoCompleto(el, base.top, base.left, base.width, { ...base, ...extra });
+            });
+            elementosExtrasDB.forEach(data => criarElementoDOM(data));
+            initInteract();
+        };
+
+        function mudarOrientacaoCanvas() {
+            const modo = document.getElementById('canvas-mode').value;
+            stage.className = (modo === 'portrait') ? 'stage-portrait' : 'stage-landscape';
+            setTimeout(initInteract, 300);
+        }
+
+        // --- INTERACT (DRAG & RESIZE) ---
+        function initInteract() {
+            interact('.drag-element').unset(); 
+
+            // Configuração Genérica de Drag (Move)
+            interact('.drag-element').draggable({
+                listeners: {
+                    move (event) {
+                        const target = event.target;
+                        const parentRect = stage.getBoundingClientRect();
+
+                        let currentCenterX = (parseFloat(target.style.left) / 100) * parentRect.width;
+                        let currentCenterY = (parseFloat(target.style.top) / 100) * parentRect.height;
+
+                        currentCenterX += event.dx;
+                        currentCenterY += event.dy;
+
+                        const newLeftPct = (currentCenterX / parentRect.width) * 100;
+                        const newTopPct = (currentCenterY / parentRect.height) * 100;
+
+                        target.style.left = newLeftPct.toFixed(2) + '%';
+                        target.style.top = newTopPct.toFixed(2) + '%';
+                    }
+                },
+                modifiers: [ interact.modifiers.restrictRect({ restriction: 'parent', endOnly: false }) ]
+            })
+            .on('down', (e) => selecionarElemento(e.currentTarget));
+
+            // Configuração Específica da Imagem (Resizable + Draggable)
+            // Precisamos garantir que a imagem também seja arrastável explicitamente se houver conflito
+            interact('#el-imagem').resizable({
+                edges: { left: true, right: true, bottom: true, top: true },
+                listeners: {
+                    move (event) {
+                        const target = event.target;
+                        const parentRect = stage.getBoundingClientRect();
+                        const newWidthPct = (event.rect.width / parentRect.width) * 100;
+                        target.style.width = newWidthPct.toFixed(2) + '%';
+                        target.style.height = 'auto';
+                    }
+                }
+            });
+        }
+
+        function aplicarEstadoCompleto(el, topPct, leftPct, widthPct, styleObj) {
+            el.style.top = topPct + '%';
+            el.style.left = leftPct + '%';
+            if (widthPct) el.style.width = widthPct + '%';
+            else el.style.width = 'auto';
+
+            if (styleObj.fontSize) el.style.fontSize = styleObj.fontSize;
+            if (styleObj.color) el.style.color = styleObj.color;
+            if (styleObj.fontWeight) el.style.fontWeight = styleObj.fontWeight;
+            if (styleObj.fontStyle) el.style.fontStyle = styleObj.fontStyle;
+            if (styleObj.textDecoration) el.style.textDecoration = styleObj.textDecoration;
+            
+            // Fundo e Opacidade (RGBA)
+            if (styleObj.backgroundColor) el.style.backgroundColor = styleObj.backgroundColor;
+            
+            el.style.transform = `translate(-50%, -50%)`;
+        }
+
+        function selecionarElemento(el) {
+            if(elSelecionado) elSelecionado.classList.remove('selected');
+            elSelecionado = el;
+            el.classList.add('selected');
+
+            document.getElementById('no-selection').style.display = 'none';
+            document.getElementById('propriedades').style.display = 'block';
+
+            // Inputs e Travamento
+            const inputTexto = document.getElementById('prop-texto');
+            inputTexto.value = el.innerText;
+            
+            // 5. Ineditáveis
+            const isFixed = ['titulo', 'preco', 'imagem'].includes(el.dataset.type);
+            inputTexto.disabled = isFixed; 
+            
+            // 4. Excluir Elemento (Só aparece se for extra)
+            const btnExcluir = document.getElementById('btn-excluir');
+            btnExcluir.style.display = isFixed ? 'none' : 'block';
+
+            // Estilos
+            const style = window.getComputedStyle(el);
+            document.getElementById('prop-size').value = parseFloat(style.fontSize);
+            document.getElementById('prop-color').value = rgbToHex(style.color);
+            
+            // Background & Opacity
+            const bg = style.backgroundColor; // Vem como rgba(r, g, b, a) ou rgb(r, g, b)
+            const rgba = parseRgba(bg);
+            document.getElementById('prop-bg-color').value = rgba.hex;
+            document.getElementById('prop-bg-opacity').value = rgba.alpha;
+            document.getElementById('opacity-val').innerText = Math.round(rgba.alpha * 100) + '%';
+
+            // Botões de Estilo
+            document.getElementById('btn-bold').classList.toggle('active', style.fontWeight === '700' || style.fontWeight === 'bold');
+            document.getElementById('btn-italic').classList.toggle('active', style.fontStyle === 'italic');
+            document.getElementById('btn-underline').classList.toggle('active', style.textDecorationLine.includes('underline'));
+        }
+
+        function atualizarElemento() {
+            if(!elSelecionado) return;
+            const el = elSelecionado;
+            
+            if(!['imagem', 'titulo', 'preco'].includes(el.dataset.type)) {
+                el.innerText = document.getElementById('prop-texto').value;
+            }
+
+            el.style.fontSize = document.getElementById('prop-size').value + 'px';
+            el.style.color = document.getElementById('prop-color').value;
+        }
+
+        // 6. Nova lógica de Fundo com Slider
+        function atualizarFundo() {
+            if(!elSelecionado) return;
+            const hex = document.getElementById('prop-bg-color').value;
+            const alpha = document.getElementById('prop-bg-opacity').value;
+            document.getElementById('opacity-val').innerText = Math.round(alpha * 100) + '%';
+            
+            const rgb = hexToRgb(hex);
+            el.style.backgroundColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+        }
+
+        function toggleStyle(prop, val) {
+            if(!elSelecionado) return;
+            const current = elSelecionado.style[prop];
+            // Lógica melhorada para B/I/U
+            if(prop === 'fontWeight') {
+                elSelecionado.style.fontWeight = (current === 'bold' || current === '700') ? 'normal' : 'bold';
+            }
+            if(prop === 'fontStyle') {
+                elSelecionado.style.fontStyle = (current === 'italic') ? 'normal' : 'italic';
+            }
+            if(prop === 'textDecoration') {
+                elSelecionado.style.textDecoration = (current.includes('underline')) ? 'none' : 'underline';
+            }
+            selecionarElemento(elSelecionado);
+        }
+
+        function adicionarTextoExtra() {
+            const data = {
+                id: 'extra-' + Date.now(), texto: 'NOVO TEXTO',
+                top: 50, left: 50,
+                style: { fontSize: '30px', color: '#ffffff', fontWeight: 'bold' }
+            };
+            const el = criarElementoDOM(data);
+            selecionarElemento(el);
+        }
+
+        function criarElementoDOM(data) {
+            const div = document.createElement('div');
+            div.className = 'drag-element';
+            div.innerText = data.texto;
+            div.dataset.type = 'extra';
+            div.id = data.id || ('extra-' + Date.now());
+            stage.appendChild(div);
+            aplicarEstadoCompleto(div, data.top, data.left, null, data.style || {});
+            return div;
+        }
+
+        function removerElemento() {
+            if(elSelecionado && elSelecionado.dataset.type === 'extra') {
+                elSelecionado.remove();
+                elSelecionado = null;
+                document.getElementById('propriedades').style.display = 'none';
+                document.getElementById('no-selection').style.display = 'block';
+            }
+        }
+
+        function salvarLayout() {
+            const status = document.getElementById('save-status');
+            status.innerText = "Salvando...";
+            const payload = { estilos_css: {}, elementos_extras: [] };
+
+            const extractStyle = (el) => ({
+                fontWeight: el.style.fontWeight,
+                fontStyle: el.style.fontStyle,
+                textDecoration: el.style.textDecoration,
+                backgroundColor: el.style.backgroundColor, // Salva rgba string direto
+                color: el.style.color,
+                fontSize: el.style.fontSize
+            });
+
+            ['el-titulo', 'el-preco', 'el-imagem'].forEach(id => {
+                const el = document.getElementById(id);
+                const type = el.dataset.type;
+
+                if(type === 'titulo') {
+                    payload.titulo_top = parseFloat(el.style.top);
+                    payload.titulo_left = parseFloat(el.style.left);
+                    payload.titulo_cor = rgbToHex(el.style.color);
+                    payload.titulo_tamanho = el.style.fontSize;
+                }
+                if(type === 'preco') {
+                    payload.preco_top = parseFloat(el.style.top);
+                    payload.preco_left = parseFloat(el.style.left);
+                    payload.preco_cor = rgbToHex(el.style.color);
+                    payload.preco_tamanho = el.style.fontSize;
+                }
+                if(type === 'imagem') {
+                    payload.imagem_config = {
+                        top: parseFloat(el.style.top),
+                        left: parseFloat(el.style.left),
+                        width: parseFloat(el.style.width)
+                    };
+                }
+                payload.estilos_css[id] = extractStyle(el);
+            });
+
+            document.querySelectorAll('.drag-element[data-type="extra"]').forEach(el => {
+                payload.elementos_extras.push({
+                    id: el.id,
+                    texto: el.innerText,
+                    top: parseFloat(el.style.top),
+                    left: parseFloat(el.style.left),
+                    style: extractStyle(el)
+                });
+            });
+
+            fetch(`/api/editor/salvar/${templateId}/`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') status.innerText = "Salvo com sucesso!";
+                else status.innerText = "Erro ao salvar.";
+            });
+        }
+
+        // Helpers de Cor
+        function rgbToHex(rgb) {
+            if(!rgb || rgb === 'transparent') return '#ffffff';
+            if(rgb.startsWith('#')) return rgb;
+            const nums = rgb.match(/\d+/g);
+            if(!nums) return '#000000';
+            return '#' + ((1 << 24) + (+nums[0] << 16) + (+nums[1] << 8) + +nums[2]).toString(16).slice(1);
+        }
+
+        function hexToRgb(hex) {
+            const bigint = parseInt(hex.slice(1), 16);
+            return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };
+        }
+
+        function parseRgba(rgbaStr) {
+            if (!rgbaStr || rgbaStr === 'transparent') return { hex: '#000000', alpha: 0 };
+            if (rgbaStr.startsWith('#')) return { hex: rgbaStr, alpha: 1 };
+            
+            const nums = rgbaStr.match(/(\d+(\.\d+)?)/g);
+            if (!nums) return { hex: '#000000', alpha: 1 };
+            
+            const r = parseInt(nums[0]);
+            const g = parseInt(nums[1]);
+            const b = parseInt(nums[2]);
+            const a = nums[3] ? parseFloat(nums[3]) : 1;
+            
+            const hex = '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+            return { hex: hex, alpha: a };
+        }
+    </script>
+</body>
+</html>
