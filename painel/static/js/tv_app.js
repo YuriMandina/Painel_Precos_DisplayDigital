@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Referências do DOM
     const setupScreen = document.getElementById('setup-screen');
     const appScreen = document.getElementById('app-screen');
     const inputCodigo = document.getElementById('input-uuid');
@@ -8,18 +7,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const elConteudo = document.getElementById('painel-conteudo');
     const elVideoContainer = document.getElementById('video-overlay-container');
 
-    // Estado da Aplicação
     let deviceUUID = localStorage.getItem('tv_device_uuid');
     let dadosCache = null;
     
-    // Controle de Ciclo
-    let modoAtual = 'TABELA'; // Estado inicial padrão
+    let modoAtual = 'TABELA';
     let paginaTabelaAtual = 0;
     let indiceVideoAtual = 0;
     
-    // Constantes de Tempo
-    const TEMPO_PAGINA_TABELA = 12000; // 12s por página da tabela
-    const ITENS_POR_PAGINA = 18;
+    // Configuração Dinâmica de Layout
+    let ITENS_POR_PAGINA = 18; // Padrão Horizontal
+    let MODO_VERTICAL = false;
+
+    const TEMPO_PAGINA_TABELA = 12000; 
 
     // --- SETUP ---
     if(inputCodigo) inputCodigo.placeholder = "CÓDIGO DE 6 DÍGITOS";
@@ -77,31 +76,43 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error("Erro API");
             const data = await response.json();
 
-            // 1. Atualiza Título
+            // 1. Configurações Visuais
             if (data.config && data.config.titulo_exibicao) {
                 elTitulo.innerText = data.config.titulo_exibicao;
             }
 
-            // 2. APLICA A ROTAÇÃO
+            // 2. DETECÇÃO DE ORIENTAÇÃO (CRÍTICO)
             document.body.classList.remove('rotacao-90', 'rotacao-270');
+            elConteudo.classList.remove('layout-vertical'); // Reseta
             
-            if (data.config.orientacao === 'VERTICAL_DIR') {
+            const ori = data.config.orientacao;
+            if (ori === 'VERTICAL_DIR') {
                 document.body.classList.add('rotacao-90');
-            } else if (data.config.orientacao === 'VERTICAL_ESQ') {
+                MODO_VERTICAL = true;
+            } else if (ori === 'VERTICAL_ESQ') {
                 document.body.classList.add('rotacao-270');
+                MODO_VERTICAL = true;
+            } else {
+                MODO_VERTICAL = false;
             }
 
-            // 3. Verifica Mudanças (Agora olha para playlist_final)
-            // Cria um hash simples do conteúdo
+            // Define capacidade da página baseado na orientação
+            if (MODO_VERTICAL) {
+                ITENS_POR_PAGINA = 15; // 1 Coluna x 15 Linhas
+                elConteudo.classList.add('layout-vertical');
+            } else {
+                ITENS_POR_PAGINA = 18; // 2 Colunas x 9 Linhas
+            }
+
+            // 3. Verifica Mudanças e Inicia Ciclo
             const hashNovo = JSON.stringify(data.produtos) + JSON.stringify(data.playlist_final) + data.config.modo_exibicao + data.config.orientacao;
             const hashAntigo = dadosCache ? (JSON.stringify(dadosCache.produtos) + JSON.stringify(dadosCache.playlist_final) + dadosCache.config.modo_exibicao + dadosCache.config.orientacao) : "";
 
             if (hashNovo !== hashAntigo) {
-                console.log("Novos dados/configuração recebidos!");
+                console.log("Novos dados/configuração recebidos! Vertical:", MODO_VERTICAL);
                 const primeiraCarga = dadosCache === null;
                 dadosCache = data;
                 
-                // Se mudou a configuração (Ex: de Tabela para Video), forçamos o reset do ciclo
                 if (primeiraCarga) {
                     if (dadosCache.config.modo_exibicao === 'VIDEO') {
                         modoAtual = 'VIDEO';
@@ -114,23 +125,18 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { console.error(e); }
     }
 
-    // --- MOTOR DE DECISÃO ---
+    // --- CICLO DE EXIBIÇÃO ---
     function proximoPassoCiclo() {
         if (!dadosCache) return;
 
-        const configModo = dadosCache.config.modo_exibicao; // 'TABELA', 'VIDEO' ou 'MISTO'
-        // Agora usamos playlist_final que contém mix de Produtos e Propagandas
+        const configModo = dadosCache.config.modo_exibicao; 
         const temVideos = dadosCache.playlist_final && dadosCache.playlist_final.length > 0;
         const temProdutos = dadosCache.produtos && dadosCache.produtos.length > 0;
 
-        // 1. Força o Estado baseado na Configuração
         if (configModo === 'TABELA') modoAtual = 'TABELA';
         if (configModo === 'VIDEO') modoAtual = 'VIDEO';
 
-        // 2. Executa a lógica do Estado Atual
         if (modoAtual === 'TABELA') {
-            
-            // Segurança: Se não tem produtos na tabela, mas tem vídeos e é MISTO/VIDEO, troca.
             if (!temProdutos && temVideos && configModo !== 'TABELA') {
                 modoAtual = 'VIDEO';
                 proximoPassoCiclo();
@@ -145,12 +151,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 elConteudo.innerHTML = "<h2>Aguardando produtos...</h2>";
             }
 
-            // Lógica de Transição
             if (paginaTabelaAtual < totalPaginas - 1) {
                 paginaTabelaAtual++;
                 setTimeout(proximoPassoCiclo, TEMPO_PAGINA_TABELA);
             } else {
-                // Chegou na última página da tabela
                 if (configModo === 'MISTO' && temVideos) {
                     modoAtual = 'VIDEO';
                     indiceVideoAtual = 0;
@@ -170,22 +174,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (indiceVideoAtual < dadosCache.playlist_final.length) {
-                // Toca o item atual (pode ser Produto ou Propaganda)
                 const item = dadosCache.playlist_final[indiceVideoAtual];
                 mostrarOverlayVideo(item, () => {
-                    // Quando acabar o vídeo:
                     indiceVideoAtual++;
                     proximoPassoCiclo();
                 });
             } else {
-                // Acabou a playlist
                 if (configModo === 'MISTO') {
                     modoAtual = 'TABELA';
                     paginaTabelaAtual = 0;
                     esconderOverlayVideo();
                     proximoPassoCiclo();
                 } else {
-                    // Loop infinito nos vídeos
                     indiceVideoAtual = 0;
                     proximoPassoCiclo();
                 }
@@ -193,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- RENDERIZADOR DA TABELA ---
+    // --- RENDERIZADOR DA TABELA INTELIGENTE ---
     function renderizarTabela(pagina) {
         esconderOverlayVideo(); 
         elConteudo.classList.add('fade'); 
@@ -205,28 +205,38 @@ document.addEventListener('DOMContentLoaded', () => {
             const fim = inicio + ITENS_POR_PAGINA;
             const produtosReais = dadosCache.produtos.slice(inicio, fim);
             
-            const itensCol1 = [];
-            const itensCol2 = [];
+            // LÓGICA DE COLUNAS
+            if (MODO_VERTICAL) {
+                // MODO 1 COLUNA (Vertical)
+                const col = document.createElement('div'); 
+                col.className = 'coluna';
+                
+                produtosReais.forEach(p => col.appendChild(criarItemHTML(p)));
+                
+                // Preenche espaço vazio para manter layout
+                while (col.children.length < ITENS_POR_PAGINA) {
+                    col.appendChild(criarItemVazio());
+                }
+                
+                elConteudo.appendChild(col);
 
-            // 1. Distribui produtos reais
-            produtosReais.forEach((p, idx) => {
-                if (idx < 9) itensCol1.push(criarItemHTML(p));
-                else itensCol2.push(criarItemHTML(p));
-            });
+            } else {
+                // MODO 2 COLUNAS (Horizontal)
+                const col1 = document.createElement('div'); col1.className = 'coluna';
+                const col2 = document.createElement('div'); col2.className = 'coluna';
+                const itensPorCol = Math.ceil(ITENS_POR_PAGINA / 2); // 9
 
-            // 2. Preenchimento de Espaços Vazios
-            while (itensCol1.length < 9) itensCol1.push(criarItemVazio());
-            while (itensCol2.length < 9) itensCol2.push(criarItemVazio());
+                produtosReais.forEach((p, idx) => {
+                    if (idx < itensPorCol) col1.appendChild(criarItemHTML(p));
+                    else col2.appendChild(criarItemHTML(p));
+                });
 
-            // 3. Renderiza no DOM
-            const col1Div = document.createElement('div'); col1Div.className = 'coluna';
-            const col2Div = document.createElement('div'); col2Div.className = 'coluna';
+                while (col1.children.length < itensPorCol) col1.appendChild(criarItemVazio());
+                while (col2.children.length < itensPorCol) col2.appendChild(criarItemVazio());
 
-            itensCol1.forEach(el => col1Div.appendChild(el));
-            itensCol2.forEach(el => col2Div.appendChild(el));
-
-            elConteudo.appendChild(col1Div);
-            elConteudo.appendChild(col2Div);
+                elConteudo.appendChild(col1);
+                elConteudo.appendChild(col2);
+            }
             
             elConteudo.classList.remove('fade');
         }, 500);
@@ -237,7 +247,9 @@ document.addEventListener('DOMContentLoaded', () => {
         div.className = `item-produto ${produto.em_oferta ? 'em-oferta' : ''}`;
         
         const preco = parseFloat(produto.preco).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
-        const nomeClass = produto.descricao.length > 23 ? 'nome-container marquee' : 'nome-container';
+        // Ajuste no marquee: Em vertical temos mais largura (1080px vs 960px), então cabe mais texto antes de rodar
+        const limiteChars = MODO_VERTICAL ? 28 : 22;
+        const nomeClass = produto.descricao.length > limiteChars ? 'nome-container marquee' : 'nome-container';
 
         div.innerHTML = `
             <div class="${nomeClass}"><span class="nome">${produto.descricao}</span></div>
@@ -249,24 +261,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function criarItemVazio() {
         const div = document.createElement('div');
         div.className = 'item-produto';
-        div.innerHTML = `
-            <div class="nome-container"><span class="nome">&nbsp;</span></div>
-            <div class="preco">&nbsp;</div>
-        `;
+        div.innerHTML = `<div class="nome-container"><span class="nome">&nbsp;</span></div><div class="preco">&nbsp;</div>`;
         return div;
     }
 
-    // --- RENDERIZADOR DE VÍDEO (OVERLAY) ---
+    // --- RENDERIZADOR DE VÍDEO ---
     function mostrarOverlayVideo(item, onComplete) {
-        
         elVideoContainer.innerHTML = '';
         elVideoContainer.style.display = 'block';
 
-        // Detecta se é Produto ou Propaganda
         const isPropaganda = item.tipo === 'propaganda';
         const videoUrl = isPropaganda ? item.url : item.template_video.arquivo_video;
 
-        // 1. Elemento de Vídeo
         const video = document.createElement('video');
         video.id = 'video-bg';
         video.src = videoUrl;
@@ -281,10 +287,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (isPropaganda) return;
 
-        // --- LÓGICA DE TEXTO (SÓ PARA PRODUTOS) ---
         const template = item.template_video;
-        
-        // Função auxiliar ajustada
+        const css = template.estilos_css || {};
+
         const createEl = (conteudo, top, left, styleBase, estilosExtras) => {
             if (estilosExtras && estilosExtras.display === 'none') return null;
 
@@ -294,55 +299,34 @@ document.addEventListener('DOMContentLoaded', () => {
             if (conteudo.startsWith('<img')) el.innerHTML = conteudo;
             else el.innerText = conteudo;
 
-            // Posição Base
             el.style.top = top + '%';
             el.style.left = left + '%';
-            el.style.transform = `translate(-50%, -50%)`;
+            el.style.transform = `translate(-50%, -50%)`; 
 
-            // Mescla estilos
             const styleFinal = { ...styleBase, ...estilosExtras };
+            if (styleFinal.fontSizeVh) el.style.fontSize = styleFinal.fontSizeVh + 'vh';
+            else if (styleFinal.fontSize) el.style.fontSize = styleFinal.fontSize;
             
-            // Aplica Fonte VH (Escala Real na TV)
-            if (styleFinal.fontSizeVh) {
-                el.style.fontSize = styleFinal.fontSizeVh + 'vh';
-            } else if (styleFinal.fontSize) {
-                // Fallback legado
-                el.style.fontSize = styleFinal.fontSize;
-            }
-            
-            // --- Lista Permissiva Incluindo WIDTH/HEIGHT ---
-            const propsPermitidas = [
-                'color', 'backgroundColor', 'fontFamily', 'fontWeight', 
-                'fontStyle', 'textDecoration', 'width', 'height', 'zIndex'
-            ];
-            
-            propsPermitidas.forEach(prop => {
+            ['color', 'backgroundColor', 'fontFamily', 'fontWeight', 'fontStyle', 'textDecoration', 'width', 'height', 'zIndex'].forEach(prop => {
                 if(styleFinal[prop]) el.style[prop] = styleFinal[prop];
             });
 
             return el;
         };
 
-        // Título
-        const elTit = createEl(item.descricao, template.titulo_top, template.titulo_left, 
-            { color: template.titulo_cor }, template.estilos_css['el-titulo']);
+        const elTit = createEl(item.descricao, template.titulo_top, template.titulo_left, { color: template.titulo_cor }, css['el-titulo']);
         if(elTit) elVideoContainer.appendChild(elTit);
         
-        // Preço
         const precoVal = parseFloat(item.preco).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
-        const elPreco = createEl(precoVal, template.preco_top, template.preco_left, 
-            { color: template.preco_cor }, template.estilos_css['el-preco']);
+        const elPreco = createEl(precoVal, template.preco_top, template.preco_left, { color: template.preco_cor }, css['el-preco']);
         if(elPreco) elVideoContainer.appendChild(elPreco);
 
-        // Imagem (Agora com Width sendo aplicado corretamente)
         if (item.imagem) {
             const imgHTML = `<img src="${item.imagem}" style="width:100%; height:100%; object-fit:contain;">`;
-            const elImg = createEl(imgHTML, template.img_top, template.img_left, 
-                { width: template.img_width + '%' }, template.estilos_css['el-imagem']);
+            const elImg = createEl(imgHTML, template.img_top, template.img_left, { width: template.img_width + '%' }, css['el-imagem']);
             if(elImg) elVideoContainer.appendChild(elImg);
         }
 
-        // Extras
         if (template.elementos_extras) {
             template.elementos_extras.forEach(extra => {
                 const el = createEl(extra.texto, extra.top, extra.left, {}, extra.style);

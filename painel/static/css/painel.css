@@ -203,3 +203,28 @@ body.rotacao-270 .coluna {
     /* Em vertical, talvez queira ajustar o padding */
     padding: 0 1vw;
 }
+
+/* --- AJUSTES DE LAYOUT PARA MODO VERTICAL (1 COLUNA) --- */
+
+/* Quando a classe .layout-vertical for injetada pelo JS */
+.painel-conteudo.layout-vertical {
+    display: block; /* Remove o flex padrão para gerenciar melhor */
+    padding: 0 4vw; /* Mais margem lateral para elegância */
+}
+
+.painel-conteudo.layout-vertical .coluna {
+    width: 100%; /* Ocupa toda a largura */
+    border-right: none; /* Remove a linha tracejada do meio */
+    padding: 0;
+    
+    /* Aumentamos de 9 para 15 linhas para aproveitar a altura da TV em pé */
+    grid-template-rows: repeat(15, 1fr); 
+}
+
+/* Ajuste fino da fonte no modo vertical se necessário */
+.painel-conteudo.layout-vertical .item-produto .nome {
+    font-size: 3.8vh; /* Levemente menor pois a altura (vh) base é gigante (1920px) */
+}
+.painel-conteudo.layout-vertical .item-produto .preco {
+    font-size: 4.5vh;
+}

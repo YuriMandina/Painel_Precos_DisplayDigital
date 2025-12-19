@@ -12,6 +12,7 @@ media/
 staticfiles/
 templates_video/
 produtos/
+propagandas/
 
 # VS Code
 .vscode/
