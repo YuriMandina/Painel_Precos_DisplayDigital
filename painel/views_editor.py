@@ -9,19 +9,18 @@ from .models import VideoTemplate, Produto
 def editor_visual(request, template_id):
     template = get_object_or_404(VideoTemplate, pk=template_id)
     
-    # Tenta pegar um produto que use esse template para dar realismo ao editor
-    produto_exemplo = Produto.objects.filter(template_video=template).first()
+    # 1. Tenta pegar UM produto real que use este template
+    produto_real = Produto.objects.filter(template_video=template).first()
     
-    # Se não tiver, pega qualquer um
-    if not produto_exemplo:
-        produto_exemplo = Produto.objects.first()
-        
-    # Se o banco estiver vazio, cria um objeto dummy em memória
-    if not produto_exemplo:
+    # 2. Se achou, usa ele. Se NÃO achou, cria um Dummy (falso)
+    if produto_real:
+        produto_exemplo = produto_real
+    else:
+        # Objeto falso apenas para visualização no editor
         class DummyProduto:
-            descricao = "NOME DO PRODUTO"
-            preco = 99.90
-            imagem = None
+            descricao = "NOME DO PRODUTO (MODELO)"
+            preco = 0.00
+            imagem = None # Não tem imagem
         produto_exemplo = DummyProduto()
 
     return render(request, 'painel/editor_visual.html', {

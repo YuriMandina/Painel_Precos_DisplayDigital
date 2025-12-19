@@ -5,157 +5,112 @@
     <meta charset="UTF-8">
     <title>Editor Visual - {{ template.nome }}</title>
     <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Montserrat:wght@400;700&family=Lato:wght@400;700&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
+        /* (Estilos mantidos iguais, apenas ajuste de layout) */
         body { margin: 0; display: flex; height: 100vh; font-family: sans-serif; overflow: hidden; background: #222; color: white; }
-        
-        /* SIDEBAR */
-        #sidebar { width: 320px; background: #333; padding: 20px; border-right: 1px solid #444; overflow-y: auto; display: flex; flex-direction: column; gap: 15px;}
-        h2 { font-size: 14px; color: #aaa; text-transform: uppercase; border-bottom: 1px solid #555; padding-bottom: 5px; margin-top: 10px;}
-        
-        .control-group { margin-bottom: 10px; }
-        label { display: block; font-size: 12px; margin-bottom: 5px; color: #ccc; }
-        input[type="color"] { width: 100%; height: 40px; border: none; cursor: pointer; }
-        input[type="number"], input[type="text"], select { width: 100%; padding: 8px; background: #222; border: 1px solid #555; color: white; border-radius: 4px; }
+        #sidebar { width: 340px; background: #333; padding: 20px; border-right: 1px solid #444; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;}
+        h2 { font-size: 13px; color: #aaa; text-transform: uppercase; border-bottom: 1px solid #555; padding-bottom: 5px; margin-top: 15px; margin-bottom: 5px;}
+        .control-group { margin-bottom: 8px; }
+        label { display: block; font-size: 11px; margin-bottom: 3px; color: #ccc; }
+        input[type="color"] { width: 100%; height: 35px; border: none; cursor: pointer; background: none;}
+        input[type="number"], input[type="text"], select { width: 100%; padding: 8px; background: #222; border: 1px solid #555; color: white; border-radius: 4px; font-size: 13px;}
         input[type=range] { width: 100%; cursor: pointer; }
-
-        .btn { padding: 10px; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; width: 100%; margin-top: 5px;}
-        .btn-save { background: #4CAF50; color: white; font-size: 16px;}
-        .btn-add { background: #2196F3; color: white; margin-bottom: 15px; } /* Movidopara cima */
+        .btn { padding: 10px; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; width: 100%; margin-top: 5px; transition: 0.2s;}
+        .btn:hover { filter: brightness(1.1); }
+        .btn-save { background: #4CAF50; color: white; font-size: 15px; }
+        .btn-add { background: #2196F3; color: white; }
         .btn-style { width: 30%; background: #444; color: white; cursor: pointer; padding: 5px;}
         .btn-style.active { background: #FFD700; color: black; }
-        .btn-delete { background: #E53935; color: white; display: none; } /* Começa oculto */
-
-        /* CANVAS AREA */
-        #canvas-area { flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #111; position: relative; padding: 20px; }
-        
-        #video-stage {
-            position: relative; background: black;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5); border: 2px solid #444;
-            overflow: hidden; user-select: none;
-            transition: all 0.3s ease;
-        }
-
+        .btn-delete { background: #E53935; color: white; }
+        .btn-restore { background: #FF9800; color: white; margin-top: 20px; }
+        #canvas-area { flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #181818; position: relative; padding: 20px; }
+        #video-stage { position: relative; background: black; box-shadow: 0 0 50px rgba(0,0,0,0.5); border: 2px solid #444; overflow: hidden; user-select: none; transition: all 0.3s ease; }
         .stage-landscape { width: 70vw; aspect-ratio: 16/9; }
         .stage-portrait { height: 90vh; aspect-ratio: 9/16; }
-        
         #bg-video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
-
-        .drag-element {
-            position: absolute; cursor: grab; 
-            border: 1px dashed rgba(255, 255, 255, 0.3); 
-            font-family: 'Roboto Condensed', sans-serif; 
-            font-weight: 400; /* Padrão normal para o Bold funcionar */
-            line-height: 1.2;
-            white-space: nowrap;
-            transform: translate(-50%, -50%); /* Centro */
-            transform-origin: center center;
-        }
-        
+        .drag-element { position: absolute; cursor: grab; border: 1px dashed rgba(255, 255, 255, 0.2); line-height: 1.2; white-space: nowrap; transform: translate(-50%, -50%); transform-origin: center center; }
         .drag-element:hover { border-color: rgba(255, 255, 255, 0.8); }
         .drag-element.selected { border: 2px solid #00FFFF; z-index: 1000; }
-        .placeholder-img { background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 10px; }
-
+        .drag-element.hidden-element { visibility: hidden !important; opacity: 0 !important; pointer-events: none; }
+        .placeholder-img { background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 10px; color: #888; border: 1px solid #555; }
     </style>
 </head>
 <body>
-
     <div id="sidebar">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <button class="btn btn-save" onclick="salvarLayout()">💾 SALVAR TUDO</button>
-            <p id="save-status" style="font-size: 12px; color: #aaa; margin-top: 5px;"></p>
+        <div style="text-align: center;">
+            <button class="btn btn-save" onclick="salvarLayout()">💾 SALVAR LAYOUT</button>
+            <p id="save-status" style="font-size: 11px; color: #aaa; margin-top: 5px;"></p>
+        </div>
+        
+        <div style="background: #222; padding: 10px; border-radius: 5px; text-align: center; margin-bottom: 10px; border: 1px solid #444;">
+            <span style="color: #FFD700; font-weight: bold;">⏱️ Duração: {{ template.duracao }}s</span>
+            <br><small style="color: #888;">(Configure no Admin)</small>
         </div>
 
-        <button class="btn btn-add" onclick="adicionarTextoExtra()">+ Adicionar Texto</button>
-
-        <div class="control-group" style="background: #444; padding: 10px; border-radius: 5px;">
-            <label style="color: #fff; font-weight: bold;">📺 Formato do Canvas</label>
+        <button class="btn btn-add" onclick="adicionarTextoExtra()">+ TEXTO EXTRA</button>
+        <button class="btn btn-restore" onclick="restaurarOcultos()">👁️ Restaurar Ocultos</button>
+        <div class="control-group" style="background: #444; padding: 10px; border-radius: 5px; margin-top: 15px;">
+            <label style="color: #fff; font-weight: bold;">📺 Visualização</label>
             <select id="canvas-mode" onchange="mudarOrientacaoCanvas()">
                 <option value="landscape">Horizontal (16:9)</option>
                 <option value="portrait">Vertical (9:16)</option>
             </select>
         </div>
         <hr style="border-color: #444;">
-
-        <div id="no-selection">
-            <p style="text-align: center; color: #888; margin-top: 30px;">Clique em um elemento para editar.</p>
-        </div>
-
         <div id="propriedades" style="display:none;">
-            <h2>Conteúdo</h2>
+            <h3 style="color: #00FFFF; margin: 0 0 10px 0;">Editando</h3>
+            <div class="control-group"><label>Conteúdo</label><input type="text" id="prop-texto" oninput="atualizarElemento()"></div>
             <div class="control-group">
-                <label>Texto</label>
-                <input type="text" id="prop-texto" oninput="atualizarElemento()">
+                <label>Fonte</label>
+                <select id="prop-font" onchange="atualizarElemento()">
+                    <option value="'Roboto', sans-serif">Roboto</option>
+                    <option value="'Open Sans', sans-serif">Open Sans</option>
+                    <option value="'Montserrat', sans-serif">Montserrat</option>
+                    <option value="'Lato', sans-serif">Lato</option>
+                    <option value="'Oswald', sans-serif">Oswald</option>
+                </select>
             </div>
+            <div class="control-group">
+                <label>Tamanho (% da Altura)</label>
+                <input type="range" id="prop-size-slider" min="1" max="30" step="0.1" oninput="atualizarElemento()">
+            </div>
+            <div class="control-group"><label>Cor do Texto</label><input type="color" id="prop-color" oninput="atualizarElemento()"></div>
             
-            <h2>Aparência</h2>
-            <div class="control-group">
-                <label>Tamanho da Fonte (px)</label>
-                <input type="number" id="prop-size" oninput="atualizarElemento()">
-            </div>
-            <div class="control-group">
-                <label>Cor do Texto</label>
-                <input type="color" id="prop-color" oninput="atualizarElemento()">
-            </div>
-            
-            <h2>Fundo & Opacidade</h2>
-            <div class="control-group">
-                <label>Cor do Fundo</label>
-                <input type="color" id="prop-bg-color" oninput="atualizarFundo()">
-            </div>
+            <div class="control-group"><label>Cor do Fundo</label><input type="color" id="prop-bg-color" oninput="atualizarFundo()"></div>
             <div class="control-group">
                 <label>Opacidade do Fundo: <span id="opacity-val">100%</span></label>
-                <input type="range" id="prop-bg-opacity" min="0" max="1" step="0.01" value="1" oninput="atualizarFundo()">
+                <input type="range" id="prop-bg-opacity" min="0" max="1" step="0.01" oninput="atualizarFundo()">
             </div>
 
-            <h2>Estilo</h2>
             <div class="control-group" style="display: flex; gap: 5px;">
                 <button class="btn btn-style" id="btn-bold" onclick="toggleStyle('fontWeight', 'bold')">B</button>
                 <button class="btn btn-style" id="btn-italic" onclick="toggleStyle('fontStyle', 'italic')">I</button>
                 <button class="btn btn-style" id="btn-underline" onclick="toggleStyle('textDecoration', 'underline')">U</button>
             </div>
-            
-            <div class="control-group" style="margin-top: 20px;">
-                <button class="btn btn-delete" id="btn-excluir" onclick="removerElemento()">Excluir Elemento</button>
-            </div>
+            <div class="control-group" style="margin-top: 15px;"><button class="btn btn-delete" id="btn-excluir" onclick="removerElemento()">Ocultar / Excluir</button></div>
         </div>
+        <div id="no-selection"><p style="text-align: center; color: #666; margin-top: 30px;">Selecione um elemento.</p></div>
     </div>
 
     <div id="canvas-area">
         <div id="video-stage" class="stage-landscape">
-            {% if template.arquivo_video %}
-                <video id="bg-video" src="{{ template.arquivo_video.url }}" muted loop autoplay></video>
-            {% else %}
-                <div style="width:100%; height:100%; background: #333; display:flex; align-items:center; justify-content:center;">Sem Vídeo</div>
-            {% endif %}
-
+            {% if template.arquivo_video %}<video id="bg-video" src="{{ template.arquivo_video.url }}" muted loop autoplay></video>
+            {% else %}<div style="width:100%; height:100%; background: #333; display:flex; align-items:center; justify-content:center;">Sem Vídeo</div>{% endif %}
+            
             <div class="drag-element" id="el-titulo" data-type="titulo">{{ produto.descricao }}</div>
             <div class="drag-element" id="el-preco" data-type="preco">R$ {{ produto.preco|floatformat:2 }}</div>
-            <div class="drag-element placeholder-img" id="el-imagem" data-type="imagem">
-                {% if produto.imagem %}
-                    <img src="{{ produto.imagem.url }}" style="width:100%; height:100%; object-fit:contain; pointer-events: none;">
-                {% else %}
-                    FOTO
-                {% endif %}
-            </div>
+            <div class="drag-element placeholder-img" id="el-imagem" data-type="imagem">{% if produto.imagem %}<img src="{{ produto.imagem.url }}" style="width:100%; height:100%; object-fit:contain; pointer-events: none;">{% else %}FOTO{% endif %}</div>
         </div>
     </div>
 
     <script>
         const templateId = "{{ template.id }}";
         const stylesDB = {
-            'el-titulo': { 
-                top: {{ template.titulo_top }}, left: {{ template.titulo_left }}, 
-                color: "{{ template.titulo_cor }}", fontSize: "{{ template.titulo_tamanho }}" 
-            },
-            'el-preco': { 
-                top: {{ template.preco_top }}, left: {{ template.preco_left }}, 
-                color: "{{ template.preco_cor }}", fontSize: "{{ template.preco_tamanho }}" 
-            },
-            'el-imagem': { 
-                top: {{ template.img_top }}, left: {{ template.img_left }}, width: {{ template.img_width }} 
-            }
+            'el-titulo': { top: {{ template.titulo_top }}, left: {{ template.titulo_left }} },
+            'el-preco': { top: {{ template.preco_top }}, left: {{ template.preco_left }} },
+            'el-imagem': { top: {{ template.img_top }}, left: {{ template.img_left }}, width: {{ template.img_width }} }
         };
         const estilosExtrasDB = {{ template.estilos_css|default:"{}"|safe }};
         const elementosExtrasDB = {{ template.elementos_extras|default:"[]"|safe }};
@@ -168,7 +123,8 @@
                 const el = document.getElementById(id);
                 const base = stylesDB[id];
                 const extra = estilosExtrasDB[id] || {};
-                aplicarEstadoCompleto(el, base.top, base.left, base.width, { ...base, ...extra });
+                if (extra.display === 'none') el.classList.add('hidden-element');
+                aplicarEstado(el, base.top, base.left, base.width, extra);
             });
             elementosExtrasDB.forEach(data => criarElementoDOM(data));
             initInteract();
@@ -180,36 +136,24 @@
             setTimeout(initInteract, 300);
         }
 
-        // --- INTERACT (DRAG & RESIZE) ---
         function initInteract() {
             interact('.drag-element').unset(); 
-
-            // Configuração Genérica de Drag (Move)
             interact('.drag-element').draggable({
                 listeners: {
                     move (event) {
                         const target = event.target;
                         const parentRect = stage.getBoundingClientRect();
-
-                        let currentCenterX = (parseFloat(target.style.left) / 100) * parentRect.width;
-                        let currentCenterY = (parseFloat(target.style.top) / 100) * parentRect.height;
-
-                        currentCenterX += event.dx;
-                        currentCenterY += event.dy;
-
-                        const newLeftPct = (currentCenterX / parentRect.width) * 100;
-                        const newTopPct = (currentCenterY / parentRect.height) * 100;
-
-                        target.style.left = newLeftPct.toFixed(2) + '%';
-                        target.style.top = newTopPct.toFixed(2) + '%';
+                        let currentLeft = parseFloat(target.style.left) || 50;
+                        let currentTop = parseFloat(target.style.top) || 50;
+                        currentLeft += (event.dx / parentRect.width) * 100;
+                        currentTop += (event.dy / parentRect.height) * 100;
+                        target.style.left = currentLeft.toFixed(2) + '%';
+                        target.style.top = currentTop.toFixed(2) + '%';
                     }
                 },
                 modifiers: [ interact.modifiers.restrictRect({ restriction: 'parent', endOnly: false }) ]
-            })
-            .on('down', (e) => selecionarElemento(e.currentTarget));
+            }).on('down', (e) => selecionarElemento(e.currentTarget));
 
-            // Configuração Específica da Imagem (Resizable + Draggable)
-            // Precisamos garantir que a imagem também seja arrastável explicitamente se houver conflito
             interact('#el-imagem').resizable({
                 edges: { left: true, right: true, bottom: true, top: true },
                 listeners: {
@@ -224,20 +168,26 @@
             });
         }
 
-        function aplicarEstadoCompleto(el, topPct, leftPct, widthPct, styleObj) {
-            el.style.top = topPct + '%';
-            el.style.left = leftPct + '%';
-            if (widthPct) el.style.width = widthPct + '%';
-            else el.style.width = 'auto';
+        function aplicarEstado(el, top, left, width, style) {
+            el.style.top = top + '%';
+            el.style.left = left + '%';
+            if (width) el.style.width = width + '%'; else el.style.width = 'auto';
 
-            if (styleObj.fontSize) el.style.fontSize = styleObj.fontSize;
-            if (styleObj.color) el.style.color = styleObj.color;
-            if (styleObj.fontWeight) el.style.fontWeight = styleObj.fontWeight;
-            if (styleObj.fontStyle) el.style.fontStyle = styleObj.fontStyle;
-            if (styleObj.textDecoration) el.style.textDecoration = styleObj.textDecoration;
-            
-            // Fundo e Opacidade (RGBA)
-            if (styleObj.backgroundColor) el.style.backgroundColor = styleObj.backgroundColor;
+            if (style.fontSizeVh) {
+                const pxSize = (style.fontSizeVh / 100) * stage.offsetHeight;
+                el.style.fontSize = pxSize + 'px';
+            } else if (style.fontSize) {
+                el.style.fontSize = style.fontSize; 
+            } else {
+                el.style.fontSize = (0.05 * stage.offsetHeight) + 'px';
+            }
+
+            if (style.color) el.style.color = style.color;
+            if (style.backgroundColor) el.style.backgroundColor = style.backgroundColor;
+            if (style.fontFamily) el.style.fontFamily = style.fontFamily;
+            if (style.fontWeight) el.style.fontWeight = style.fontWeight;
+            if (style.fontStyle) el.style.fontStyle = style.fontStyle;
+            if (style.textDecoration) el.style.textDecoration = style.textDecoration;
             
             el.style.transform = `translate(-50%, -50%)`;
         }
@@ -246,36 +196,35 @@
             if(elSelecionado) elSelecionado.classList.remove('selected');
             elSelecionado = el;
             el.classList.add('selected');
-
             document.getElementById('no-selection').style.display = 'none';
             document.getElementById('propriedades').style.display = 'block';
 
-            // Inputs e Travamento
             const inputTexto = document.getElementById('prop-texto');
             inputTexto.value = el.innerText;
-            
-            // 5. Ineditáveis
-            const isFixed = ['titulo', 'preco', 'imagem'].includes(el.dataset.type);
-            inputTexto.disabled = isFixed; 
-            
-            // 4. Excluir Elemento (Só aparece se for extra)
+            inputTexto.disabled = ['titulo', 'preco', 'imagem'].includes(el.dataset.type);
             const btnExcluir = document.getElementById('btn-excluir');
-            btnExcluir.style.display = isFixed ? 'none' : 'block';
+            btnExcluir.style.display = 'block';
 
-            // Estilos
             const style = window.getComputedStyle(el);
-            document.getElementById('prop-size').value = parseFloat(style.fontSize);
+            const sizePx = parseFloat(style.fontSize);
+            const sizePct = (sizePx / stage.offsetHeight) * 100;
+            document.getElementById('prop-size-slider').value = sizePct.toFixed(1);
+            
+            const currentFont = el.style.fontFamily.replace(/"/g, "'");
+            const fontSelect = document.getElementById('prop-font');
+            for(let i=0; i<fontSelect.options.length; i++){
+                if(currentFont.includes(fontSelect.options[i].value.split(',')[0].replace(/'/g, ""))) fontSelect.selectedIndex = i;
+            }
+
             document.getElementById('prop-color').value = rgbToHex(style.color);
             
-            // Background & Opacity
-            const bg = style.backgroundColor; // Vem como rgba(r, g, b, a) ou rgb(r, g, b)
-            const rgba = parseRgba(bg);
-            document.getElementById('prop-bg-color').value = rgba.hex;
-            document.getElementById('prop-bg-opacity').value = rgba.alpha;
-            document.getElementById('opacity-val').innerText = Math.round(rgba.alpha * 100) + '%';
+            // Popula Slider e Cor de Fundo
+            const bgData = parseRgba(el.style.backgroundColor);
+            document.getElementById('prop-bg-color').value = bgData.hex;
+            document.getElementById('prop-bg-opacity').value = bgData.alpha; // 0 a 1
+            document.getElementById('opacity-val').innerText = Math.round(bgData.alpha * 100) + '%';
 
-            // Botões de Estilo
-            document.getElementById('btn-bold').classList.toggle('active', style.fontWeight === '700' || style.fontWeight === 'bold');
+            document.getElementById('btn-bold').classList.toggle('active', style.fontWeight > 400);
             document.getElementById('btn-italic').classList.toggle('active', style.fontStyle === 'italic');
             document.getElementById('btn-underline').classList.toggle('active', style.textDecorationLine.includes('underline'));
         }
@@ -283,48 +232,57 @@
         function atualizarElemento() {
             if(!elSelecionado) return;
             const el = elSelecionado;
-            
-            if(!['imagem', 'titulo', 'preco'].includes(el.dataset.type)) {
-                el.innerText = document.getElementById('prop-texto').value;
-            }
+            if(!['imagem', 'titulo', 'preco'].includes(el.dataset.type)) el.innerText = document.getElementById('prop-texto').value;
 
-            el.style.fontSize = document.getElementById('prop-size').value + 'px';
+            const vhSize = document.getElementById('prop-size-slider').value;
+            const pxSize = (vhSize / 100) * stage.offsetHeight;
+            el.style.fontSize = pxSize + 'px';
+            el.dataset.vhSize = vhSize;
+
             el.style.color = document.getElementById('prop-color').value;
+            el.style.fontFamily = document.getElementById('prop-font').value;
         }
 
-        // 6. Nova lógica de Fundo com Slider
+        // --- CORREÇÃO: Função Unificada para Fundo + Opacidade ---
         function atualizarFundo() {
             if(!elSelecionado) return;
+            
             const hex = document.getElementById('prop-bg-color').value;
-            const alpha = document.getElementById('prop-bg-opacity').value;
+            const alpha = parseFloat(document.getElementById('prop-bg-opacity').value);
+            
+            // Atualiza Label
             document.getElementById('opacity-val').innerText = Math.round(alpha * 100) + '%';
             
             const rgb = hexToRgb(hex);
+            
+            // Aplica RGBA
             el.style.backgroundColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
         }
 
         function toggleStyle(prop, val) {
             if(!elSelecionado) return;
             const current = elSelecionado.style[prop];
-            // Lógica melhorada para B/I/U
-            if(prop === 'fontWeight') {
-                elSelecionado.style.fontWeight = (current === 'bold' || current === '700') ? 'normal' : 'bold';
-            }
-            if(prop === 'fontStyle') {
-                elSelecionado.style.fontStyle = (current === 'italic') ? 'normal' : 'italic';
-            }
-            if(prop === 'textDecoration') {
-                elSelecionado.style.textDecoration = (current.includes('underline')) ? 'none' : 'underline';
-            }
+            if(prop === 'fontWeight') elSelecionado.style.fontWeight = (current === 'bold' || current === '700') ? '400' : 'bold';
+            if(prop === 'fontStyle') elSelecionado.style.fontStyle = (current === 'italic') ? 'normal' : 'italic';
+            if(prop === 'textDecoration') elSelecionado.style.textDecoration = (current.includes('underline')) ? 'none' : 'underline';
             selecionarElemento(elSelecionado);
         }
 
+        function removerElemento() {
+            if(!elSelecionado) return;
+            if(['titulo', 'preco', 'imagem'].includes(elSelecionado.dataset.type)) elSelecionado.classList.add('hidden-element');
+            else elSelecionado.remove();
+            elSelecionado = null;
+            document.getElementById('propriedades').style.display = 'none';
+            document.getElementById('no-selection').style.display = 'block';
+        }
+
+        function restaurarOcultos() {
+            document.querySelectorAll('.hidden-element').forEach(el => el.classList.remove('hidden-element'));
+        }
+
         function adicionarTextoExtra() {
-            const data = {
-                id: 'extra-' + Date.now(), texto: 'NOVO TEXTO',
-                top: 50, left: 50,
-                style: { fontSize: '30px', color: '#ffffff', fontWeight: 'bold' }
-            };
+            const data = { id: 'extra-' + Date.now(), texto: 'Novo Texto', top: 50, left: 50, style: { fontSizeVh: 5, color: '#ffffff', fontWeight: 'bold' } };
             const el = criarElementoDOM(data);
             selecionarElemento(el);
         }
@@ -336,17 +294,8 @@
             div.dataset.type = 'extra';
             div.id = data.id || ('extra-' + Date.now());
             stage.appendChild(div);
-            aplicarEstadoCompleto(div, data.top, data.left, null, data.style || {});
+            aplicarEstado(div, data.top, data.left, null, data.style || {});
             return div;
-        }
-
-        function removerElemento() {
-            if(elSelecionado && elSelecionado.dataset.type === 'extra') {
-                elSelecionado.remove();
-                elSelecionado = null;
-                document.getElementById('propriedades').style.display = 'none';
-                document.getElementById('no-selection').style.display = 'block';
-            }
         }
 
         function salvarLayout() {
@@ -354,91 +303,50 @@
             status.innerText = "Salvando...";
             const payload = { estilos_css: {}, elementos_extras: [] };
 
-            const extractStyle = (el) => ({
-                fontWeight: el.style.fontWeight,
-                fontStyle: el.style.fontStyle,
-                textDecoration: el.style.textDecoration,
-                backgroundColor: el.style.backgroundColor, // Salva rgba string direto
-                color: el.style.color,
-                fontSize: el.style.fontSize
-            });
+            const extractStyle = (el) => {
+                const pxSize = parseFloat(el.style.fontSize);
+                const vhSize = (pxSize / stage.offsetHeight) * 100;
+                
+                return {
+                    fontWeight: el.style.fontWeight,
+                    fontStyle: el.style.fontStyle,
+                    textDecoration: el.style.textDecoration,
+                    backgroundColor: el.style.backgroundColor, // Salva o RGBA gerado
+                    color: el.style.color,
+                    fontSizeVh: vhSize,
+                    fontFamily: el.style.fontFamily,
+                    display: el.classList.contains('hidden-element') ? 'none' : 'block'
+                };
+            };
 
             ['el-titulo', 'el-preco', 'el-imagem'].forEach(id => {
                 const el = document.getElementById(id);
                 const type = el.dataset.type;
-
-                if(type === 'titulo') {
-                    payload.titulo_top = parseFloat(el.style.top);
-                    payload.titulo_left = parseFloat(el.style.left);
-                    payload.titulo_cor = rgbToHex(el.style.color);
-                    payload.titulo_tamanho = el.style.fontSize;
-                }
-                if(type === 'preco') {
-                    payload.preco_top = parseFloat(el.style.top);
-                    payload.preco_left = parseFloat(el.style.left);
-                    payload.preco_cor = rgbToHex(el.style.color);
-                    payload.preco_tamanho = el.style.fontSize;
-                }
-                if(type === 'imagem') {
-                    payload.imagem_config = {
-                        top: parseFloat(el.style.top),
-                        left: parseFloat(el.style.left),
-                        width: parseFloat(el.style.width)
-                    };
-                }
+                if(type === 'titulo') { payload.titulo_top = parseFloat(el.style.top); payload.titulo_left = parseFloat(el.style.left); payload.titulo_cor = rgbToHex(el.style.color); }
+                if(type === 'preco') { payload.preco_top = parseFloat(el.style.top); payload.preco_left = parseFloat(el.style.left); payload.preco_cor = rgbToHex(el.style.color); }
+                if(type === 'imagem') { payload.imagem_config = { top: parseFloat(el.style.top), left: parseFloat(el.style.left), width: parseFloat(el.style.width) }; }
                 payload.estilos_css[id] = extractStyle(el);
             });
 
             document.querySelectorAll('.drag-element[data-type="extra"]').forEach(el => {
-                payload.elementos_extras.push({
-                    id: el.id,
-                    texto: el.innerText,
-                    top: parseFloat(el.style.top),
-                    left: parseFloat(el.style.left),
-                    style: extractStyle(el)
-                });
+                if(el.classList.contains('hidden-element')) return; 
+                payload.elementos_extras.push({ id: el.id, texto: el.innerText, top: parseFloat(el.style.top), left: parseFloat(el.style.left), style: extractStyle(el) });
             });
 
-            fetch(`/api/editor/salvar/${templateId}/`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === 'success') status.innerText = "Salvo com sucesso!";
-                else status.innerText = "Erro ao salvar.";
-            });
+            fetch(`/api/editor/salvar/${templateId}/`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) })
+            .then(res => res.json()).then(data => { if(data.status === 'success') status.innerText = "Salvo com sucesso!"; else status.innerText = "Erro ao salvar."; });
         }
 
-        // Helpers de Cor
-        function rgbToHex(rgb) {
-            if(!rgb || rgb === 'transparent') return '#ffffff';
-            if(rgb.startsWith('#')) return rgb;
-            const nums = rgb.match(/\d+/g);
-            if(!nums) return '#000000';
-            return '#' + ((1 << 24) + (+nums[0] << 16) + (+nums[1] << 8) + +nums[2]).toString(16).slice(1);
-        }
-
-        function hexToRgb(hex) {
-            const bigint = parseInt(hex.slice(1), 16);
-            return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };
-        }
-
-        function parseRgba(rgbaStr) {
-            if (!rgbaStr || rgbaStr === 'transparent') return { hex: '#000000', alpha: 0 };
-            if (rgbaStr.startsWith('#')) return { hex: rgbaStr, alpha: 1 };
-            
-            const nums = rgbaStr.match(/(\d+(\.\d+)?)/g);
-            if (!nums) return { hex: '#000000', alpha: 1 };
-            
-            const r = parseInt(nums[0]);
-            const g = parseInt(nums[1]);
-            const b = parseInt(nums[2]);
-            const a = nums[3] ? parseFloat(nums[3]) : 1;
-            
-            const hex = '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-            return { hex: hex, alpha: a };
+        function rgbToHex(rgb) { if(!rgb || rgb === 'transparent') return '#ffffff'; if(rgb.startsWith('#')) return rgb; try { const nums = rgb.match(/\d+/g); return '#' + ((1 << 24) + (+nums[0] << 16) + (+nums[1] << 8) + +nums[2]).toString(16).slice(1); } catch(e) { return '#ffffff'; } }
+        function hexToRgb(hex) { const bigint = parseInt(hex.slice(1), 16); return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 }; }
+        function parseRgba(str) { 
+            if(!str || str === 'transparent') return {hex:'#000000', alpha:0}; 
+            if(str.startsWith('#')) return {hex:str, alpha:1}; 
+            const nums = str.match(/(\d+(\.\d+)?)/g); 
+            if(!nums) return {hex:'#000000', alpha:1}; 
+            const a = nums[3] ? parseFloat(nums[3]) : 1; 
+            const hex = '#' + ((1 << 24) + (+nums[0] << 16) + (+nums[1] << 8) + +nums[2]).toString(16).slice(1); 
+            return {hex, alpha:a}; 
         }
     </script>
 </body>

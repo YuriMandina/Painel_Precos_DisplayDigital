@@ -9,7 +9,7 @@ class FamiliaSerializer(serializers.ModelSerializer):
 class VideoTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = VideoTemplate
-        fields = '__all__' # Envia tudo: video url, coordenadas top/left, cores, etc.
+        fields = '__all__'
 
 class ProdutoSerializer(serializers.ModelSerializer):
     # Serializamos a família para enviar o nome dela, não só o ID
@@ -23,7 +23,7 @@ class ProdutoSerializer(serializers.ModelSerializer):
         fields = [
             'codigo', 'descricao', 'preco', 
             'familia_nome', 'imagem', 
-            'em_oferta', 'template_video'
+            'em_oferta', 'template_video', 'ordem'
         ]
 
 class DispositivoConfigSerializer(serializers.ModelSerializer):

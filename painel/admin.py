@@ -4,21 +4,29 @@ from django.urls import path, reverse
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.utils.html import format_html
-from .models import FamiliaProduto, Produto, VideoTemplate, Dispositivo
+from .models import FamiliaProduto, Produto, VideoTemplate, Dispositivo, VideoPropaganda
 from .forms import ImportarProdutosForm
 
-# --- ADMIN DE PRODUTOS (COM IMPORTAÇÃO EXCEL) ---
+# --- ADMIN DE PRODUTOS (COM IMPORTAÇÃO EXCEL E ORDENAÇÃO) ---
 @admin.register(Produto)
 class ProdutoAdmin(admin.ModelAdmin):
-    list_display = ('codigo', 'descricao', 'preco_formatado', 'familia', 'em_oferta', 'exibir_no_painel')
+    # 'ordem' é a primeira coluna, mas definimos 'codigo' e 'descricao' como links abaixo
+    list_display = ('ordem', 'codigo', 'descricao', 'preco_formatado', 'em_oferta', 'exibir_no_painel')
+    
+    # CORREÇÃO DO ERRO E124: Definimos explicitamente quais campos são links
+    list_display_links = ('codigo', 'descricao') 
+    
+    # Agora podemos editar 'ordem' direto na lista sem conflito
+    list_editable = ('ordem', 'em_oferta', 'exibir_no_painel')
+    
     list_filter = ('familia', 'em_oferta', 'exibir_no_painel')
     search_fields = ('codigo', 'descricao')
-    list_editable = ('em_oferta', 'exibir_no_painel')
     
     def preco_formatado(self, obj):
         return f"R$ {obj.preco}".replace('.', ',')
     preco_formatado.short_description = 'Preço'
 
+    # --- Lógica de Importação Excel (Mantida) ---
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
@@ -103,14 +111,12 @@ class ProdutoAdmin(admin.ModelAdmin):
 class FamiliaProdutoAdmin(admin.ModelAdmin):
     list_display = ('nome',)
 
-# --- ADMIN DE TEMPLATES (COM BOTÃO DO EDITOR) ---
+# --- ADMIN DE TEMPLATES ---
 @admin.register(VideoTemplate)
 class VideoTemplateAdmin(admin.ModelAdmin):
-    # Aqui unificamos: mostramos o nome e o botão do editor
-    list_display = ('nome', 'botao_editor')
+    list_display = ('nome', 'duracao', 'botao_editor')
     
     def botao_editor(self, obj):
-        # Cria o link para a nossa view de edição
         url = reverse('editor_visual', args=[obj.id])
         return format_html(
             '<a class="button" href="{}" style="background-color:#E91E63; color:white; padding:5px 10px; border-radius:5px; text-decoration:none;">🎨 Abrir Editor Visual</a>',
@@ -118,9 +124,20 @@ class VideoTemplateAdmin(admin.ModelAdmin):
         )
     botao_editor.short_description = 'Editor'
 
+# --- ADMIN DE PROPAGANDAS (Onde deu o erro) ---
+@admin.register(VideoPropaganda)
+class VideoPropagandaAdmin(admin.ModelAdmin):
+    list_display = ('ordem', 'descricao', 'duracao', 'ativo')
+    
+    # CORREÇÃO: Definimos 'descricao' como o link para editar
+    list_display_links = ('descricao',)
+    
+    list_editable = ('ordem', 'ativo')
+
 # --- ADMIN DE DISPOSITIVOS ---
 @admin.register(Dispositivo)
 class DispositivoAdmin(admin.ModelAdmin):
     list_display = ('nome', 'codigo_acesso', 'uuid', 'modo_exibicao', 'orientacao')
     readonly_fields = ('uuid', 'codigo_acesso')
-    fields = ('nome', 'codigo_acesso', 'uuid', 'modo_exibicao', 'orientacao', 'exibir_apenas_familias')
+    fields = ('nome', 'codigo_acesso', 'uuid', 'modo_exibicao', 'orientacao', 'exibir_apenas_familias', 'exibir_propagandas')
+    filter_horizontal = ('exibir_apenas_familias', 'exibir_propagandas') # Facilita seleção de muitos itens

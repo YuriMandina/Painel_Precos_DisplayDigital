@@ -43,7 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
-                // Tenta pegar msg de erro do backend
                 let msg = "Erro desconhecido";
                 try { const json = await response.json(); msg = json.erro || msg; } catch(e){}
                 throw new Error(msg);
@@ -83,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 elTitulo.innerText = data.config.titulo_exibicao;
             }
 
-            // 2. APLICA A ROTAÇÃO (NOVO CÓDIGO) ---
+            // 2. APLICA A ROTAÇÃO
             document.body.classList.remove('rotacao-90', 'rotacao-270');
             
             if (data.config.orientacao === 'VERTICAL_DIR') {
@@ -91,12 +90,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (data.config.orientacao === 'VERTICAL_ESQ') {
                 document.body.classList.add('rotacao-270');
             }
-            // ------------------------------------
 
-            // Verifica mudanças (inclua orientação no hash para atualizar se mudar no admin)
-            const hashNovo = JSON.stringify(data.produtos) + JSON.stringify(data.ofertas_destaque) + data.config.modo_exibicao + data.config.orientacao;
-            // Linha do Hash atualizada:
-            const hashAntigo = dadosCache ? (JSON.stringify(dadosCache.produtos) + JSON.stringify(dadosCache.ofertas_destaque) + dadosCache.config.modo_exibicao + dadosCache.config.orientacao) : "";
+            // 3. Verifica Mudanças (Agora olha para playlist_final)
+            // Cria um hash simples do conteúdo
+            const hashNovo = JSON.stringify(data.produtos) + JSON.stringify(data.playlist_final) + data.config.modo_exibicao + data.config.orientacao;
+            const hashAntigo = dadosCache ? (JSON.stringify(dadosCache.produtos) + JSON.stringify(dadosCache.playlist_final) + dadosCache.config.modo_exibicao + dadosCache.config.orientacao) : "";
 
             if (hashNovo !== hashAntigo) {
                 console.log("Novos dados/configuração recebidos!");
@@ -105,7 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Se mudou a configuração (Ex: de Tabela para Video), forçamos o reset do ciclo
                 if (primeiraCarga) {
-                    // Define o modo inicial baseado na config
                     if (dadosCache.config.modo_exibicao === 'VIDEO') {
                         modoAtual = 'VIDEO';
                     } else {
@@ -117,25 +114,23 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { console.error(e); }
     }
 
-    // --- MOTOR DE DECISÃO (CORRIGIDO) ---
+    // --- MOTOR DE DECISÃO ---
     function proximoPassoCiclo() {
         if (!dadosCache) return;
 
         const configModo = dadosCache.config.modo_exibicao; // 'TABELA', 'VIDEO' ou 'MISTO'
-        const temVideos = dadosCache.ofertas_destaque && dadosCache.ofertas_destaque.length > 0;
+        // Agora usamos playlist_final que contém mix de Produtos e Propagandas
+        const temVideos = dadosCache.playlist_final && dadosCache.playlist_final.length > 0;
         const temProdutos = dadosCache.produtos && dadosCache.produtos.length > 0;
 
         // 1. Força o Estado baseado na Configuração
-        // Se a config diz "SÓ TABELA", proibido estar em modo VIDEO.
         if (configModo === 'TABELA') modoAtual = 'TABELA';
-        // Se a config diz "SÓ VIDEO", proibido estar em modo TABELA.
         if (configModo === 'VIDEO') modoAtual = 'VIDEO';
-
 
         // 2. Executa a lógica do Estado Atual
         if (modoAtual === 'TABELA') {
             
-            // Segurança: Se não tem produtos, mas tem vídeos e é MISTO/VIDEO, troca.
+            // Segurança: Se não tem produtos na tabela, mas tem vídeos e é MISTO/VIDEO, troca.
             if (!temProdutos && temVideos && configModo !== 'TABELA') {
                 modoAtual = 'VIDEO';
                 proximoPassoCiclo();
@@ -144,28 +139,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const totalPaginas = Math.ceil(dadosCache.produtos.length / ITENS_POR_PAGINA);
             
-            // Renderiza se tiver o que mostrar
             if (temProdutos) {
                 renderizarTabela(paginaTabelaAtual);
             } else {
-                elConteudo.innerHTML = "<h2>Sem produtos para exibir</h2>";
+                elConteudo.innerHTML = "<h2>Aguardando produtos...</h2>";
             }
 
             // Lógica de Transição
             if (paginaTabelaAtual < totalPaginas - 1) {
-                // Ainda tem páginas de tabela
                 paginaTabelaAtual++;
                 setTimeout(proximoPassoCiclo, TEMPO_PAGINA_TABELA);
             } else {
-                // Chegou na última página da tabela. O que fazer agora?
-                
+                // Chegou na última página da tabela
                 if (configModo === 'MISTO' && temVideos) {
-                    // SE for misto E tiver vídeos -> Vai para Vídeo
                     modoAtual = 'VIDEO';
                     indiceVideoAtual = 0;
-                    setTimeout(proximoPassoCiclo, TEMPO_PAGINA_TABELA); // Espera ler a última pág antes de trocar
+                    setTimeout(proximoPassoCiclo, TEMPO_PAGINA_TABELA); 
                 } else {
-                    // SE for só tabela OU não tiver vídeos -> Volta pro início da Tabela
                     paginaTabelaAtual = 0;
                     setTimeout(proximoPassoCiclo, TEMPO_PAGINA_TABELA);
                 }
@@ -173,32 +163,29 @@ document.addEventListener('DOMContentLoaded', () => {
         } 
         
         else if (modoAtual === 'VIDEO') {
-            // Segurança: Se não tem vídeos, volta pra tabela
             if (!temVideos) {
                 modoAtual = 'TABELA';
                 proximoPassoCiclo();
                 return;
             }
 
-            if (indiceVideoAtual < dadosCache.ofertas_destaque.length) {
-                // Toca o vídeo atual
-                const oferta = dadosCache.ofertas_destaque[indiceVideoAtual];
-                mostrarOverlayVideo(oferta, () => {
+            if (indiceVideoAtual < dadosCache.playlist_final.length) {
+                // Toca o item atual (pode ser Produto ou Propaganda)
+                const item = dadosCache.playlist_final[indiceVideoAtual];
+                mostrarOverlayVideo(item, () => {
                     // Quando acabar o vídeo:
                     indiceVideoAtual++;
                     proximoPassoCiclo();
                 });
             } else {
-                // Acabaram os vídeos da lista. O que fazer?
-                
+                // Acabou a playlist
                 if (configModo === 'MISTO') {
-                    // SE for misto -> Volta para Tabela
                     modoAtual = 'TABELA';
                     paginaTabelaAtual = 0;
                     esconderOverlayVideo();
                     proximoPassoCiclo();
                 } else {
-                    // SE for só vídeo -> Loop infinito nos vídeos
+                    // Loop infinito nos vídeos
                     indiceVideoAtual = 0;
                     proximoPassoCiclo();
                 }
@@ -206,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-// --- RENDERIZADOR DA TABELA (COM CORREÇÃO VISUAL) ---
+    // --- RENDERIZADOR DA TABELA ---
     function renderizarTabela(pagina) {
         esconderOverlayVideo(); 
         elConteudo.classList.add('fade'); 
@@ -216,10 +203,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const inicio = pagina * ITENS_POR_PAGINA;
             const fim = inicio + ITENS_POR_PAGINA;
-            // Pega os produtos reais
             const produtosReais = dadosCache.produtos.slice(inicio, fim);
             
-            // Cria arrays para as colunas
             const itensCol1 = [];
             const itensCol2 = [];
 
@@ -229,15 +214,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 else itensCol2.push(criarItemHTML(p));
             });
 
-            // 2. Preenchimento de Espaços Vazios (Dummy Items)
-            // Garante que a coluna 1 tenha sempre 9 itens
-            while (itensCol1.length < 9) {
-                itensCol1.push(criarItemVazio());
-            }
-            // Garante que a coluna 2 tenha sempre 9 itens
-            while (itensCol2.length < 9) {
-                itensCol2.push(criarItemVazio());
-            }
+            // 2. Preenchimento de Espaços Vazios
+            while (itensCol1.length < 9) itensCol1.push(criarItemVazio());
+            while (itensCol2.length < 9) itensCol2.push(criarItemVazio());
 
             // 3. Renderiza no DOM
             const col1Div = document.createElement('div'); col1Div.className = 'coluna';
@@ -253,7 +232,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 500);
     }
 
-    // Cria o HTML do Produto Real
     function criarItemHTML(produto) {
         const div = document.createElement('div');
         div.className = `item-produto ${produto.em_oferta ? 'em-oferta' : ''}`;
@@ -268,11 +246,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return div;
     }
 
-    // Cria o HTML de Espaço Vazio (mantém a linha pontilhada)
     function criarItemVazio() {
         const div = document.createElement('div');
         div.className = 'item-produto';
-        // Conteúdo invisível para manter altura
         div.innerHTML = `
             <div class="nome-container"><span class="nome">&nbsp;</span></div>
             <div class="preco">&nbsp;</div>
@@ -281,102 +257,96 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- RENDERIZADOR DE VÍDEO (OVERLAY) ---
-    function mostrarOverlayVideo(oferta, onComplete) {
-        const template = oferta.template_video;
-        if (!template) { onComplete(); return; }
-
+    function mostrarOverlayVideo(item, onComplete) {
+        
         elVideoContainer.innerHTML = '';
         elVideoContainer.style.display = 'block';
 
-        // 1. Vídeo de Fundo
+        // Detecta se é Produto ou Propaganda
+        const isPropaganda = item.tipo === 'propaganda';
+        const videoUrl = isPropaganda ? item.url : item.template_video.arquivo_video;
+
+        // 1. Elemento de Vídeo
         const video = document.createElement('video');
         video.id = 'video-bg';
-        video.src = template.arquivo_video;
+        video.src = videoUrl;
         video.muted = true; video.autoplay = true; video.playsInline = true;
         
-        const safetyTimeout = setTimeout(onComplete, 15000);
+        const duracaoSeguranca = (item.duracao || 15) * 1000 + 2000; 
+        const safetyTimeout = setTimeout(onComplete, duracaoSeguranca);
+
         video.onerror = () => { clearTimeout(safetyTimeout); onComplete(); };
         video.onended = () => { clearTimeout(safetyTimeout); onComplete(); };
         elVideoContainer.appendChild(video);
 
-        // Função auxiliar ajustada para CENTRO-CENTRO
+        if (isPropaganda) return;
+
+        // --- LÓGICA DE TEXTO (SÓ PARA PRODUTOS) ---
+        const template = item.template_video;
+        
+        // Função auxiliar ajustada
         const createEl = (conteudo, top, left, styleBase, estilosExtras) => {
+            if (estilosExtras && estilosExtras.display === 'none') return null;
+
             const el = document.createElement('div');
             el.className = 'overlay-element pop-in';
             
             if (conteudo.startsWith('<img')) el.innerHTML = conteudo;
             else el.innerText = conteudo;
 
-            // Posição Absoluta (Centro do elemento)
+            // Posição Base
             el.style.top = top + '%';
             el.style.left = left + '%';
-            
-            // Aplica estilos base
-            if (styleBase) Object.assign(el.style, styleBase);
+            el.style.transform = `translate(-50%, -50%)`;
 
-            // Aplica estilos extras
-            let rotation = 0;
-            if (estilosExtras) {
-                Object.assign(el.style, estilosExtras);
-                if (estilosExtras.rotation) rotation = estilosExtras.rotation;
+            // Mescla estilos
+            const styleFinal = { ...styleBase, ...estilosExtras };
+            
+            // Aplica Fonte VH (Escala Real na TV)
+            if (styleFinal.fontSizeVh) {
+                el.style.fontSize = styleFinal.fontSizeVh + 'vh';
+            } else if (styleFinal.fontSize) {
+                // Fallback legado
+                el.style.fontSize = styleFinal.fontSize;
             }
+            
+            // --- Lista Permissiva Incluindo WIDTH/HEIGHT ---
+            const propsPermitidas = [
+                'color', 'backgroundColor', 'fontFamily', 'fontWeight', 
+                'fontStyle', 'textDecoration', 'width', 'height', 'zIndex'
+            ];
+            
+            propsPermitidas.forEach(prop => {
+                if(styleFinal[prop]) el.style[prop] = styleFinal[prop];
+            });
 
-            // A MÁGICA FINAL: Sempre centraliza e depois roda
-            // Isso garante que a posição na TV seja idêntica ao Editor
-            el.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
-            
-            // Remove transformações conflitantes que possam vir do styleBase ou estilosExtras
-            // (Pois acabamos de definir o transform manual acima)
-            
             return el;
         };
 
-        // Pega estilos salvos (pode vir vazio se template antigo)
-        const css = template.estilos_css || {};
-
-        // 2. Título
-        elVideoContainer.appendChild(createEl(
-            oferta.descricao, 
-            template.titulo_top, 
-            template.titulo_left, 
-            { color: template.titulo_cor, fontSize: template.titulo_tamanho },
-            css['el-titulo'] // Rotação, Bold, etc.
-        ));
+        // Título
+        const elTit = createEl(item.descricao, template.titulo_top, template.titulo_left, 
+            { color: template.titulo_cor }, template.estilos_css['el-titulo']);
+        if(elTit) elVideoContainer.appendChild(elTit);
         
-        // 3. Preço
-        const precoVal = parseFloat(oferta.preco).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
-        elVideoContainer.appendChild(createEl(
-            precoVal, 
-            template.preco_top, 
-            template.preco_left, 
-            { color: template.preco_cor, fontSize: template.preco_tamanho },
-            css['el-preco']
-        ));
+        // Preço
+        const precoVal = parseFloat(item.preco).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+        const elPreco = createEl(precoVal, template.preco_top, template.preco_left, 
+            { color: template.preco_cor }, template.estilos_css['el-preco']);
+        if(elPreco) elVideoContainer.appendChild(elPreco);
 
-        // 4. Imagem
-        if (oferta.imagem) {
-            // Imagem precisa de tratamento especial de tamanho
-            const imgHTML = `<img src="${oferta.imagem}" style="width:100%; height:100%; object-fit:contain;">`;
-            const elImg = createEl(
-                imgHTML,
-                template.img_top,
-                template.img_left,
-                { width: template.img_width + '%' },
-                css['el-imagem']
-            );
-            elVideoContainer.appendChild(elImg);
+        // Imagem (Agora com Width sendo aplicado corretamente)
+        if (item.imagem) {
+            const imgHTML = `<img src="${item.imagem}" style="width:100%; height:100%; object-fit:contain;">`;
+            const elImg = createEl(imgHTML, template.img_top, template.img_left, 
+                { width: template.img_width + '%' }, template.estilos_css['el-imagem']);
+            if(elImg) elVideoContainer.appendChild(elImg);
         }
 
-        // 5. ELEMENTOS EXTRAS (Textos livres adicionados no Editor)
-        if (template.elementos_extras && Array.isArray(template.elementos_extras)) {
+        // Extras
+        if (template.elementos_extras) {
             template.elementos_extras.forEach(extra => {
-                elVideoContainer.appendChild(createEl(
-                    extra.texto,
-                    extra.top,
-                    extra.left,
-                    {}, // sem base
-                    extra.style // estilo completo + rotação
-                ));
+                const el = createEl(extra.texto, extra.top, extra.left, {}, extra.style);
+                if(el) elVideoContainer.appendChild(el);
             });
         }
     }

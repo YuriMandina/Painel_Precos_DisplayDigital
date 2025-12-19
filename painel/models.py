@@ -27,8 +27,7 @@ class FamiliaProduto(models.Model):
 class VideoTemplate(models.Model):
     nome = models.CharField(max_length=100)
     arquivo_video = models.FileField(upload_to='templates_video/')
-    
-    # --- Mudamos de IntegerField para FloatField para precisão no Editor Visual ---
+
     titulo_top = models.FloatField(default=10, validators=[validar_porcentagem])
     titulo_left = models.FloatField(default=50, validators=[validar_porcentagem])
     titulo_cor = models.CharField(max_length=7, default="#FFFFFF")
@@ -43,13 +42,28 @@ class VideoTemplate(models.Model):
     img_left = models.FloatField(default=10, validators=[validar_porcentagem])
     img_width = models.FloatField(default=20, validators=[validar_porcentagem])
 
-    # Onde salvaremos a Rotação, Negrito, Itálico, etc.
+    duracao = models.IntegerField(default=15, help_text="Duração do vídeo em segundos (Padrão para produtos)")
+
     estilos_css = models.JSONField(default=dict, blank=True)
     elementos_extras = models.JSONField(default=list, blank=True)
 
     def __str__(self):
         return self.nome
 
+class VideoPropaganda(models.Model):
+    """
+    Vídeos institucionais ou de parceiros que não dependem de um produto.
+    """
+    descricao = models.CharField(max_length=100, help_text="Nome interno para identificação")
+    arquivo_video = models.FileField(upload_to='propagandas/')
+    duracao = models.IntegerField(default=15, help_text="Duração em segundos (caso o vídeo não tenha metadados)")
+    ativo = models.BooleanField(default=True)
+    duracao = models.IntegerField(default=15, help_text="Duração em segundos")
+    ordem = models.IntegerField(default=0, help_text="Ordem de exibição na playlist")
+    ativo = models.BooleanField(default=True, help_text="Se desmarcado, não aparecerá na TV")
+
+    def __str__(self):
+        return f"{self.descricao} ({self.duracao}s)"
 
 class Produto(models.Model):
     """
@@ -59,8 +73,7 @@ class Produto(models.Model):
     descricao = models.CharField(max_length=200)
     preco = models.DecimalField(max_digits=10, decimal_places=2)
     familia = models.ForeignKey(FamiliaProduto, on_delete=models.CASCADE, related_name='produtos')
-    
-    # Imagem é opcional, pois nem todo produto terá foto para o vídeo
+    ordem = models.IntegerField(default=0, help_text="Ordem de exibição na TV (Menor número aparece primeiro)")
     imagem = models.ImageField(upload_to='produtos/', blank=True, null=True)
     
     em_oferta = models.BooleanField(default=False)
@@ -88,8 +101,7 @@ class Dispositivo(models.Model):
     codigo_acesso = models.CharField(max_length=6, default=gerar_codigo_curto, unique=True, editable=False)
 
     exibir_apenas_familias = models.ManyToManyField(FamiliaProduto, blank=True)
-    
-    # NOVO CAMPO DE ORIENTAÇÃO
+    exibir_propagandas = models.ManyToManyField(VideoPropaganda, blank=True, help_text="Selecione vídeos institucionais para intercalar")
     orientacao = models.CharField(max_length=20, choices=[
         ('HORIZONTAL', 'Horizontal (Padrão 16:9)'),
         ('VERTICAL_DIR', 'Vertical 9:16 (Giro 90° Direita)'),
