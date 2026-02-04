@@ -1,0 +1,23 @@
+{% extends "painel/base_dashboard.html" %}
+{% block title %}Excluir TV | DisplayDigital{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto mt-10">
+    <div class="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden text-center p-8">
+        <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="ph ph-television-simple text-3xl"></i>
+        </div>
+        <h2 class="text-xl font-bold text-gray-900 mb-2">Desconectar TV?</h2>
+        <p class="text-gray-500 mb-6">
+            Você vai remover <strong>"{{ object.nome }}"</strong>. 
+            <br>Se ela estiver ligada, perderá a conexão imediatamente.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="flex justify-center gap-3">
+                <a href="{% url 'dispositivo_list' %}" class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</a>
+                <button type="submit" class="px-5 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 shadow-md">Confirmar Exclusão</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

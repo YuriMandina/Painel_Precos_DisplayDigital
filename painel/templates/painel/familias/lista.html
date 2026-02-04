@@ -1,0 +1,63 @@
+{% extends "painel/base_dashboard.html" %}
+
+{% block title %}Famílias | DisplayDigital{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Famílias de Produtos</h1>
+            <p class="text-sm text-gray-500 mt-1">Categorias para organizar a exibição na TV.</p>
+        </div>
+        <a href="{% url 'familia_create' %}" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-md">
+            <i class="ph ph-plus text-lg"></i> Nova Família
+        </a>
+    </div>
+
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
+        <form method="GET" class="flex gap-4">
+            <div class="relative flex-1">
+                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
+                <input type="text" name="q" value="{{ query }}" placeholder="Buscar categoria..." 
+                    class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+            </div>
+            <button type="submit" class="px-6 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800">Buscar</button>
+        </form>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nome da Família</th>
+                    <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for familia in familias %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                <i class="ph-fill ph-folder"></i>
+                            </div>
+                            {{ familia.nome }}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <a href="{% url 'familia_edit' familia.id %}" class="text-indigo-600 hover:text-indigo-900 mr-4">Editar</a>
+                        <a href="{% url 'familia_delete' familia.id %}" class="text-red-600 hover:text-red-900">Excluir</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="2" class="px-6 py-10 text-center text-gray-500">
+                        Nenhuma família cadastrada.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -56,8 +56,6 @@ class VideoPropaganda(models.Model):
     """
     descricao = models.CharField(max_length=100, help_text="Nome interno para identificação")
     arquivo_video = models.FileField(upload_to='propagandas/')
-    duracao = models.IntegerField(default=15, help_text="Duração em segundos (caso o vídeo não tenha metadados)")
-    ativo = models.BooleanField(default=True)
     duracao = models.IntegerField(default=15, help_text="Duração em segundos")
     ordem = models.IntegerField(default=0, help_text="Ordem de exibição na playlist")
     ativo = models.BooleanField(default=True, help_text="Se desmarcado, não aparecerá na TV")

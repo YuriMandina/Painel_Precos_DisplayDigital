@@ -1,0 +1,72 @@
+{% extends "painel/base_dashboard.html" %}
+
+{% block title %}Dispositivos | DisplayDigital{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Dispositivos Conectados</h1>
+            <p class="text-sm text-gray-500 mt-1">Gerencie suas telas e códigos de acesso.</p>
+        </div>
+        <a href="{% url 'dispositivo_create' %}" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-md">
+            <i class="ph ph-monitor-play text-lg"></i> Nova TV
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for tv in dispositivos %}
+        <div class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+            <div class="p-5 border-b border-gray-100 flex justify-between items-start">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <i class="ph-fill ph-television text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-900">{{ tv.nome }}</h3>
+                        <span class="text-xs text-gray-500 flex items-center gap-1">
+                            {% if 'VERTICAL' in tv.orientacao %}
+                                <i class="ph ph-device-mobile-camera text-gray-400"></i> Vertical
+                            {% else %}
+                                <i class="ph ph-monitor text-gray-400"></i> Horizontal
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="relative group">
+                    <button class="text-gray-400 hover:text-gray-600"><i class="ph ph-dots-three-vertical text-xl"></i></button>
+                    <div class="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block z-10">
+                        <a href="{% url 'dispositivo_edit' tv.id %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Configurar</a>
+                        <a href="{% url 'dispositivo_delete' tv.id %}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Excluir</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 flex-1 flex flex-col items-center justify-center bg-gray-50/50">
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Código de Pareamento</p>
+                <div class="text-3xl font-mono font-bold text-gray-900 tracking-wider bg-white px-4 py-2 rounded border border-dashed border-gray-300 select-all">
+                    {{ tv.codigo_acesso }}
+                </div>
+                <p class="text-xs text-gray-400 mt-2">Digite este código na TV</p>
+            </div>
+
+            <div class="p-4 bg-gray-50 border-t border-gray-100 text-xs text-gray-500 flex justify-between items-center">
+                <span>Modo: <strong>{{ tv.get_modo_exibicao_display }}</strong></span>
+                <a href="{% url 'dispositivo_edit' tv.id %}" class="text-indigo-600 font-medium hover:underline">Alterar</a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full text-center py-12 bg-white rounded-xl border border-gray-200 border-dashed">
+            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                <i class="ph ph-television-simple text-3xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900">Nenhuma TV cadastrada</h3>
+            <p class="text-gray-500 mt-1 mb-4">Adicione uma TV para gerar um código de pareamento.</p>
+            <a href="{% url 'dispositivo_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
+                Adicionar TV
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

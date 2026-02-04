@@ -1,0 +1,68 @@
+{% extends "painel/base_dashboard.html" %}
+
+{% block title %}Templates | DisplayDigital{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Meus Layouts de Vídeo</h1>
+            <p class="text-sm text-gray-500 mt-1">Defina onde o preço e o nome do produto aparecem no vídeo.</p>
+        </div>
+        <a href="{% url 'template_create' %}" class="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors shadow-md">
+            <i class="ph ph-plus text-lg"></i> Novo Layout
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for template in templates %}
+        <div class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all overflow-hidden group">
+            
+            <div class="h-40 bg-gray-900 relative overflow-hidden flex items-center justify-center">
+                {% if template.arquivo_video %}
+                    <video src="{{ template.arquivo_video.url }}" class="w-full h-full object-cover opacity-60"></video>
+                {% else %}
+                    <i class="ph ph-film-strip text-4xl text-gray-700"></i>
+                {% endif %}
+                
+                <a href="{% url 'editor_visual' template.id %}" target="_blank" class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm cursor-pointer">
+                    <div class="bg-white text-gray-900 px-5 py-2 rounded-full font-bold flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform">
+                        <i class="ph ph-paint-brush-broad text-purple-600"></i> EDITAR VISUAL
+                    </div>
+                </a>
+            </div>
+
+            <div class="p-5">
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="font-bold text-gray-900 truncate pr-2">{{ template.nome }}</h3>
+                    <div class="flex gap-2">
+                        <a href="{% url 'template_edit' template.id %}" class="text-gray-400 hover:text-indigo-600" title="Configurações"><i class="ph ph-gear text-xl"></i></a>
+                        <a href="{% url 'template_delete' template.id %}" class="text-gray-400 hover:text-red-600" title="Excluir"><i class="ph ph-trash text-xl"></i></a>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-4 text-xs text-gray-500 mt-3">
+                    <span class="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded">
+                        <i class="ph ph-timer"></i> {{ template.duracao }}s
+                    </span>
+                    <a href="{% url 'editor_visual' template.id %}" target="_blank" class="text-purple-600 font-bold hover:underline ml-auto flex items-center gap-1">
+                        Abrir Editor <i class="ph ph-arrow-square-out"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full text-center py-16 bg-white rounded-xl border border-gray-200 border-dashed">
+            <div class="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4 text-purple-500">
+                <i class="ph ph-paint-brush-broad text-3xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900">Nenhum layout criado</h3>
+            <p class="text-gray-500 mt-1 mb-4">Crie um template, suba um vídeo de fundo e posicione os preços.</p>
+            <a href="{% url 'template_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700">
+                Criar Primeiro Layout
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

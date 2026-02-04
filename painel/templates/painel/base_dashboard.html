@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Painel Administrativo | DisplayDigital{% endblock %}</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Utilitário para o link da sidebar */
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem; /* gap-3 */
+            padding: 0.75rem 1rem; /* px-4 py-3 */
+            border-radius: 0.5rem; /* rounded-lg */
+            font-size: 0.875rem; /* text-sm */
+            font-weight: 500;
+            color: #9CA3AF; /* text-gray-400 */
+            transition: all 0.2s ease-in-out;
+            width: 100%;
+        }
+
+        .nav-item:hover {
+            background-color: #1F2937; /* bg-gray-800 */
+            color: #F3F4F6; /* text-gray-100 */
+        }
+
+        .nav-item.active {
+            background-color: #4F46E5; /* bg-indigo-600 */
+            color: #FFFFFF;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2), 0 2px 4px -1px rgba(79, 70, 229, 0.1);
+        }
+
+        /* Seção de cabeçalho do menu */
+        .nav-section-title {
+            padding: 0 1rem;
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.75rem; /* text-xs */
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em; /* tracking-wider */
+            color: #6B7280; /* text-gray-500 */
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-gray-900 text-white flex flex-col shadow-2xl z-20 hidden md:flex flex-shrink-0">
+        <div class="h-20 flex items-center px-6 border-b border-gray-800">
+            <div class="flex items-center gap-2 text-xl font-bold tracking-tight">
+                <i class="ph-fill ph-monitor-play text-indigo-500 text-2xl"></i>
+                <div>
+                    <span class="text-white">DISPLAY</span><span class="text-indigo-500">DIGITAL</span>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-6 px-3 custom-scrollbar">
+            
+            <div class="nav-section-title mt-0">Principal</div> <a href="{% url 'dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <i class="ph ph-squares-four text-lg"></i>
+                <span>Visão Geral</span>
+            </a>
+
+            <a href="{% url 'dispositivo_list' %}" class="nav-item">
+                <i class="ph ph-television text-lg"></i>
+                <span>Dispositivos</span>
+            </a>
+
+            <div class="nav-section-title">Catálogo</div>
+            
+            <a href="{% url 'produtos_list' %}" class="nav-item">
+                <i class="ph ph-tag text-lg"></i>
+                <span>Produtos</span>
+            </a>
+            
+            <a href="{% url 'familia_list' %}" class="nav-item">
+                <i class="ph ph-folders text-lg"></i>
+                <span>Famílias</span>
+            </a>
+
+            <div class="nav-section-title">Mídia</div>
+
+            <a href="#" class="nav-item">
+                <i class="ph ph-film-strip text-lg"></i>
+                <span>Propagandas</span>
+            </a>
+
+            <a href="{% url 'template_list' %}" class="nav-item">
+                <i class="ph ph-paint-brush-broad text-lg"></i>
+                <span>Templates & Layouts</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-800 bg-gray-900">
+            <a href="/admin/logout/" class="nav-item text-red-400 hover:bg-red-900/20 hover:text-red-300 justify-center">
+                <i class="ph ph-sign-out text-lg"></i>
+                <span>Sair do Sistema</span>
+            </a>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
+        
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 md:hidden flex-shrink-0">
+            <div class="font-bold text-gray-900 flex items-center gap-2">
+                <i class="ph-fill ph-monitor-play text-indigo-600"></i>
+                DISPLAYDIGITAL
+            </div>
+            <button class="text-gray-500 hover:text-indigo-600 p-2 rounded-md">
+                <i class="ph ph-list text-2xl"></i>
+            </button>
+        </header>
+
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6 md:p-10 scroll-smooth">
+            {% if messages %}
+                <div class="mb-6 space-y-2 max-w-7xl mx-auto">
+                    {% for message in messages %}
+                        <div class="p-4 rounded-lg border-l-4 shadow-sm flex items-center gap-3
+                            {% if message.tags == 'error' %}bg-red-50 border-red-500 text-red-700
+                            {% elif message.tags == 'success' %}bg-green-50 border-green-500 text-green-700
+                            {% else %}bg-blue-50 border-blue-500 text-blue-700{% endif %}">
+                            <i class="ph-fill {% if message.tags == 'error' %}ph-warning-circle{% elif message.tags == 'success' %}ph-check-circle{% else %}ph-info{% endif %} text-xl"></i>
+                            <span class="font-medium">{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+</body>
+</html>
