@@ -4,29 +4,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Digital</title>
+    <title>Painel Digital | Display</title>
+    
     <link rel="stylesheet" href="{% static 'css/painel.css' %}">
+
+    <style>
+        /* Estilos Base para Modo Kiosk (TV)
+           Remove scroll, seleção de texto e cursor do mouse.
+        */
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000; /* Fundo preto evita clarão ao carregar */
+            user-select: none;
+            cursor: none; /* Esconde o mouse na TV */
+            font-family: sans-serif;
+        }
+
+        /* Estilos da Tela de Configuração (Pareamento)
+           Centraliza o conteúdo e estiliza os inputs.
+        */
+        #setup-screen {
+            display: none; /* Controlado via JS */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: white;
+            background: #1a1a1a;
+            text-align: center;
+            cursor: default; /* Mouse visível apenas aqui para digitar */
+        }
+
+        #setup-screen h1 { margin-bottom: 1rem; font-size: 2rem; }
+        #setup-screen p { margin-bottom: 1.5rem; color: #ccc; }
+
+        #input-uuid {
+            padding: 15px;
+            font-size: 1.2rem;
+            width: 60%;
+            max-width: 500px;
+            border: 2px solid #333;
+            border-radius: 8px;
+            background: #333;
+            color: #fff;
+            text-align: center;
+            outline: none;
+            margin-bottom: 20px;
+        }
+        
+        #input-uuid:focus { border-color: #4F46E5; }
+
+        #btn-salvar {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background-color: #4F46E5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #btn-salvar:hover { background-color: #4338ca; }
+    </style>
 </head>
 <body>
 
-    <div id="setup-screen" style="display:none;">
+    <section id="setup-screen">
         <h1>Configuração da TV</h1>
-        <p>Digite o UUID do dispositivo gerado no Admin:</p>
-        <input type="text" id="input-uuid" placeholder="ex: 550e8400-e29b..." style="width: 60%;">
-        <button id="btn-salvar">CONECTAR</button>
-    </div>
+        <p>Digite o UUID do dispositivo gerado no Painel Administrativo:</p>
+        
+        <input type="text" 
+               id="input-uuid" 
+               placeholder="ex: 550e8400-e29b..." 
+               autocomplete="off">
+               
+        <button id="btn-salvar">CONECTAR DISPOSITIVO</button>
+    </section>
 
-    <div class="tv-wrapper" id="app-screen" style="display:none;">
+    <main class="tv-wrapper" id="app-screen" style="display:none;">
         <header class="painel-header">
-            <h1 class="painel-titulo" id="titulo-painel">...</h1>
+            <h1 class="painel-titulo" id="titulo-painel">Carregando...</h1>
         </header>
 
-        <main class="painel-conteudo" id="painel-conteudo">
-            </main>
+        <div class="painel-conteudo" id="painel-conteudo">
+            </div>
         
         <div id="video-overlay-container"></div>
-    </div>
+    </main>
 
-    <script src="{% static 'js/tv_app.js' %}"></script>
+    <script src="{% static 'js/tv_app.js' %}" defer></script>
 </body>
 </html>

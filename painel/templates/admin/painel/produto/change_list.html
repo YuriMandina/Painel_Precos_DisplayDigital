@@ -1,8 +1,29 @@
 {% extends "admin/change_list.html" %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <style>
+    /* Estilização customizada para o botão de importação.
+      Define uma cor verde (sucesso) para diferenciar do botão padrão.
+    */
+    .object-tools a.import-link {
+        background-color: #28a745 !important;
+        color: white !important;
+        transition: background-color 0.2s ease-in-out;
+    }
+
+    .object-tools a.import-link:hover {
+        background-color: #218838 !important;
+    }
+  </style>
+{% endblock %}
+
 {% block object-tools-items %}
+    {# Renderiza os botões padrões do Django primeiro (ex: Adicionar Produto) #}
     {{ block.super }}
+    
     <li>
-        <a href="importar-excel/" class="addlink" style="background-color: #28a745 !important;">
+        <a href="importar-excel/" class="addlink import-link">
             Importar Excel
         </a>
     </li>

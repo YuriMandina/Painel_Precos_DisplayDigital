@@ -1,22 +1,41 @@
 {% extends "painel/base_dashboard.html" %}
+
 {% block title %}Excluir Template | DisplayDigital{% endblock %}
+
 {% block content %}
-<div class="max-w-lg mx-auto mt-10">
-    <div class="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden text-center p-8">
-        <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="ph ph-trash text-3xl"></i>
+<div class="min-h-[60vh] flex items-center justify-center p-4">
+    <div class="bg-white border border-gray-200 rounded-xl shadow-xl max-w-md w-full overflow-hidden text-center p-8">
+        
+        <div class="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-red-50/50">
+            <i class="ph-fill ph-trash text-3xl"></i>
         </div>
-        <h2 class="text-xl font-bold text-gray-900 mb-2">Apagar Layout?</h2>
-        <p class="text-gray-500 mb-6">
-            Você vai excluir <strong>"{{ object.nome }}"</strong>.
-            <br>Produtos usando este layout voltarão ao padrão.
+
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">Tem certeza?</h2>
+        
+        <p class="text-gray-500 mb-6 leading-relaxed">
+            Você está prestes a excluir o layout <br>
+            <strong class="text-gray-900">"{{ object.nome }}"</strong>.
         </p>
-        <form method="post">
+
+        <div class="bg-orange-50 border border-orange-100 rounded-lg p-3 mb-8 text-left flex items-start gap-3">
+            <i class="ph-fill ph-warning text-orange-500 text-xl mt-0.5"></i>
+            <p class="text-sm text-orange-800">
+                <strong>Atenção:</strong> Produtos que utilizam este layout voltarão automaticamente para o layout padrão do sistema.
+            </p>
+        </div>
+
+        <form method="post" class="flex flex-col sm:flex-row gap-3 justify-center">
             {% csrf_token %}
-            <div class="flex justify-center gap-3">
-                <a href="{% url 'template_list' %}" class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</a>
-                <button type="submit" class="px-5 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 shadow-md">Sim, Excluir</button>
-            </div>
+            
+            <a href="{% url 'template_list' %}" 
+               class="flex-1 px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                Não, Cancelar
+            </a>
+            
+            <button type="submit" 
+                    class="flex-1 px-5 py-2.5 text-sm font-bold text-white bg-red-600 rounded-lg hover:bg-red-700 shadow-md hover:shadow-lg transition-all">
+                Sim, Excluir
+            </button>
         </form>
     </div>
 </div>

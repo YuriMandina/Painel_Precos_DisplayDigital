@@ -1,47 +1,73 @@
 {% extends "painel/base_dashboard.html" %}
+
 {% block title %}{{ titulo }} | DisplayDigital{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto">
-    <div class="flex items-center justify-between mb-8">
+<div class="max-w-3xl mx-auto">
+    
+    <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-gray-900">{{ titulo }}</h1>
-        <a href="{% url 'template_list' %}" class="text-gray-500 hover:text-gray-900 font-medium text-sm flex items-center gap-1">
-            <i class="ph ph-arrow-left"></i> Voltar
+        <a href="{% url 'template_list' %}" class="text-gray-500 hover:text-gray-900 font-medium text-sm flex items-center gap-1 transition-colors">
+            <i class="ph ph-arrow-left"></i> Voltar para Lista
         </a>
     </div>
 
-    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden p-8">
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            
-            <div class="space-y-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Layout</label>
-                    {{ form.nome }}
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div class="p-6 md:p-8">
+            <form method="post" enctype="multipart/form-data" class="space-y-6">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label for="{{ form.nome.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            Nome do Layout <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.nome }}
+                        <p class="text-xs text-gray-500 mt-1">Dê um nome fácil de identificar (ex: "Ofertas de Natal").</p>
+                    </div>
+
+                    <div>
+                        <label for="{{ form.duracao.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            Duração (segundos)
+                        </label>
+                        {{ form.duracao }}
+                    </div>
                 </div>
+
+                <hr class="border-gray-100">
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Duração Padrão (segundos)</label>
-                    {{ form.duracao }}
-                    <p class="text-xs text-gray-500 mt-1">Tempo que cada produto ficará na tela usando este layout.</p>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Vídeo de Fundo (Background)</label>
+                    
+                    <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-5 transition-colors hover:border-indigo-200">
+                        <div class="flex items-start gap-3">
+                            <div class="p-2 bg-white rounded-md text-indigo-600 shadow-sm">
+                                <i class="ph ph-video-camera text-xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                {{ form.arquivo_video }}
+                                <p class="text-xs text-indigo-800 mt-2 leading-relaxed">
+                                    <strong>Dica:</strong> O sistema irá sobrepor automaticamente o preço e o nome do produto sobre este vídeo. 
+                                    Use vídeos com espaços vazios estratégicos.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="p-4 bg-purple-50 rounded-lg border border-purple-100">
-                    <label class="block text-sm font-medium text-purple-900 mb-2">Vídeo de Fundo (Background)</label>
-                    {{ form.arquivo_video }}
-                    <p class="text-xs text-purple-700 mt-2">
-                        <i class="ph-fill ph-info"></i> O sistema colocará o preço e a foto do produto <strong>por cima</strong> deste vídeo.
-                    </p>
+                <div class="pt-4 flex items-center justify-end gap-3 border-t border-gray-100 mt-6">
+                    <a href="{% url 'template_list' %}" 
+                       class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        Cancelar
+                    </a>
+                    <button type="submit" 
+                            class="px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+                        <i class="ph ph-check"></i>
+                        Salvar Layout
+                    </button>
                 </div>
-            </div>
-
-            <div class="mt-8 flex justify-end gap-3">
-                <a href="{% url 'template_list' %}" class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</a>
-                <button type="submit" class="px-5 py-2.5 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 shadow-md">
-                    Salvar e Continuar
-                </button>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </div>
 {% endblock %}

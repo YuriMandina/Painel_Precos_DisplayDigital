@@ -6,31 +6,43 @@ class FamiliaSerializer(serializers.ModelSerializer):
         model = FamiliaProduto
         fields = ['id', 'nome']
 
+
 class VideoTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = VideoTemplate
         fields = '__all__'
 
+
 class ProdutoSerializer(serializers.ModelSerializer):
-    # Serializamos a família para enviar o nome dela, não só o ID
+    # Campos calculados ou aninhados (Read-Only)
     familia_nome = serializers.CharField(source='familia.nome', read_only=True)
-    
-    # Se o produto tiver um template de vídeo específico, enviamos os dados dele junto
     template_video = VideoTemplateSerializer(read_only=True)
 
     class Meta:
         model = Produto
         fields = [
-            'codigo', 'descricao', 'preco', 
-            'familia_nome', 'imagem', 
-            'em_oferta', 'template_video', 'ordem'
+            'codigo',
+            'descricao',
+            'preco',
+            'familia',       # ID para filtros/relacionamentos
+            'familia_nome',  # String para exibição
+            'imagem',
+            'em_oferta',
+            'template_video',
+            'ordem'
         ]
+
 
 class DispositivoConfigSerializer(serializers.ModelSerializer):
     """
-    Este é o serializer que a TV vai receber.
-    Ele diz qual o modo de operação e pode incluir dados extras.
+    Serializer para configuração inicial do dispositivo (TV).
+    Define identidade e modo de operação.
     """
     class Meta:
         model = Dispositivo
-        fields = ['nome', 'modo_exibicao', 'uuid', 'orientacao']
+        fields = [
+            'nome',
+            'modo_exibicao',
+            'uuid',
+            'orientacao'
+        ]

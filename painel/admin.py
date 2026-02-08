@@ -4,33 +4,50 @@ from django.urls import path, reverse
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.utils.html import format_html
-from .models import FamiliaProduto, Produto, VideoTemplate, Dispositivo, VideoPropaganda
+from django.core.exceptions import ValidationError
+
+from .models import (
+    FamiliaProduto, 
+    Produto, 
+    VideoTemplate, 
+    Dispositivo, 
+    VideoPropaganda
+)
 from .forms import ImportarProdutosForm
 
-# --- ADMIN DE PRODUTOS (COM IMPORTAÇÃO EXCEL E ORDENAÇÃO) ---
 @admin.register(Produto)
 class ProdutoAdmin(admin.ModelAdmin):
-    # 'ordem' é a primeira coluna, mas definimos 'codigo' e 'descricao' como links abaixo
-    list_display = ('ordem', 'codigo', 'descricao', 'preco_formatado', 'em_oferta', 'exibir_no_painel')
-    
-    # CORREÇÃO DO ERRO E124: Definimos explicitamente quais campos são links
-    list_display_links = ('codigo', 'descricao') 
-    
-    # Agora podemos editar 'ordem' direto na lista sem conflito
+    """
+    Administração de Produtos com funcionalidade de Importação via Excel.
+    """
+    # Configuração da Listagem
+    list_display = ('ordem', 'codigo', 'descricao', 'get_preco_formatado', 'em_oferta', 'exibir_no_painel')
+    list_display_links = ('codigo', 'descricao')
     list_editable = ('ordem', 'em_oferta', 'exibir_no_painel')
-    
     list_filter = ('familia', 'em_oferta', 'exibir_no_painel')
     search_fields = ('codigo', 'descricao')
-    
-    def preco_formatado(self, obj):
-        return f"R$ {obj.preco}".replace('.', ',')
-    preco_formatado.short_description = 'Preço'
+    ordering = ('ordem', 'descricao')
 
-    # --- Lógica de Importação Excel (Mantida) ---
+    # Constantes das Colunas do Excel
+    COL_CODIGO = 'CÓDIGO DO PRODUTO'
+    COL_DESCRICAO = 'DESCRIÇÃO DO PRODUTO'
+    COL_PRECO = 'PREÇO UNITÁRIO DE VENDA'
+    COL_FAMILIA = 'FAMÍLIA DE PRODUTO'
+
+    def get_preco_formatado(self, obj):
+        return f"R$ {obj.preco}".replace('.', ',')
+    get_preco_formatado.short_description = 'Preço'
+
+    # --- Custom Views (Importação Excel) ---
+
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
-            path('importar-excel/', self.admin_site.admin_view(self.importar_excel_view), name='importar_produtos_excel'),
+            path(
+                'importar-excel/', 
+                self.admin_site.admin_view(self.importar_excel_view), 
+                name='importar_produtos_excel'
+            ),
         ]
         return custom_urls + urls
 
@@ -38,13 +55,21 @@ class ProdutoAdmin(admin.ModelAdmin):
         if request.method == "POST":
             form = ImportarProdutosForm(request.POST, request.FILES)
             if form.is_valid():
-                arquivo = request.FILES['arquivo_excel']
                 try:
-                    self.processar_arquivo(arquivo)
-                    self.message_user(request, "Importação concluída com sucesso!", level=messages.SUCCESS)
+                    arquivo = request.FILES['arquivo_excel']
+                    criados, atualizados = self.processar_arquivo(arquivo)
+                    self.message_user(
+                        request, 
+                        f"Sucesso! {criados} produtos criados e {atualizados} atualizados.", 
+                        level=messages.SUCCESS
+                    )
                     return redirect('..')
                 except Exception as e:
-                    self.message_user(request, f"Erro ao processar arquivo: {str(e)}", level=messages.ERROR)
+                    self.message_user(
+                        request, 
+                        f"Erro ao processar arquivo: {str(e)}", 
+                        level=messages.ERROR
+                    )
         else:
             form = ImportarProdutosForm()
 
@@ -55,44 +80,60 @@ class ProdutoAdmin(admin.ModelAdmin):
         }
         return render(request, 'admin/importar_excel.html', context)
 
+    @staticmethod
+    def _limpar_valor_monetario(valor):
+        """Converte string de moeda (R$ 1.000,00) para float (1000.00)."""
+        if pd.isna(valor):
+            return None
+        
+        if isinstance(valor, str):
+            # Remove R$, espaços e pontos de milhar, troca vírgula por ponto
+            limpo = valor.replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
+            try:
+                return float(limpo)
+            except ValueError:
+                return None
+        return float(valor)
+
     def processar_arquivo(self, arquivo):
+        """Lê o Excel e atualiza/cria produtos."""
         df = pd.read_excel(arquivo)
+        
+        # Normaliza colunas para uppercase e strip
         df.columns = [str(c).strip().upper() for c in df.columns]
 
-        col_codigo = 'CÓDIGO DO PRODUTO'
-        col_descricao = 'DESCRIÇÃO DO PRODUTO'
-        col_preco = 'PREÇO UNITÁRIO DE VENDA'
-        col_familia = 'FAMÍLIA DE PRODUTO'
+        colunas_necessarias = [
+            self.COL_CODIGO, 
+            self.COL_DESCRICAO, 
+            self.COL_PRECO, 
+            self.COL_FAMILIA
+        ]
         
-        colunas_esperadas = [col_codigo, col_descricao, col_preco, col_familia]
-        
-        for col in colunas_esperadas:
+        # Validação de Colunas
+        for col in colunas_necessarias:
             if col not in df.columns:
-                colunas_encontradas = ", ".join(df.columns)
-                raise ValueError(f"A coluna '{col}' não foi encontrada. Colunas lidas: {colunas_encontradas}")
+                raise ValueError(
+                    f"Coluna obrigatória '{col}' não encontrada. "
+                    f"Colunas detectadas: {', '.join(df.columns)}"
+                )
 
-        produtos_atualizados = 0
-        produtos_criados = 0
+        count_criados = 0
+        count_atualizados = 0
 
-        for index, row in df.iterrows():
-            codigo = str(row[col_codigo]).strip()
-            descricao = str(row[col_descricao]).strip()
-            familia_nome = str(row[col_familia]).strip().upper()
-            
-            valor_raw = row[col_preco]
-            if pd.isna(valor_raw): continue
+        for _, row in df.iterrows():
+            # Extração de dados
+            codigo = str(row[self.COL_CODIGO]).strip()
+            descricao = str(row[self.COL_DESCRICAO]).strip()
+            familia_nome = str(row[self.COL_FAMILIA]).strip().upper()
+            preco = self._limpar_valor_monetario(row[self.COL_PRECO])
 
-            if isinstance(valor_raw, str):
-                valor_raw = valor_raw.replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
-            
-            try:
-                preco = float(valor_raw)
-            except ValueError:
+            if preco is None:
                 continue
 
+            # Lógica de Banco de Dados
             familia_obj, _ = FamiliaProduto.objects.get_or_create(nome=familia_nome)
 
-            obj, created = Produto.objects.update_or_create(
+            _, created = Produto.objects.update_or_create(
                 codigo=codigo,
                 defaults={
                     'descricao': descricao,
@@ -100,18 +141,21 @@ class ProdutoAdmin(admin.ModelAdmin):
                     'familia': familia_obj
                 }
             )
-            
-            if created: produtos_criados += 1
-            else: produtos_atualizados += 1
-                
-        return True
 
-# --- ADMIN DE FAMÍLIAS ---
+            if created:
+                count_criados += 1
+            else:
+                count_atualizados += 1
+
+        return count_criados, count_atualizados
+
+
 @admin.register(FamiliaProduto)
 class FamiliaProdutoAdmin(admin.ModelAdmin):
     list_display = ('nome',)
+    search_fields = ('nome',)
 
-# --- ADMIN DE TEMPLATES ---
+
 @admin.register(VideoTemplate)
 class VideoTemplateAdmin(admin.ModelAdmin):
     list_display = ('nome', 'duracao', 'botao_editor')
@@ -119,25 +163,39 @@ class VideoTemplateAdmin(admin.ModelAdmin):
     def botao_editor(self, obj):
         url = reverse('editor_visual', args=[obj.id])
         return format_html(
-            '<a class="button" href="{}" style="background-color:#E91E63; color:white; padding:5px 10px; border-radius:5px; text-decoration:none;">🎨 Abrir Editor Visual</a>',
+            '<a class="button" href="{}" style="background-color:#E91E63; color:white; '
+            'padding:5px 10px; border-radius:5px; text-decoration:none;">'
+            '🎨 Abrir Editor Visual</a>',
             url
         )
-    botao_editor.short_description = 'Editor'
+    botao_editor.short_description = 'Editor Visual'
 
-# --- ADMIN DE PROPAGANDAS (Onde deu o erro) ---
+
 @admin.register(VideoPropaganda)
 class VideoPropagandaAdmin(admin.ModelAdmin):
     list_display = ('ordem', 'descricao', 'duracao', 'ativo')
-    
-    # CORREÇÃO: Definimos 'descricao' como o link para editar
     list_display_links = ('descricao',)
-    
     list_editable = ('ordem', 'ativo')
+    list_filter = ('ativo',)
 
-# --- ADMIN DE DISPOSITIVOS ---
+
 @admin.register(Dispositivo)
 class DispositivoAdmin(admin.ModelAdmin):
     list_display = ('nome', 'codigo_acesso', 'uuid', 'modo_exibicao', 'orientacao')
     readonly_fields = ('uuid', 'codigo_acesso')
-    fields = ('nome', 'codigo_acesso', 'uuid', 'modo_exibicao', 'orientacao', 'exibir_apenas_familias', 'exibir_propagandas')
-    filter_horizontal = ('exibir_apenas_familias', 'exibir_propagandas') # Facilita seleção de muitos itens
+    
+    # Organização visual dos campos no formulário de edição
+    fieldsets = (
+        ('Identificação', {
+            'fields': ('nome', 'titulo_exibicao', 'uuid', 'codigo_acesso')
+        }),
+        ('Configuração Técnica', {
+            'fields': ('modo_exibicao', 'orientacao')
+        }),
+        ('Conteúdo', {
+            'fields': ('playlist', 'exibir_apenas_familias', 'exibir_propagandas'),
+            'description': 'Configure o que será exibido neste dispositivo.'
+        }),
+    )
+    
+    filter_horizontal = ('exibir_apenas_familias', 'exibir_propagandas')

@@ -1,18 +1,57 @@
-# Python
+# ========================
+# 1. Python & Compilados
+# ========================
 __pycache__/
 *.py[cod]
+*$py.class
+
+# ========================
+# 2. Virtual Environment
+# ========================
+# Pasta do ambiente virtual, pode variar dependendo do nome que você deu
 venv/
+env/
+.venv/
+
+# ========================
+# 3. Variáveis de Ambiente e Segredos
+# ========================
+# NUNCA suba isso para o repositório, mesmo que seja um repositório privado!
 .env
+.env.local
+.env.*
 
-# Banco de dados local
-db.sqlite3
+# ========================
+# 4. Banco de Dados
+# ========================
+*.sqlite3
+db.sqlite3-journal
 
-# Mídia (uploads locais não vão pro git)
+# ========================
+# 5. Django Mídia e Uploads
+# ========================
+
+# Pasta 'media' padrão (caso configure MEDIA_ROOT depois)
 media/
-staticfiles/
-templates_video/
-produtos/
-propagandas/
 
-# VS Code
+# Pasta vista na imagem contendo os vídeos .mp4
+templates_video/
+
+# Outras pastas de upload citadas no models.py
+propagandas/
+produtos/
+
+# ========================
+# 6. Arquivos Estáticos (Coletados)
+# ========================
+# Pasta gerada pelo comando collectstatic (produção)
+staticfiles/
+static_root/
+
+# ========================
+# 7. IDE e Sistema Operacional
+# ========================
 .vscode/
+.idea/
+.DS_Store
+Thumbs.db

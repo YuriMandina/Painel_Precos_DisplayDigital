@@ -1,17 +1,77 @@
 {% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}Importar Produtos | Admin DisplayDigital{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+        .import-container {
+            max-width: 800px;
+        }
+        .instruction-box {
+            padding: 15px;
+            background-color: var(--body-bg);
+            border-left: 4px solid var(--primary-color, #417690);
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .instruction-box h2 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            color: var(--body-quiet-color, #666);
+        }
+        .column-list {
+            margin: 10px 0 0 20px;
+            list-style-type: disc;
+        }
+        .column-list li {
+            margin-bottom: 5px;
+            color: var(--body-fg, #333);
+        }
+        /* Ajuste para o botão de cancelar parecer nativo */
+        .btn-cancel {
+            margin-left: 15px;
+            padding: 10px 15px;
+            background: #eee;
+            border-radius: 4px;
+            color: #333;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .btn-cancel:hover {
+            background: #ddd;
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
-<div style="padding: 20px; max-width: 600px;">
-    <h2>Importar Produtos via Excel</h2>
-    <p>O arquivo deve conter as colunas: <strong>CÓDIGO DO PRODUTO</strong>, <strong>DESCRIÇÃO DO PRODUTO</strong>, <strong>VALOR DO PRODUTO</strong>, <strong>FAMÍLIA</strong>.</p>
+<div class="import-container">
     
+    <div class="instruction-box">
+        <h2>Instruções de Importação</h2>
+        <p>Selecione um arquivo <strong>.xlsx</strong> para atualizar o catálogo de produtos.</p>
+        <p>O cabeçalho do arquivo deve conter exatamente as seguintes colunas:</p>
+        <ul class="column-list">
+            <li><strong>CÓDIGO DO PRODUTO</strong></li>
+            <li><strong>DESCRIÇÃO DO PRODUTO</strong></li>
+            <li><strong>VALOR DO PRODUTO</strong></li>
+            <li><strong>FAMÍLIA</strong></li>
+        </ul>
+    </div>
+
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        <div style="margin-bottom: 20px;">
-            {{ form.as_p }}
-        </div>
-        <div>
-            <input type="submit" value="Fazer Upload e Processar" class="default" style="padding: 10px 20px; background: #417690; color: white; border: none; cursor: pointer;">
-            <a href="../" style="margin-left: 10px; color: #666;">Cancelar</a>
+        
+        <fieldset class="module aligned">
+            <div class="form-row">
+                {{ form.as_p }}
+            </div>
+        </fieldset>
+
+        <div class="submit-row">
+            <input type="submit" value="Fazer Upload e Processar" class="default">
+            <a href="../" class="btn-cancel">Cancelar</a>
         </div>
     </form>
 </div>

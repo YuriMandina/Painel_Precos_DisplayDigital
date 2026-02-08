@@ -5,16 +5,19 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, FormView
-from django.db.models import Q
+from django.db.models import Q, Count
+from django.http import HttpRequest, HttpResponse
+
 from .models import Dispositivo, FamiliaProduto, Produto, VideoPropaganda, VideoTemplate
 from .forms import ProdutoForm, FamiliaForm, ImportarProdutosForm, DispositivoForm, VideoTemplateForm
 
 
-# --- DASHBOARD (Function View) ---
+# --- DASHBOARD ---
+
 @login_required
-def dashboard_index(request):
+def dashboard_index(request: HttpRequest) -> HttpResponse:
     """
-    Dashboard Principal com KPIs.
+    Renderiza o Dashboard Principal com KPIs (Key Performance Indicators).
     """
     context = {
         'kpis': {
@@ -29,32 +32,31 @@ def dashboard_index(request):
     return render(request, 'painel/dashboard/index.html', context)
 
 
-# --- CRUD PRODUTOS (GENERIC VIEWS) ---
+# --- MÓDULO: PRODUTOS ---
 
 class ProdutoListView(LoginRequiredMixin, ListView):
     model = Produto
     template_name = 'painel/produtos/lista.html'
-    context_object_name = 'page_obj' # Mantém compatibilidade com seu template atual
+    context_object_name = 'page_obj'
     paginate_by = 20
 
     def get_queryset(self):
-        # Otimização com select_related e ordenação
-        qs = Produto.objects.select_related('familia').order_by('ordem', 'descricao')
+        queryset = Produto.objects.select_related('familia').order_by('ordem', 'descricao')
         
-        # Lógica de Busca
-        query = self.request.GET.get('q')
-        if query:
-            qs = qs.filter(
-                Q(descricao__icontains=query) | 
-                Q(codigo__icontains=query)
+        term = self.request.GET.get('q')
+        if term:
+            queryset = queryset.filter(
+                Q(descricao__icontains=term) | 
+                Q(codigo__icontains=term)
             )
-        return qs
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['query'] = self.request.GET.get('q', '')
         context['total_count'] = self.get_queryset().count()
         return context
+
 
 class ProdutoCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Produto
@@ -63,6 +65,7 @@ class ProdutoCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     success_url = reverse_lazy('produtos_list')
     success_message = "Produto criado com sucesso!"
     extra_context = {'titulo': 'Novo Produto'}
+
 
 class ProdutoUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Produto
@@ -74,8 +77,11 @@ class ProdutoUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = f"Editando: {self.object.descricao}"
-        context['produto'] = self.object # Garante que o template receba a variável 'produto' para preview de imagem
+        # 'produto' já é passado pelo UpdateView (como self.object), 
+        # mas mantemos explicito se o template depender desse nome exato.
+        context['produto'] = self.object 
         return context
+
 
 class ProdutoDeleteView(LoginRequiredMixin, SuccessMessageMixin, DeleteView):
     model = Produto
@@ -83,78 +89,97 @@ class ProdutoDeleteView(LoginRequiredMixin, SuccessMessageMixin, DeleteView):
     success_url = reverse_lazy('produtos_list')
     success_message = "Produto removido com sucesso!"
 
+
 class ProdutoImportView(LoginRequiredMixin, SuccessMessageMixin, FormView):
     template_name = 'painel/produtos/importar.html'
     form_class = ImportarProdutosForm
     success_url = reverse_lazy('produtos_list')
     success_message = "Importação concluída com sucesso!"
 
+    # Constantes para mapeamento do Excel
+    COL_CODIGO = 'CÓDIGO DO PRODUTO'
+    COL_DESCRICAO = 'DESCRIÇÃO DO PRODUTO'
+    COL_PRECO = 'PREÇO UNITÁRIO DE VENDA'
+    COL_FAMILIA = 'FAMÍLIA DE PRODUTO'
+
     def form_valid(self, form):
         arquivo = form.cleaned_data['arquivo_excel']
         try:
-            self.processar_arquivo(arquivo)
+            self._processar_excel(arquivo)
             return super().form_valid(form)
+        except ValueError as e:
+            form.add_error(None, str(e))
+            return self.form_invalid(form)
         except Exception as e:
-            form.add_error(None, f"Erro ao processar arquivo: {str(e)}")
+            form.add_error(None, f"Erro inesperado ao processar arquivo: {str(e)}")
             return self.form_invalid(form)
 
-    def processar_arquivo(self, arquivo):
-        # Lógica migrada do admin.py e limpa
+    def _processar_excel(self, arquivo):
+        """Lê o arquivo Excel e atualiza o banco de dados."""
         df = pd.read_excel(arquivo)
+        # Normaliza colunas (upper case e sem espaços)
         df.columns = [str(c).strip().upper() for c in df.columns]
 
-        col_codigo = 'CÓDIGO DO PRODUTO'
-        col_descricao = 'DESCRIÇÃO DO PRODUTO'
-        col_preco = 'PREÇO UNITÁRIO DE VENDA'
-        col_familia = 'FAMÍLIA DE PRODUTO'
+        self._validar_colunas(df)
         
-        colunas_esperadas = [col_codigo, col_descricao, col_preco, col_familia]
-        
-        for col in colunas_esperadas:
-            if col not in df.columns:
-                raise ValueError(f"Coluna obrigatória não encontrada: '{col}'")
-
-        # Cache de famílias para evitar queries repetidas
+        # Cache para evitar N+1 queries na busca de famílias
         familias_cache = {f.nome: f for f in FamiliaProduto.objects.all()}
 
-        for index, row in df.iterrows():
-            codigo = str(row[col_codigo]).strip()
-            descricao = str(row[col_descricao]).strip()
-            familia_nome = str(row[col_familia]).strip().upper()
-            
-            valor_raw = row[col_preco]
-            if pd.isna(valor_raw): continue
+        for _, row in df.iterrows():
+            self._processar_linha(row, familias_cache)
 
-            if isinstance(valor_raw, str):
-                valor_raw = valor_raw.replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
-            
-            try:
-                preco = float(valor_raw)
-            except ValueError:
-                continue
+    def _validar_colunas(self, df):
+        colunas_esperadas = [
+            self.COL_CODIGO, self.COL_DESCRICAO, 
+            self.COL_PRECO, self.COL_FAMILIA
+        ]
+        for col in colunas_esperadas:
+            if col not in df.columns:
+                raise ValueError(f"A coluna obrigatória '{col}' não foi encontrada no arquivo.")
 
-            # Resolve a Família
-            if familia_nome not in familias_cache:
-                # Se não existe, cria na hora
-                familia_obj = FamiliaProduto.objects.create(nome=familia_nome)
-                familias_cache[familia_nome] = familia_obj
-            else:
-                familia_obj = familias_cache[familia_nome]
-
-            # Update or Create Logic
-            Produto.objects.update_or_create(
-                codigo=codigo,
-                defaults={
-                    'descricao': descricao,
-                    'preco': preco,
-                    'familia': familia_obj
-                }
-            )
+    def _processar_linha(self, row, familias_cache):
+        # Extração e Limpeza
+        codigo = str(row[self.COL_CODIGO]).strip()
+        descricao = str(row[self.COL_DESCRICAO]).strip()
+        familia_nome = str(row[self.COL_FAMILIA]).strip().upper()
         
-        return True
+        preco = self._limpar_valor_monetario(row[self.COL_PRECO])
+        if preco is None:
+            return # Pula linhas com preço inválido
+
+        # Resolução da Família (usa cache ou cria nova)
+        if familia_nome not in familias_cache:
+            familia_obj = FamiliaProduto.objects.create(nome=familia_nome)
+            familias_cache[familia_nome] = familia_obj
+        else:
+            familia_obj = familias_cache[familia_nome]
+
+        # Persistência
+        Produto.objects.update_or_create(
+            codigo=codigo,
+            defaults={
+                'descricao': descricao,
+                'preco': preco,
+                'familia': familia_obj
+            }
+        )
+
+    @staticmethod
+    def _limpar_valor_monetario(valor_raw):
+        """Converte string 'R$ 1.000,00' ou float para float puro."""
+        if pd.isna(valor_raw):
+            return None
+
+        if isinstance(valor_raw, str):
+            limpo = valor_raw.replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.')
+            try:
+                return float(limpo.strip())
+            except ValueError:
+                return None
+        return float(valor_raw)
 
 
-# --- CRUD FAMÍLIAS (GENERIC VIEWS) ---
+# --- MÓDULO: FAMÍLIAS ---
 
 class FamiliaListView(LoginRequiredMixin, ListView):
     model = FamiliaProduto
@@ -163,15 +188,17 @@ class FamiliaListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        query = self.request.GET.get('q')
-        if query:
-            return FamiliaProduto.objects.filter(nome__icontains=query).order_by('nome')
-        return FamiliaProduto.objects.all().order_by('nome')
+        queryset = FamiliaProduto.objects.all().order_by('nome')
+        term = self.request.GET.get('q')
+        if term:
+            queryset = queryset.filter(nome__icontains=term)
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['query'] = self.request.GET.get('q', '')
         return context
+
 
 class FamiliaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = FamiliaProduto
@@ -181,6 +208,7 @@ class FamiliaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     success_message = "Família criada com sucesso!"
     extra_context = {'titulo': 'Nova Família'}
 
+
 class FamiliaUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     model = FamiliaProduto
     form_class = FamiliaForm
@@ -189,13 +217,35 @@ class FamiliaUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     success_message = "Família atualizada com sucesso!"
     extra_context = {'titulo': 'Editar Família'}
 
+
 class FamiliaDeleteView(LoginRequiredMixin, SuccessMessageMixin, DeleteView):
     model = FamiliaProduto
     template_name = 'painel/familias/confirm_delete.html'
     success_url = reverse_lazy('familia_list')
     success_message = "Família removida com sucesso!"
 
-# --- CRUD DISPOSITIVOS (GENERIC VIEWS) ---
+
+# --- MÓDULO: DISPOSITIVOS (TVs) ---
+
+class DispositivoContextMixin:
+    """
+    Mixin para injetar dados auxiliares necessários 
+    para a interface de configuração da TV (Drag & Drop).
+    """
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        context['todas_familias'] = FamiliaProduto.objects.all().order_by('nome')
+        context['todas_propagandas'] = VideoPropaganda.objects.filter(ativo=True).order_by('descricao')
+        
+        # Otimização: Traz apenas produtos que possuem vídeo configurado
+        context['produtos_com_video'] = Produto.objects.filter(
+            template_video__isnull=False, 
+            exibir_no_painel=True
+        ).select_related('template_video').order_by('descricao')
+        
+        return context
+
 
 class DispositivoListView(LoginRequiredMixin, ListView):
     model = Dispositivo
@@ -205,7 +255,8 @@ class DispositivoListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return Dispositivo.objects.all().order_by('-created_at')
 
-class DispositivoCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+
+class DispositivoCreateView(LoginRequiredMixin, SuccessMessageMixin, DispositivoContextMixin, CreateView):
     model = Dispositivo
     form_class = DispositivoForm
     template_name = 'painel/dispositivos/form.html'
@@ -213,13 +264,15 @@ class DispositivoCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView)
     success_message = "Nova TV adicionada! Use o código de pareamento para conectar."
     extra_context = {'titulo': 'Nova TV'}
 
-class DispositivoUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+
+class DispositivoUpdateView(LoginRequiredMixin, SuccessMessageMixin, DispositivoContextMixin, UpdateView):
     model = Dispositivo
     form_class = DispositivoForm
     template_name = 'painel/dispositivos/form.html'
     success_url = reverse_lazy('dispositivo_list')
     success_message = "Configurações da TV atualizadas."
     extra_context = {'titulo': 'Configurar TV'}
+
 
 class DispositivoDeleteView(LoginRequiredMixin, SuccessMessageMixin, DeleteView):
     model = Dispositivo
@@ -228,7 +281,7 @@ class DispositivoDeleteView(LoginRequiredMixin, SuccessMessageMixin, DeleteView)
     success_message = "Dispositivo removido."
 
 
-# --- CRUD TEMPLATES ---
+# --- MÓDULO: TEMPLATES ---
 
 class TemplateListView(LoginRequiredMixin, ListView):
     model = VideoTemplate
@@ -238,6 +291,7 @@ class TemplateListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return VideoTemplate.objects.all().order_by('-id')
 
+
 class TemplateCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = VideoTemplate
     form_class = VideoTemplateForm
@@ -246,6 +300,7 @@ class TemplateCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     success_message = "Template criado! Agora abra o Editor Visual para ajustar."
     extra_context = {'titulo': 'Novo Template'}
 
+
 class TemplateUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     model = VideoTemplate
     form_class = VideoTemplateForm
@@ -253,6 +308,7 @@ class TemplateUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     success_url = reverse_lazy('template_list')
     success_message = "Dados do template atualizados."
     extra_context = {'titulo': 'Editar Dados do Template'}
+
 
 class TemplateDeleteView(LoginRequiredMixin, SuccessMessageMixin, DeleteView):
     model = VideoTemplate

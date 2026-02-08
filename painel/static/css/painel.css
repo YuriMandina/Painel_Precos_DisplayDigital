@@ -1,230 +1,323 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&family=Lato:wght@400;700&display=swap');
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+/* ==========================================================================
+   1. VARIÁVEIS & CONFIGURAÇÕES GERAIS
+   ========================================================================== */
+:root {
+    /* Paleta de Cores */
+    --color-bg: #000000;
+    --color-bg-panel: #111111;
+    --color-text-primary: #FFFFFF;
+    --color-highlight: #FFD700; /* Ouro */
+    --color-border: #333333;
+    
+    /* Tipografia */
+    --font-primary: 'Roboto Condensed', sans-serif;
+    
+    /* Dimensões do Grid */
+    --grid-rows-horizontal: 9;
+    --grid-rows-vertical: 15;
+    
+    /* Z-Index Layers */
+    --z-background: 0;
+    --z-content: 10;
+    --z-header: 20;
+    --z-overlay: 100;
+    --z-setup: 999;
+}
+
+/* ==========================================================================
+   2. RESET & BASE
+   ========================================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
 html, body {
-    width: 100%; height: 100%;
-    overflow: hidden; background: #000;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--color-bg);
 }
-body { display: flex; justify-content: center; align-items: center; }
 
-/* Wrapper 16:9 Fixo */
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ==========================================================================
+   3. LAYOUT PRINCIPAL (TV WRAPPER)
+   ========================================================================== */
+/* Mantém a proporção 16:9 independente da resolução da tela.
+   Baseado em Viewport Width (vw) para escalar perfeitamente.
+*/
 .tv-wrapper {
-    width: 100vw; height: 56.25vw;
-    max-height: 100vh; max-width: 177.78vh;
-    background: #000; 
-    display: flex; flex-direction: column;
+    width: 100vw;
+    height: 56.25vw; /* 16:9 Aspect Ratio */
+    max-width: 177.78vh;
+    max-height: 100vh;
+    
+    background-color: var(--color-bg);
+    border: 5px solid var(--color-bg-panel);
+    display: flex;
+    flex-direction: column;
     position: relative;
-    border: 5px solid #111;
+    overflow: hidden;
 }
 
-/* Header */
+/* --- Header --- */
 .painel-header {
-    height: 12%; 
-    background: #000;
-    border-bottom: 4px solid #FFD700; 
-    display: flex; justify-content: center; align-items: center;
+    height: 12%;
+    background-color: var(--color-bg);
+    border-bottom: 4px solid var(--color-highlight);
+    display: flex;
+    justify-content: center;
+    align-items: center;
     padding: 0 2vw;
-    z-index: 20;
+    z-index: var(--z-header);
 }
 
 .painel-titulo {
-    font-family: 'Roboto Condensed', sans-serif;
-    font-size: 6.5vh; 
-    color: #FFD700;
+    font-family: var(--font-primary);
+    font-size: 6.5vh;
+    color: var(--color-highlight);
     text-transform: uppercase;
     text-align: center;
     letter-spacing: 2px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* Conteúdo */
+/* --- Área de Conteúdo --- */
 .painel-conteudo {
-    height: 88%; 
+    height: 88%;
     display: flex;
-    padding: 0 1vw; 
+    padding: 0 1vw;
 }
 
-/* Colunas */
+/* --- Colunas do Grid --- */
 .coluna {
     width: 50%;
     height: 100%;
     display: grid;
-    grid-template-rows: repeat(9, 1fr);
-    align-items: center; 
+    grid-template-rows: repeat(var(--grid-rows-horizontal), 1fr);
+    align-items: center;
 }
 
 .coluna:first-child {
-    border-right: 2px dashed #333; 
-    padding-right: 2vw; 
+    border-right: 2px dashed var(--color-border);
     padding-left: 1vw;
+    padding-right: 2vw;
 }
 
 .coluna:last-child {
-    padding-left: 2vw; 
+    padding-left: 2vw;
     padding-right: 1vw;
 }
 
-/* Item Produto */
+/* ==========================================================================
+   4. COMPONENTES: PRODUTO
+   ========================================================================== */
 .item-produto {
-    display: flex; 
-    justify-content: space-between; 
-    align-items: flex-end; 
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
     width: 100%;
-    height: 100%; 
-    border-bottom: 1px dashed #222; 
-    padding-bottom: 0.8vh; 
-    overflow: hidden; 
-    position: relative; /* Necessário para o z-index funcionar */
+    height: 100%;
+    border-bottom: 1px dashed #222;
+    padding-bottom: 0.8vh;
+    overflow: hidden;
+    position: relative;
 }
 
-/* --- SOLUÇÃO DO OVERLAP AQUI --- */
-
+/* Container do Nome (com suporte a Marquee) */
 .nome-container {
-    flex: 1; 
-    min-width: 0; 
-    margin-right: 0; /* Removemos a margem física, o preço cuidará disso */
-    white-space: nowrap; 
+    flex: 1;
+    min-width: 0;
+    margin-right: 0;
+    white-space: nowrap;
     position: relative;
     padding-bottom: 2px;
-    z-index: 1; /* Camada inferior */
+    z-index: 1;
 }
 
 .nome {
-    font-family: 'Roboto Condensed', sans-serif;
+    font-family: var(--font-primary);
     font-weight: 700;
-    font-size: 4.8vh; 
-    color: #FFF;
+    font-size: 4.8vh;
+    color: var(--color-text-primary);
     text-transform: uppercase;
     display: inline-block;
 }
 
+/* Preço
+   Usa um hack visual de z-index e background para cobrir
+   o nome do produto caso ele seja muito longo (marquee).
+*/
 .preco {
-    flex-shrink: 0; 
-    font-family: 'Roboto Condensed', sans-serif;
+    flex-shrink: 0;
+    font-family: var(--font-primary);
     font-weight: 700;
-    color: #FFD700;
-    font-size: 4.8vh; 
+    font-size: 4.8vh;
+    color: var(--color-highlight);
     text-align: right;
     white-space: nowrap;
     
-    /* A Mágica do Fundo Sólido */
-    z-index: 5; /* Fica POR CIMA do texto */
     position: relative;
-    background-color: #000; /* Fundo preto tapa o texto que passa por baixo */
-    padding-left: 15px; /* Espaço para o texto não colar no número */
-    
-    /* Sombra difusa para criar um efeito de "fade out" suave */
-    box-shadow: -5px 0 10px #000; 
+    z-index: 5;
+    background-color: var(--color-bg);
+    padding-left: 15px;
+    box-shadow: -5px 0 10px var(--color-bg); /* Fade out suave */
 }
 
-/* --- ANIMAÇÃO PING-PONG (REBATE) --- */
+/* ==========================================================================
+   5. OVERLAYS (Vídeo, Setup, Editor)
+   ========================================================================== */
+
+/* Tela de Configuração Inicial */
+#setup-screen {
+    position: absolute;
+    inset: 0;
+    background-color: var(--color-bg);
+    color: var(--color-text-primary);
+    z-index: var(--z-setup);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#setup-screen input {
+    font-size: 2rem;
+    padding: 10px;
+    text-align: center;
+    margin: 20px;
+    border: 2px solid #333;
+    background: #222;
+    color: white;
+}
+
+#setup-screen button {
+    font-size: 2rem;
+    padding: 10px 30px;
+    cursor: pointer;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+/* Container de Vídeo e Elementos Flutuantes */
+#video-overlay-container {
+    position: absolute;
+    inset: 0;
+    z-index: var(--z-overlay);
+    display: none;
+    background-color: var(--color-bg);
+}
+
+#video-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.overlay-element {
+    position: absolute;
+    font-family: var(--font-primary);
+    font-weight: 700;
+    text-shadow: 2px 2px 4px #000;
+    z-index: 101;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   6. ANIMAÇÕES
+   ========================================================================== */
+.fade {
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.pop-in {
+    animation: popIn 0.5s forwards;
+    opacity: 0;
+    transform: scale(0.5);
+}
+
+@keyframes popIn {
+    to {
+        opacity: 1;
+        transform: scale(1) translate(-50%, -50%);
+    }
+}
+
+/* Marquee (Texto Rolante) */
 .marquee .nome {
-    padding-left: 0; /* Removemos o delay visual inicial */
-    /* ease-in-out: começa devagar, acelera, termina devagar 
-       alternate: vai e volta */
+    padding-left: 0;
     animation: scroll-bounce 6s ease-in-out infinite alternate;
 }
 
 @keyframes scroll-bounce {
-    /* Fica parado 15% do tempo no início para leitura */
-    0%, 10% { 
-        transform: translateX(0); 
-    } 
-    /* Vai até o final, mas deixa um pedaço visível (aprox 20vw) para não sumir */
-    90%, 100% { 
-        transform: translateX(calc(-100% + 30vw)); 
-    } 
+    0%, 15% { transform: translateX(0); }
+    85%, 100% { transform: translateX(calc(-100% + 25vw)); }
 }
 
-/* Efeitos Visuais */
-.fade { opacity: 0; transition: opacity 0.5s; }
-
-/* Setup & Overlay */
-#setup-screen { position: absolute; top:0; left:0; width:100%; height:100%; background:#000; z-index:999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff;}
-#setup-screen input { font-size: 2rem; padding: 10px; text-align: center; margin: 20px;}
-#setup-screen button { font-size: 2rem; padding: 10px 30px; cursor: pointer; background: #28a745; color: white; border: none;}
-
-#video-overlay-container { position:absolute; top:0; left:0; width:100%; height:100%; z-index:100; display:none; background:#000;}
-.overlay-element { position: absolute; font-family: 'Roboto Condensed', sans-serif; font-weight: 700; text-shadow: 2px 2px 4px #000; z-index: 101; white-space: nowrap;}
-#video-bg { width: 100%; height: 100%; object-fit: cover; }
-.pop-in { animation: popIn 0.5s forwards; opacity: 0; transform: scale(0.5); }
-@keyframes popIn { to { opacity: 1; transform: scale(1) translate(-50%, -50%); } }
-
-/* --- SISTEMA DE ROTAÇÃO (VERTICAL MODE) --- */
-
-/* Lógica: Se a TV está de lado, mas o sistema operacional (Windows/Android) 
-   ainda manda sinal 1920x1080 (Landscape), nós rotacionamos o conteúdo via CSS.
+/* ==========================================================================
+   7. MODIFICADORES DE ROTAÇÃO (Modo Vertical)
+   ========================================================================== */
+/*
+   Lógica: TVs instaladas na vertical recebendo sinal horizontal (1920x1080).
+   Rotacionamos o container e invertemos as dimensões (vh <-> vw).
 */
 
-/* Rotação 90 Graus (Topo da TV virado para a Direita) */
-body.rotacao-90 .tv-wrapper {
-    transform: rotate(90deg);
-    transform-origin: center;
-    
-    /* Inverte as dimensões para preencher a tela */
-    width: 100vh; 
-    height: 100vw;
-    
-    /* Reposiciona para o centro, pois a rotação tira do eixo */
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    translate: -50% -50%;
-    
-    /* Ajuste fino de borda para não vazar */
-    max-width: none; 
-    max-height: none;
-}
-
-/* Rotação -90/270 Graus (Topo da TV virado para a Esquerda) */
+body.rotacao-90 .tv-wrapper,
 body.rotacao-270 .tv-wrapper {
-    transform: rotate(-90deg); /* ou 270deg */
-    transform-origin: center;
-    
     width: 100vh;
     height: 100vw;
-    
     position: fixed;
     top: 50%;
     left: 50%;
     translate: -50% -50%;
-    
-    max-width: none; 
+    transform-origin: center;
+    max-width: none;
     max-height: none;
 }
 
-/* AJUSTE DE LAYOUT PARA MODO VERTICAL (OPCIONAL) 
-   Se ficar muito apertado 2 colunas, podemos forçar 1 coluna aqui.
-   Por enquanto, vamos manter o grid, mas ajustando a proporção.
-*/
+body.rotacao-90 .tv-wrapper {
+    transform: rotate(90deg);
+}
+
+body.rotacao-270 .tv-wrapper {
+    transform: rotate(-90deg);
+}
+
+/* Ajustes internos para layout vertical */
 body.rotacao-90 .coluna,
 body.rotacao-270 .coluna {
-    /* Em vertical, talvez queira ajustar o padding */
     padding: 0 1vw;
 }
 
-/* --- AJUSTES DE LAYOUT PARA MODO VERTICAL (1 COLUNA) --- */
-
-/* Quando a classe .layout-vertical for injetada pelo JS */
+/* Layout de Coluna Única (Injetado via JS: .layout-vertical) */
 .painel-conteudo.layout-vertical {
-    display: block; /* Remove o flex padrão para gerenciar melhor */
-    padding: 0 4vw; /* Mais margem lateral para elegância */
+    display: block;
+    padding: 0 4vw;
 }
 
 .painel-conteudo.layout-vertical .coluna {
-    width: 100%; /* Ocupa toda a largura */
-    border-right: none; /* Remove a linha tracejada do meio */
+    width: 100%;
+    border-right: none;
     padding: 0;
-    
-    /* Aumentamos de 9 para 15 linhas para aproveitar a altura da TV em pé */
-    grid-template-rows: repeat(15, 1fr); 
+    grid-template-rows: repeat(var(--grid-rows-vertical), 1fr);
 }
 
-/* Ajuste fino da fonte no modo vertical se necessário */
+/* Ajuste fino de fontes para modo vertical */
 .painel-conteudo.layout-vertical .item-produto .nome {
-    font-size: 3.8vh; /* Levemente menor pois a altura (vh) base é gigante (1920px) */
+    font-size: 3.8vh;
 }
+
 .painel-conteudo.layout-vertical .item-produto .preco {
     font-size: 4.5vh;
 }

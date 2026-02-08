@@ -3,70 +3,102 @@
 {% block title %}Dispositivos | DisplayDigital{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto">
-    <div class="flex items-center justify-between mb-8">
+<main class="max-w-7xl mx-auto">
+    
+    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">Dispositivos Conectados</h1>
-            <p class="text-sm text-gray-500 mt-1">Gerencie suas telas e códigos de acesso.</p>
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Dispositivos Conectados</h1>
+            <p class="text-sm text-gray-500 mt-1">Gerencie suas telas, códigos de pareamento e status.</p>
         </div>
-        <a href="{% url 'dispositivo_create' %}" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-md">
-            <i class="ph ph-monitor-play text-lg"></i> Nova TV
+        
+        <a href="{% url 'dispositivo_create' %}" 
+           class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-md hover:shadow-lg">
+            <i class="ph ph-monitor-play text-lg"></i>
+            <span>Nova TV</span>
         </a>
-    </div>
+    </header>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
         {% for tv in dispositivos %}
-        <div class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
-            <div class="p-5 border-b border-gray-100 flex justify-between items-start">
+        <article class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex flex-col overflow-hidden group">
+            
+            <div class="p-5 border-b border-gray-100 flex justify-between items-start bg-white">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                        <i class="ph-fill ph-television text-xl"></i>
+                    <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
+                        <i class="ph-fill ph-television text-2xl"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-gray-900">{{ tv.nome }}</h3>
-                        <span class="text-xs text-gray-500 flex items-center gap-1">
+                        <h3 class="font-bold text-gray-900 leading-tight">{{ tv.nome }}</h3>
+                        <div class="flex items-center gap-1 mt-1">
                             {% if 'VERTICAL' in tv.orientacao %}
-                                <i class="ph ph-device-mobile-camera text-gray-400"></i> Vertical
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-600 uppercase tracking-wide">
+                                    <i class="ph-bold ph-device-mobile-camera"></i> Vertical
+                                </span>
                             {% else %}
-                                <i class="ph ph-monitor text-gray-400"></i> Horizontal
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-600 uppercase tracking-wide">
+                                    <i class="ph-bold ph-monitor"></i> Horizontal
+                                </span>
                             {% endif %}
-                        </span>
+                        </div>
                     </div>
                 </div>
-                <div class="relative group">
-                    <button class="text-gray-400 hover:text-gray-600"><i class="ph ph-dots-three-vertical text-xl"></i></button>
-                    <div class="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block z-10">
-                        <a href="{% url 'dispositivo_edit' tv.id %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Configurar</a>
-                        <a href="{% url 'dispositivo_delete' tv.id %}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Excluir</a>
+
+                <div class="relative group/menu">
+                    <button class="p-1 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+                        <i class="ph-bold ph-dots-three-vertical text-xl"></i>
+                    </button>
+                    
+                    <div class="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-100 rounded-lg shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-20 transform origin-top-right">
+                        <div class="py-1">
+                            <a href="{% url 'dispositivo_edit' tv.id %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-indigo-600 flex items-center gap-2">
+                                <i class="ph ph-gear"></i> Configurar
+                            </a>
+                            <a href="{% url 'dispositivo_delete' tv.id %}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
+                                <i class="ph ph-trash"></i> Desconectar
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="p-6 flex-1 flex flex-col items-center justify-center bg-gray-50/50">
-                <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Código de Pareamento</p>
-                <div class="text-3xl font-mono font-bold text-gray-900 tracking-wider bg-white px-4 py-2 rounded border border-dashed border-gray-300 select-all">
-                    {{ tv.codigo_acesso }}
+            <div class="p-8 flex-1 flex flex-col items-center justify-center bg-gray-50/30">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Código de Pareamento</p>
+                
+                <div class="relative group/code cursor-pointer" onclick="navigator.clipboard.writeText('{{ tv.codigo_acesso }}'); alert('Código copiado!');">
+                    <div class="text-4xl font-mono font-bold text-gray-800 tracking-widest bg-white px-6 py-3 rounded-lg border-2 border-dashed border-gray-300 group-hover/code:border-indigo-400 group-hover/code:text-indigo-600 transition-colors select-all">
+                        {{ tv.codigo_acesso }}
+                    </div>
+                    <span class="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-indigo-500 opacity-0 group-hover/code:opacity-100 transition-opacity whitespace-nowrap">
+                        Clique para copiar
+                    </span>
                 </div>
-                <p class="text-xs text-gray-400 mt-2">Digite este código na TV</p>
             </div>
 
-            <div class="p-4 bg-gray-50 border-t border-gray-100 text-xs text-gray-500 flex justify-between items-center">
-                <span>Modo: <strong>{{ tv.get_modo_exibicao_display }}</strong></span>
-                <a href="{% url 'dispositivo_edit' tv.id %}" class="text-indigo-600 font-medium hover:underline">Alterar</a>
+            <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs flex justify-between items-center">
+                <div class="text-gray-500">
+                    Modo: <strong class="text-gray-700">{{ tv.get_modo_exibicao_display }}</strong>
+                </div>
+                <a href="{% url 'dispositivo_edit' tv.id %}" class="text-indigo-600 font-semibold hover:text-indigo-800 hover:underline">
+                    Editar Playlist
+                </a>
             </div>
-        </div>
+        </article>
+
         {% empty %}
-        <div class="col-span-full text-center py-12 bg-white rounded-xl border border-gray-200 border-dashed">
+        <div class="col-span-full py-16 text-center bg-white rounded-xl border-2 border-dashed border-gray-300">
             <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
                 <i class="ph ph-television-simple text-3xl"></i>
             </div>
-            <h3 class="text-lg font-medium text-gray-900">Nenhuma TV cadastrada</h3>
-            <p class="text-gray-500 mt-1 mb-4">Adicione uma TV para gerar um código de pareamento.</p>
-            <a href="{% url 'dispositivo_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
-                Adicionar TV
+            <h3 class="text-lg font-medium text-gray-900">Nenhuma TV conectada</h3>
+            <p class="text-gray-500 mt-2 mb-6 max-w-md mx-auto">
+                Adicione um dispositivo para gerar o código de pareamento e conectar sua Smart TV.
+            </p>
+            <a href="{% url 'dispositivo_create' %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
+                <i class="ph-bold ph-plus"></i> Adicionar Nova TV
             </a>
         </div>
         {% endfor %}
-    </div>
-</div>
+    </section>
+</main>
 {% endblock %}
