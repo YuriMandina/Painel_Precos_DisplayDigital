@@ -11,8 +11,6 @@
 
     <style>
         body { font-family: 'Inter', sans-serif; }
-        
-        /* Utilitário para ocultar a barra de rolagem mas manter funcionalidade */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #374151; border-radius: 20px; }
@@ -73,22 +71,16 @@
             </a>
 
             <p class="px-4 mt-6 mb-3 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                Mídia
+                Gestão de Conteúdo
             </p>
 
-            <a href="#" 
+            <a href="{% url 'midia_list' %}" 
                class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors
-               {% if 'propaganda' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
-                <i class="ph ph-film-strip text-lg"></i>
-                <span>Propagandas</span>
+               {% if 'midia' in request.resolver_match.url_name or 'estudio' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
+                <i class="ph ph-film-slate text-lg"></i>
+                <span>Biblioteca de Mídia</span>
             </a>
 
-            <a href="{% url 'template_list' %}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors
-               {% if 'template' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
-                <i class="ph ph-paint-brush-broad text-lg"></i>
-                <span>Templates</span>
-            </a>
         </nav>
 
         <div class="p-4 border-t border-gray-800 bg-gray-900 flex-shrink-0">
@@ -100,7 +92,6 @@
     </aside>
 
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
-        
         <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 md:hidden flex-shrink-0 z-20">
             <div class="font-bold text-gray-900 flex items-center gap-2">
                 <i class="ph-fill ph-monitor-play text-indigo-600 text-xl"></i>
@@ -112,7 +103,6 @@
         </header>
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6 md:p-10 scroll-smooth">
-            
             {% if messages %}
                 <div class="mb-8 space-y-3 max-w-7xl mx-auto">
                     {% for message in messages %}
@@ -120,18 +110,12 @@
                             {% if message.tags == 'error' %} bg-red-50 border-red-500 text-red-700
                             {% elif message.tags == 'success' %} bg-green-50 border-green-500 text-green-700
                             {% else %} bg-blue-50 border-blue-500 text-blue-700 {% endif %}">
-                            
-                            <i class="ph-fill text-xl 
-                                {% if message.tags == 'error' %} ph-warning-circle
-                                {% elif message.tags == 'success' %} ph-check-circle
-                                {% else %} ph-info {% endif %}">
-                            </i>
+                            <i class="ph-fill text-xl {% if message.tags == 'error' %} ph-warning-circle {% elif message.tags == 'success' %} ph-check-circle {% else %} ph-info {% endif %}"></i>
                             <span class="font-medium">{{ message }}</span>
                         </div>
                     {% endfor %}
                 </div>
             {% endif %}
-
             <div class="max-w-7xl mx-auto">
                 {% block content %}{% endblock %}
             </div>
@@ -147,7 +131,6 @@
         const overlay = document.getElementById('sidebarOverlay');
 
         function toggleSidebar() {
-            // Remove/Adiciona classe de translação para mostrar/esconder
             sidebar.classList.toggle('-translate-x-full');
             overlay.classList.toggle('hidden');
         }

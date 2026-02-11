@@ -1,15 +1,16 @@
 import pandas as pd
+from django.views import View
 from django.urls import reverse_lazy
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, FormView
 from django.db.models import Q, Count
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 
-from .models import Dispositivo, FamiliaProduto, Produto, VideoPropaganda, VideoTemplate
-from .forms import ProdutoForm, FamiliaForm, ImportarProdutosForm, DispositivoForm, VideoTemplateForm
+from .models import Dispositivo, FamiliaProduto, Produto, Midia
+from .forms import ProdutoForm, FamiliaForm, ImportarProdutosForm, DispositivoForm, MidiaForm
 
 
 # --- DASHBOARD ---
@@ -24,8 +25,6 @@ def dashboard_index(request: HttpRequest) -> HttpResponse:
             'dispositivos_total': Dispositivo.objects.count(),
             'produtos_total': Produto.objects.count(),
             'produtos_oferta': Produto.objects.filter(em_oferta=True).count(),
-            'propagandas_ativas': VideoPropaganda.objects.filter(ativo=True).count(),
-            'templates_total': VideoTemplate.objects.count(),
             'familias_total': FamiliaProduto.objects.count(),
         }
     }
@@ -77,8 +76,6 @@ class ProdutoUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = f"Editando: {self.object.descricao}"
-        # 'produto' já é passado pelo UpdateView (como self.object), 
-        # mas mantemos explicito se o template depender desse nome exato.
         context['produto'] = self.object 
         return context
 
@@ -117,12 +114,10 @@ class ProdutoImportView(LoginRequiredMixin, SuccessMessageMixin, FormView):
     def _processar_excel(self, arquivo):
         """Lê o arquivo Excel e atualiza o banco de dados."""
         df = pd.read_excel(arquivo)
-        # Normaliza colunas (upper case e sem espaços)
         df.columns = [str(c).strip().upper() for c in df.columns]
 
         self._validar_colunas(df)
         
-        # Cache para evitar N+1 queries na busca de famílias
         familias_cache = {f.nome: f for f in FamiliaProduto.objects.all()}
 
         for _, row in df.iterrows():
@@ -138,23 +133,20 @@ class ProdutoImportView(LoginRequiredMixin, SuccessMessageMixin, FormView):
                 raise ValueError(f"A coluna obrigatória '{col}' não foi encontrada no arquivo.")
 
     def _processar_linha(self, row, familias_cache):
-        # Extração e Limpeza
         codigo = str(row[self.COL_CODIGO]).strip()
         descricao = str(row[self.COL_DESCRICAO]).strip()
         familia_nome = str(row[self.COL_FAMILIA]).strip().upper()
         
         preco = self._limpar_valor_monetario(row[self.COL_PRECO])
         if preco is None:
-            return # Pula linhas com preço inválido
+            return
 
-        # Resolução da Família (usa cache ou cria nova)
         if familia_nome not in familias_cache:
             familia_obj = FamiliaProduto.objects.create(nome=familia_nome)
             familias_cache[familia_nome] = familia_obj
         else:
             familia_obj = familias_cache[familia_nome]
 
-        # Persistência
         Produto.objects.update_or_create(
             codigo=codigo,
             defaults={
@@ -166,7 +158,6 @@ class ProdutoImportView(LoginRequiredMixin, SuccessMessageMixin, FormView):
 
     @staticmethod
     def _limpar_valor_monetario(valor_raw):
-        """Converte string 'R$ 1.000,00' ou float para float puro."""
         if pd.isna(valor_raw):
             return None
 
@@ -235,14 +226,10 @@ class DispositivoContextMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
+        # Apenas Famílias, pois Mídias são carregadas dinamicamente
+        # ou se precisar listar mídias para drag & drop, 
+        # deve-se injetar Midia.objects.all() aqui futuramente.
         context['todas_familias'] = FamiliaProduto.objects.all().order_by('nome')
-        context['todas_propagandas'] = VideoPropaganda.objects.filter(ativo=True).order_by('descricao')
-        
-        # Otimização: Traz apenas produtos que possuem vídeo configurado
-        context['produtos_com_video'] = Produto.objects.filter(
-            template_video__isnull=False, 
-            exibir_no_painel=True
-        ).select_related('template_video').order_by('descricao')
         
         return context
 
@@ -280,38 +267,67 @@ class DispositivoDeleteView(LoginRequiredMixin, SuccessMessageMixin, DeleteView)
     success_url = reverse_lazy('dispositivo_list')
     success_message = "Dispositivo removido."
 
+class DispositivoDesconectarView(LoginRequiredMixin, View):
+    """
+    Reseta o pareamento da TV (UUID e Código) sem excluir o registro do banco.
+    """
+    def post(self, request, pk):
+        dispositivo = get_object_or_404(Dispositivo, pk=pk)
+        
+        import uuid
+        from .models import gerar_codigo_curto
+        
+        dispositivo.uuid = uuid.uuid4()
+        dispositivo.codigo_acesso = gerar_codigo_curto()
+        
+        while Dispositivo.objects.filter(codigo_acesso=dispositivo.codigo_acesso).exists():
+            dispositivo.codigo_acesso = gerar_codigo_curto()
+            
+        dispositivo.save()
+        
+        return JsonResponse({
+            "status": "success", 
+            "message": "TV desconectada com sucesso!",
+            "novo_codigo": dispositivo.codigo_acesso
+        })
 
-# --- MÓDULO: TEMPLATES ---
+# --- MÓDULO: MÍDIAS ---
 
-class TemplateListView(LoginRequiredMixin, ListView):
-    model = VideoTemplate
-    template_name = 'painel/templates/lista.html'
-    context_object_name = 'templates'
+class MidiaListView(LoginRequiredMixin, ListView):
+    model = Midia
+    template_name = 'painel/midias/lista.html'
+    context_object_name = 'midias'
+    paginate_by = 20
     
     def get_queryset(self):
-        return VideoTemplate.objects.all().order_by('-id')
+        return Midia.objects.all().order_by('-created_at')
 
+class MidiaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+    model = Midia
+    form_class = MidiaForm
+    template_name = 'painel/midias/form.html'
+    success_message = "Mídia enviada com sucesso! Configure o layout no Estúdio."
+    
+    def get_success_url(self):
+        return reverse_lazy('estudio_editor', kwargs={'pk': self.object.id})
 
-class TemplateCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
-    model = VideoTemplate
-    form_class = VideoTemplateForm
-    template_name = 'painel/templates/form.html'
-    success_url = reverse_lazy('template_list')
-    success_message = "Template criado! Agora abra o Editor Visual para ajustar."
-    extra_context = {'titulo': 'Novo Template'}
+class MidiaUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+    model = Midia
+    form_class = MidiaForm
+    template_name = 'painel/midias/form.html'
+    success_message = "Mídia atualizada."
+    
+    def get_success_url(self):
+        return reverse_lazy('midia_list')
 
+class MidiaDeleteView(LoginRequiredMixin, SuccessMessageMixin, DeleteView):
+    model = Midia
+    template_name = 'painel/midias/confirm_delete.html'
+    success_url = reverse_lazy('midia_list')
+    success_message = "Mídia removida."
 
-class TemplateUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
-    model = VideoTemplate
-    form_class = VideoTemplateForm
-    template_name = 'painel/templates/form.html'
-    success_url = reverse_lazy('template_list')
-    success_message = "Dados do template atualizados."
-    extra_context = {'titulo': 'Editar Dados do Template'}
-
-
-class TemplateDeleteView(LoginRequiredMixin, SuccessMessageMixin, DeleteView):
-    model = VideoTemplate
-    template_name = 'painel/templates/confirm_delete.html'
-    success_url = reverse_lazy('template_list')
-    success_message = "Template removido com sucesso!"
+# View placeholder para o Estúdio
+@login_required
+def estudio_editor(request, pk):
+    midia = get_object_or_404(Midia, pk=pk)
+    return render(request, 'painel/estudio/editor.html', {'midia': midia})

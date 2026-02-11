@@ -33,50 +33,38 @@ class FamiliaProduto(models.Model):
         return self.nome
 
 
-class VideoTemplate(models.Model):
-    """Define o layout visual para vídeos de produtos."""
-    nome = models.CharField(max_length=100)
-    arquivo_video = models.FileField(upload_to='templates_video/')
-    duracao = models.IntegerField(
-        default=15,
-        help_text="Duração do vídeo em segundos (Padrão para produtos)"
-    )
+class Midia(models.Model):
+    """
+    Entidade central para conteúdos de sinalização (Vídeos e Imagens).
+    Substitui as antigas 'Propagandas' e 'Templates'.
+    """
+    class Tipo(models.TextChoices):
+        VIDEO = 'VIDEO', 'Vídeo'
+        IMAGEM = 'IMAGEM', 'Imagem'
 
-    # --- Configuração do Título ---
-    titulo_top = models.FloatField(default=10, validators=[validar_porcentagem])
-    titulo_left = models.FloatField(default=50, validators=[validar_porcentagem])
-    titulo_cor = models.CharField(max_length=7, default="#FFFFFF")
-    titulo_tamanho = models.CharField(max_length=10, default="5vw")
+    nome = models.CharField(max_length=100, help_text="Identificação interna para organização")
+    arquivo = models.FileField(upload_to='midias/')
+    tipo = models.CharField(max_length=10, choices=Tipo.choices, editable=False)
+    duracao = models.IntegerField(default=15, help_text="Duração em segundos (padrão)")
+    
+    # Configuração JSON para o Editor "Estúdio"
+    dados_estudio = models.JSONField(default=dict, blank=True)
+    
+    ativo = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    # --- Configuração do Preço ---
-    preco_top = models.FloatField(default=50, validators=[validar_porcentagem])
-    preco_left = models.FloatField(default=50, validators=[validar_porcentagem])
-    preco_cor = models.CharField(max_length=7, default="#FFD700")
-    preco_tamanho = models.CharField(max_length=10, default="8vw")
-
-    # --- Configuração da Imagem ---
-    img_top = models.FloatField(default=30, validators=[validar_porcentagem])
-    img_left = models.FloatField(default=10, validators=[validar_porcentagem])
-    img_width = models.FloatField(default=20, validators=[validar_porcentagem])
-
-    # --- Extras ---
-    estilos_css = models.JSONField(default=dict, blank=True)
-    elementos_extras = models.JSONField(default=list, blank=True)
-
-    def __str__(self):
-        return self.nome
-
-
-class VideoPropaganda(models.Model):
-    """Vídeos institucionais ou de parceiros independentes de produtos."""
-    descricao = models.CharField(max_length=100, help_text="Nome interno para identificação")
-    arquivo_video = models.FileField(upload_to='propagandas/')
-    duracao = models.IntegerField(default=15, help_text="Duração em segundos")
-    ordem = models.IntegerField(default=0, help_text="Ordem de exibição na playlist")
-    ativo = models.BooleanField(default=True, help_text="Se desmarcado, não aparecerá na TV")
+    def save(self, *args, **kwargs):
+        # Lógica pragmática: define tipo pela extensão
+        import os
+        ext = os.path.splitext(self.arquivo.name)[1].lower()
+        if ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+            self.tipo = self.Tipo.IMAGEM
+        else:
+            self.tipo = self.Tipo.VIDEO
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.descricao} ({self.duracao}s)"
+        return f"{self.nome} ({self.get_tipo_display()})"
 
 
 class Produto(models.Model):
@@ -99,15 +87,6 @@ class Produto(models.Model):
     imagem = models.ImageField(upload_to='produtos/', blank=True, null=True)
     em_oferta = models.BooleanField(default=False)
     exibir_no_painel = models.BooleanField(default=True)
-
-    # Template Vinculado
-    template_video = models.ForeignKey(
-        VideoTemplate,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        help_text="Selecione um template para exibir este produto como oferta em vídeo"
-    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -152,11 +131,7 @@ class Dispositivo(models.Model):
 
     # Conteúdo
     exibir_apenas_familias = models.ManyToManyField(FamiliaProduto, blank=True)
-    exibir_propagandas = models.ManyToManyField(
-        VideoPropaganda,
-        blank=True,
-        help_text="Selecione vídeos institucionais para intercalar"
-    )
+    
     playlist = models.JSONField(
         default=list,
         blank=True,

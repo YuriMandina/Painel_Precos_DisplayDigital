@@ -1,8 +1,7 @@
 from django import forms
-from .models import Produto, FamiliaProduto, Dispositivo, VideoTemplate
+from .models import Produto, FamiliaProduto, Dispositivo, Midia
 
 # --- Constantes de Estilo (Tailwind CSS) ---
-# Centraliza o design para facilitar manutenção e reduzir repetição
 CSS_INPUT = (
     'w-full rounded-lg border-gray-300 focus:border-indigo-500 '
     'focus:ring-indigo-500 shadow-sm text-sm'
@@ -92,20 +91,18 @@ class DispositivoForm(forms.ModelForm):
         }
 
 
-class VideoTemplateForm(forms.ModelForm):
+class MidiaForm(forms.ModelForm):
     class Meta:
-        model = VideoTemplate
-        fields = ['nome', 'duracao', 'arquivo_video']
+        model = Midia
+        fields = ['nome', 'arquivo']
         widgets = {
             'nome': forms.TextInput(attrs={
-                'class': CSS_INPUT,
-                'placeholder': 'Ex: Ofertas de Fim de Semana'
+                'class': 'w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm text-sm',
+                'placeholder': 'Ex: Promoção de Natal ou Logo da Loja'
             }),
-            'duracao': forms.NumberInput(attrs={
-                'class': CSS_INPUT,
-                'placeholder': '15'
-            }),
-            'arquivo_video': forms.FileInput(attrs={
-                'class': CSS_FILE_PURPLE
-            }),
+            # O input de arquivo será estilizado via HTML/CSS no template
+            'arquivo': forms.FileInput(attrs={
+                'class': 'hidden',
+                'accept': 'video/*,image/*'
+            })
         }

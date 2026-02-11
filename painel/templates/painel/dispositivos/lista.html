@@ -21,7 +21,7 @@
     <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
         {% for tv in dispositivos %}
-        <article class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex flex-col overflow-hidden group">
+        <article id="card-tv-{{ tv.id }}" class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex flex-col overflow-hidden group">
             
             <div class="p-5 border-b border-gray-100 flex justify-between items-start bg-white">
                 <div class="flex items-center gap-3">
@@ -49,29 +49,38 @@
                         <i class="ph-bold ph-dots-three-vertical text-xl"></i>
                     </button>
                     
-                    <div class="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-100 rounded-lg shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-20 transform origin-top-right">
+                    <div class="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-100 rounded-lg shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-20 transform origin-top-right">
                         <div class="py-1">
                             <a href="{% url 'dispositivo_edit' tv.id %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-indigo-600 flex items-center gap-2">
                                 <i class="ph ph-gear"></i> Configurar
                             </a>
+                            <button onclick="desconectarTV({{ tv.id }})" class="w-full text-left block px-4 py-2 text-sm text-orange-600 hover:bg-orange-50 flex items-center gap-2">
+                                <i class="ph ph-plug"></i> Desconectar
+                            </button>
                             <a href="{% url 'dispositivo_delete' tv.id %}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
-                                <i class="ph ph-trash"></i> Desconectar
+                                <i class="ph ph-trash"></i> Excluir Dispositivo
                             </a>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="p-8 flex-1 flex flex-col items-center justify-center bg-gray-50/30">
+            <div class="p-8 flex-1 flex flex-col items-center justify-center bg-gray-50/30 relative">
                 <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Código de Pareamento</p>
                 
-                <div class="relative group/code cursor-pointer" onclick="navigator.clipboard.writeText('{{ tv.codigo_acesso }}'); alert('Código copiado!');">
-                    <div class="text-4xl font-mono font-bold text-gray-800 tracking-widest bg-white px-6 py-3 rounded-lg border-2 border-dashed border-gray-300 group-hover/code:border-indigo-400 group-hover/code:text-indigo-600 transition-colors select-all">
+                <div class="relative group/code cursor-pointer" onclick="copiarCodigo(this)">
+                    <div id="codigo-tv-{{ tv.id }}" class="text-4xl font-mono font-bold text-gray-800 tracking-widest bg-white px-6 py-3 rounded-lg border-2 border-dashed border-gray-300 group-hover/code:border-indigo-400 group-hover/code:text-indigo-600 transition-colors select-all">
                         {{ tv.codigo_acesso }}
                     </div>
                     <span class="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-indigo-500 opacity-0 group-hover/code:opacity-100 transition-opacity whitespace-nowrap">
                         Clique para copiar
                     </span>
+                </div>
+
+                <div id="overlay-msg-{{ tv.id }}" class="absolute inset-0 bg-white/90 flex flex-col items-center justify-center text-center hidden">
+                    <i class="ph-fill ph-check-circle text-3xl text-green-500 mb-2"></i>
+                    <p class="text-sm font-bold text-gray-800">Desconectado!</p>
+                    <p class="text-xs text-gray-500">Novo código gerado.</p>
                 </div>
             </div>
 
@@ -101,4 +110,52 @@
         {% endfor %}
     </section>
 </main>
+
+<script>
+    function copiarCodigo(el) {
+        const codigo = el.querySelector('div').innerText;
+        navigator.clipboard.writeText(codigo);
+        // Feedback visual simples
+        const originalBorder = el.querySelector('div').className;
+        el.querySelector('div').classList.add('border-green-500', 'text-green-600');
+        setTimeout(() => {
+            el.querySelector('div').className = originalBorder;
+        }, 1000);
+    }
+
+    function desconectarTV(id) {
+        if (!confirm('Tem certeza? A TV será desconectada e voltará para a tela de configuração.')) return;
+
+        const card = document.getElementById(`card-tv-${id}`);
+        const codigoEl = document.getElementById(`codigo-tv-${id}`);
+        const overlay = document.getElementById(`overlay-msg-${id}`);
+
+        fetch(`/dashboard/dispositivos/${id}/desconectar/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Atualiza o código na tela
+                codigoEl.innerText = data.novo_codigo;
+                
+                // Mostra feedback sem remover o card
+                overlay.classList.remove('hidden');
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                }, 2500);
+            } else {
+                alert('Erro ao desconectar.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Erro de conexão.');
+        });
+    }
+</script>
 {% endblock %}

@@ -8,7 +8,7 @@ __pycache__/
 # ========================
 # 2. Virtual Environment
 # ========================
-# Pasta do ambiente virtual, pode variar dependendo do nome que você deu
+# Pasta do ambiente virtual visível na sua imagem
 venv/
 env/
 .venv/
@@ -24,6 +24,7 @@ env/
 # ========================
 # 4. Banco de Dados
 # ========================
+# SQLite visível na sua imagem
 *.sqlite3
 db.sqlite3-journal
 
@@ -38,8 +39,8 @@ media/
 templates_video/
 
 # Outras pastas de upload citadas no models.py
-propagandas/
-produtos/
+/midias/
+
 
 # ========================
 # 6. Arquivos Estáticos (Coletados)

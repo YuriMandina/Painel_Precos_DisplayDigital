@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Produto, FamiliaProduto, VideoTemplate, Dispositivo
+from .models import Produto, FamiliaProduto, Dispositivo
 
 class FamiliaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -7,16 +7,9 @@ class FamiliaSerializer(serializers.ModelSerializer):
         fields = ['id', 'nome']
 
 
-class VideoTemplateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = VideoTemplate
-        fields = '__all__'
-
-
 class ProdutoSerializer(serializers.ModelSerializer):
     # Campos calculados ou aninhados (Read-Only)
     familia_nome = serializers.CharField(source='familia.nome', read_only=True)
-    template_video = VideoTemplateSerializer(read_only=True)
 
     class Meta:
         model = Produto
@@ -28,7 +21,6 @@ class ProdutoSerializer(serializers.ModelSerializer):
             'familia_nome',  # String para exibição
             'imagem',
             'em_oferta',
-            'template_video',
             'ordem'
         ]
 

@@ -1,6 +1,6 @@
 {% extends "painel/base_dashboard.html" %}
 
-{% block title %}Excluir Dispositivo | DisplayDigital{% endblock %}
+{% block title %}Excluir Mídia | DisplayDigital{% endblock %}
 
 {% block content %}
 <div class="min-h-[60vh] flex items-center justify-center p-4">
@@ -13,23 +13,22 @@
         <h2 class="text-2xl font-bold text-gray-900 mb-2">Confirmar Exclusão</h2>
         
         <p class="text-gray-500 mb-6 leading-relaxed">
-            Você tem certeza que deseja remover o dispositivo<br>
-            <strong class="text-gray-900 text-lg">"{{ object.nome }}"</strong>?
+            Você está prestes a remover permanentemente:<br>
+            <strong class="text-gray-900 block mt-1 text-lg">"{{ object.nome }}"</strong>
         </p>
 
         <div class="bg-orange-50 border border-orange-100 rounded-lg p-4 mb-8 text-left flex items-start gap-3">
             <i class="ph-fill ph-warning text-orange-500 text-xl mt-0.5 flex-shrink-0"></i>
-            <div class="text-sm text-orange-800">
-                <p class="font-bold mb-1">Ação Irreversível</p>
-                <p>A TV perderá o acesso imediatamente e precisará ser pareada novamente caso queira reutilizá-la.</p>
-            </div>
+            <p class="text-sm text-orange-800 leading-snug">
+                <strong>Importante:</strong> Se esta mídia estiver sendo usada em alguma playlist ativa, ela deixará de ser exibida nas TVs imediatamente.
+            </p>
         </div>
 
         <form method="post" class="flex flex-col sm:flex-row gap-3 justify-center">
             {% csrf_token %}
             
-            <a href="{% url 'dispositivo_list' %}" 
-               class="flex-1 px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center">
+            <a href="{% url 'midia_list' %}" 
+               class="flex-1 px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                 Cancelar
             </a>
             

@@ -42,6 +42,7 @@ class TVApp {
         };
         
         this.playlistManager = new PlaylistManager(this);
+        this.pollingInterval = null;
     }
 
     _mapElements() {
@@ -69,9 +70,17 @@ class TVApp {
     }
 
     _showSetupScreen() {
+        // Para qualquer polling anterior para evitar chamadas fantasmas
+        if (this.pollingInterval) clearInterval(this.pollingInterval);
+
         this.elements.SETUP_SCREEN.style.display = 'flex';
         this.elements.APP_SCREEN.style.display = 'none';
-        if(this.elements.INPUT_UUID) this.elements.INPUT_UUID.placeholder = "CÓDIGO DE 6 DÍGITOS";
+        
+        if (this.elements.INPUT_UUID) {
+            this.elements.INPUT_UUID.value = ""; // Limpa input anterior
+            this.elements.INPUT_UUID.placeholder = "CÓDIGO DE 6 DÍGITOS";
+            this.elements.INPUT_UUID.focus();
+        }
     }
 
     _startApp() {
@@ -82,7 +91,8 @@ class TVApp {
         this._fetchData();
         
         // Polling de atualização de dados
-        setInterval(() => this._fetchData(), CONFIG.UPDATE_INTERVAL_MS);
+        if (this.pollingInterval) clearInterval(this.pollingInterval);
+        this.pollingInterval = setInterval(() => this._fetchData(), CONFIG.UPDATE_INTERVAL_MS);
         
         // Inicia o loop da playlist
         this.playlistManager.playNext();
@@ -103,12 +113,28 @@ class TVApp {
     }
 
     async _fetchData() {
+        if (!this.state.uuid) return;
+
         try {
             const data = await API.getPanelData(this.state.uuid);
             this._processDataUpdate(data);
         } catch (error) {
             console.error("Erro ao atualizar dados:", error);
+            
+            // Correção: Se a API retornar 404, o dispositivo foi deletado no servidor.
+            // Devemos resetar o estado local para permitir novo pareamento.
+            if (error.status === 404) {
+                this._handleDeviceUnlinked();
+            }
         }
+    }
+
+    _handleDeviceUnlinked() {
+        console.warn("Dispositivo não reconhecido pelo servidor. Reiniciando pareamento.");
+        localStorage.removeItem('tv_device_uuid');
+        this.state.uuid = null;
+        this.state.data = null;
+        this._showSetupScreen();
     }
 
     _processDataUpdate(newData) {
@@ -148,7 +174,7 @@ class TVApp {
 
     // Métodos de UI expostos para os Managers
     setTitle(text) {
-        this.elements.TITLE.innerText = text || "";
+        if (this.elements.TITLE) this.elements.TITLE.innerText = text || "";
     }
 
     getContainer() {
@@ -171,6 +197,7 @@ class PlaylistManager {
         this.queue = [];
         this.products = [];
         this.currentIndex = 0;
+        this.isPlaying = false; // Flag para evitar múltiplas execuções simultâneas
         
         this.gridRenderer = new GridRenderer(app);
         this.videoPlayer = new VideoPlayer(app);
@@ -179,10 +206,10 @@ class PlaylistManager {
     updatePlaylist(playlist, products) {
         this.queue = playlist;
         this.products = products;
-        // Não resetamos o currentIndex aqui para não interromper o fluxo bruscamente,
-        // a menos que a playlist tenha encolhido.
-        if (this.currentIndex >= this.queue.length) {
-            this.currentIndex = 0;
+        
+        // Se a playlist estava vazia e agora tem itens, inicia
+        if (!this.isPlaying && this.queue.length > 0) {
+            this.playNext();
         }
     }
 
@@ -191,10 +218,20 @@ class PlaylistManager {
     }
 
     playNext() {
+        // Se o UUID foi removido (despareamento), para o loop
+        if (!this.app.state.uuid) {
+            this.isPlaying = false;
+            return;
+        }
+
+        this.isPlaying = true;
+
         if (!this.queue || this.queue.length === 0) {
             this.app.setTitle("AGUARDANDO");
             this.app.getContainer().innerHTML = 
                 "<h2 style='color:#666; text-align:center; margin-top:20vh;'>Aguardando configuração...</h2>";
+            
+            // Tenta novamente em breve
             setTimeout(() => this.playNext(), CONFIG.RETRY_DELAY_MS);
             return;
         }
@@ -206,7 +243,7 @@ class PlaylistManager {
         const item = this.queue[this.currentIndex];
         this.currentIndex++;
 
-        console.log(`Reproduzindo [${item.tipo}]: ${item.descricao}`);
+        // console.log(`Reproduzindo [${item.tipo}]: ${item.descricao}`);
 
         if (item.tipo === 'tabela') {
             this.gridRenderer.render(item, this.products, () => this.playNext());
@@ -249,11 +286,20 @@ class GridRenderer {
     }
 
     _paginate(products, durationSec, onComplete) {
+        // Verifica se o app ainda está pareado antes de continuar paginação
+        if (!this.app.state.uuid) {
+            onComplete();
+            return;
+        }
+
         const itemsPerPage = this.app.isVertical() ? CONFIG.ITEMS_PER_PAGE.VERTICAL : CONFIG.ITEMS_PER_PAGE.HORIZONTAL;
         const totalPages = Math.ceil(products.length / itemsPerPage);
         let currentPage = 0;
 
         const showPage = () => {
+            // Checagem de segurança se despareou durante a transição
+            if (!this.app.state.uuid) return;
+
             if (currentPage >= totalPages) {
                 onComplete();
                 return;
@@ -273,17 +319,15 @@ class GridRenderer {
 
     _drawPage(products, itemsPerPage) {
         const container = this.app.getContainer();
-        container.classList.add('fade'); // Efeito visual
+        container.classList.add('fade');
 
         setTimeout(() => {
             container.innerHTML = '';
             
-            // Lógica de colunas baseada na orientação
             if (this.app.isVertical()) {
                 const col = this._createColumn(products, itemsPerPage);
                 container.appendChild(col);
             } else {
-                // Modo Horizontal (2 colunas)
                 const itemsPerCol = Math.ceil(itemsPerPage / 2);
                 const col1 = this._createColumn(products.slice(0, itemsPerCol), itemsPerCol);
                 const col2 = this._createColumn(products.slice(itemsPerCol), itemsPerCol);
@@ -301,7 +345,6 @@ class GridRenderer {
         
         products.forEach(p => col.appendChild(this._createCard(p)));
         
-        // Preenche espaços vazios para manter layout consistente
         while (col.children.length < capacity) {
             col.appendChild(this._createEmptyCard());
         }
@@ -338,6 +381,12 @@ class VideoPlayer {
     }
 
     play(item, onComplete) {
+        // Verifica se despareou
+        if (!this.app.state.uuid) {
+            onComplete();
+            return;
+        }
+
         const container = this.app.getVideoContainer();
         container.innerHTML = '';
         container.style.display = 'block';
@@ -346,7 +395,6 @@ class VideoPlayer {
         let videoUrl = isPropaganda ? item.url : (item.template_video?.arquivo_video);
 
         if (!videoUrl) {
-            console.warn("Item de vídeo sem URL:", item);
             onComplete();
             return;
         }
@@ -358,7 +406,6 @@ class VideoPlayer {
         video.autoplay = true;
         video.playsInline = true;
 
-        // Timeout de segurança caso o evento 'ended' falhe
         const durationMs = (item.duracao || 15) * 1000;
         const safetyTimeout = setTimeout(onComplete, durationMs + 1000);
 
@@ -372,7 +419,6 @@ class VideoPlayer {
 
         container.appendChild(video);
 
-        // Se for oferta de produto, desenha os elementos por cima
         if (!isPropaganda && item.template_video) {
             this._renderOverlay(item);
         }
@@ -383,33 +429,27 @@ class VideoPlayer {
         const css = template.estilos_css || {};
         const container = this.app.getVideoContainer();
 
-        // Helper para criar elementos absolutos
         const createEl = (content, top, left, baseStyle, extraStyle) => {
             if (extraStyle && extraStyle.display === 'none') return;
 
             const el = document.createElement('div');
             el.className = 'overlay-element pop-in';
             
-            // Verifica se é imagem HTML ou texto puro
             if (typeof content === 'string' && content.trim().startsWith('<img')) {
                 el.innerHTML = content;
             } else {
                 el.innerText = content;
             }
 
-            // Posicionamento
             el.style.top = top + '%';
             el.style.left = left + '%';
             el.style.transform = `translate(-50%, -50%)`;
 
-            // Merge de Estilos
             const styles = { ...baseStyle, ...extraStyle };
             
-            // Tratamento especial para fonte responsiva
             if (styles.fontSizeVh) el.style.fontSize = styles.fontSizeVh + 'vh';
             else if (styles.fontSize) el.style.fontSize = styles.fontSize;
 
-            // Aplica propriedades CSS permitidas
             ['color', 'backgroundColor', 'fontFamily', 'fontWeight', 
              'fontStyle', 'textDecoration', 'width', 'height', 'zIndex'].forEach(prop => {
                 if(styles[prop]) el.style[prop] = styles[prop];
@@ -418,38 +458,16 @@ class VideoPlayer {
             container.appendChild(el);
         };
 
-        // 1. Título
-        createEl(
-            item.descricao, 
-            template.titulo_top, 
-            template.titulo_left, 
-            { color: template.titulo_cor }, 
-            css['el-titulo']
-        );
-
-        // 2. Preço
+        createEl(item.descricao, template.titulo_top, template.titulo_left, { color: template.titulo_cor }, css['el-titulo']);
+        
         const priceVal = parseFloat(item.preco).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
-        createEl(
-            priceVal, 
-            template.preco_top, 
-            template.preco_left, 
-            { color: template.preco_cor }, 
-            css['el-preco']
-        );
+        createEl(priceVal, template.preco_top, template.preco_left, { color: template.preco_cor }, css['el-preco']);
 
-        // 3. Imagem do Produto
         if (item.imagem) {
             const imgHTML = `<img src="${item.imagem}" style="width:100%; height:100%; object-fit:contain;">`;
-            createEl(
-                imgHTML, 
-                template.img_top, 
-                template.img_left, 
-                { width: template.img_width + '%' }, 
-                css['el-imagem']
-            );
+            createEl(imgHTML, template.img_top, template.img_left, { width: template.img_width + '%' }, css['el-imagem']);
         }
 
-        // 4. Elementos Extras (definidos no Editor)
         if (template.elementos_extras) {
             template.elementos_extras.forEach(extra => {
                 createEl(extra.texto, extra.top, extra.left, {}, extra.style);
@@ -477,7 +495,12 @@ const API = {
 
     async getPanelData(uuid) {
         const response = await fetch(`${CONFIG.API_BASE}/${uuid}/`);
-        if (!response.ok) throw new Error(`Erro API: ${response.status}`);
+        if (!response.ok) {
+            // Correção: Lança um objeto de erro com o status para tratamento no Controller
+            const error = new Error(`Erro API: ${response.status}`);
+            error.status = response.status;
+            throw error;
+        }
         return await response.json();
     }
 };

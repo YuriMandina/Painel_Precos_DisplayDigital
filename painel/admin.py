@@ -1,18 +1,10 @@
 import pandas as pd
 from django.contrib import admin
-from django.urls import path, reverse
+from django.urls import path
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.utils.html import format_html
-from django.core.exceptions import ValidationError
 
-from .models import (
-    FamiliaProduto, 
-    Produto, 
-    VideoTemplate, 
-    Dispositivo, 
-    VideoPropaganda
-)
+from .models import FamiliaProduto, Produto, Dispositivo, Midia
 from .forms import ImportarProdutosForm
 
 @admin.register(Produto)
@@ -20,7 +12,6 @@ class ProdutoAdmin(admin.ModelAdmin):
     """
     Administração de Produtos com funcionalidade de Importação via Excel.
     """
-    # Configuração da Listagem
     list_display = ('ordem', 'codigo', 'descricao', 'get_preco_formatado', 'em_oferta', 'exibir_no_painel')
     list_display_links = ('codigo', 'descricao')
     list_editable = ('ordem', 'em_oferta', 'exibir_no_painel')
@@ -87,7 +78,6 @@ class ProdutoAdmin(admin.ModelAdmin):
             return None
         
         if isinstance(valor, str):
-            # Remove R$, espaços e pontos de milhar, troca vírgula por ponto
             limpo = valor.replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
             try:
                 return float(limpo)
@@ -98,8 +88,6 @@ class ProdutoAdmin(admin.ModelAdmin):
     def processar_arquivo(self, arquivo):
         """Lê o Excel e atualiza/cria produtos."""
         df = pd.read_excel(arquivo)
-        
-        # Normaliza colunas para uppercase e strip
         df.columns = [str(c).strip().upper() for c in df.columns]
 
         colunas_necessarias = [
@@ -109,7 +97,6 @@ class ProdutoAdmin(admin.ModelAdmin):
             self.COL_FAMILIA
         ]
         
-        # Validação de Colunas
         for col in colunas_necessarias:
             if col not in df.columns:
                 raise ValueError(
@@ -121,7 +108,6 @@ class ProdutoAdmin(admin.ModelAdmin):
         count_atualizados = 0
 
         for _, row in df.iterrows():
-            # Extração de dados
             codigo = str(row[self.COL_CODIGO]).strip()
             descricao = str(row[self.COL_DESCRICAO]).strip()
             familia_nome = str(row[self.COL_FAMILIA]).strip().upper()
@@ -130,7 +116,6 @@ class ProdutoAdmin(admin.ModelAdmin):
             if preco is None:
                 continue
 
-            # Lógica de Banco de Dados
             familia_obj, _ = FamiliaProduto.objects.get_or_create(nome=familia_nome)
 
             _, created = Produto.objects.update_or_create(
@@ -156,35 +141,11 @@ class FamiliaProdutoAdmin(admin.ModelAdmin):
     search_fields = ('nome',)
 
 
-@admin.register(VideoTemplate)
-class VideoTemplateAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'duracao', 'botao_editor')
-    
-    def botao_editor(self, obj):
-        url = reverse('editor_visual', args=[obj.id])
-        return format_html(
-            '<a class="button" href="{}" style="background-color:#E91E63; color:white; '
-            'padding:5px 10px; border-radius:5px; text-decoration:none;">'
-            '🎨 Abrir Editor Visual</a>',
-            url
-        )
-    botao_editor.short_description = 'Editor Visual'
-
-
-@admin.register(VideoPropaganda)
-class VideoPropagandaAdmin(admin.ModelAdmin):
-    list_display = ('ordem', 'descricao', 'duracao', 'ativo')
-    list_display_links = ('descricao',)
-    list_editable = ('ordem', 'ativo')
-    list_filter = ('ativo',)
-
-
 @admin.register(Dispositivo)
 class DispositivoAdmin(admin.ModelAdmin):
     list_display = ('nome', 'codigo_acesso', 'uuid', 'modo_exibicao', 'orientacao')
     readonly_fields = ('uuid', 'codigo_acesso')
     
-    # Organização visual dos campos no formulário de edição
     fieldsets = (
         ('Identificação', {
             'fields': ('nome', 'titulo_exibicao', 'uuid', 'codigo_acesso')
@@ -193,9 +154,16 @@ class DispositivoAdmin(admin.ModelAdmin):
             'fields': ('modo_exibicao', 'orientacao')
         }),
         ('Conteúdo', {
-            'fields': ('playlist', 'exibir_apenas_familias', 'exibir_propagandas'),
+            'fields': ('playlist', 'exibir_apenas_familias'),
             'description': 'Configure o que será exibido neste dispositivo.'
         }),
     )
     
-    filter_horizontal = ('exibir_apenas_familias', 'exibir_propagandas')
+    filter_horizontal = ('exibir_apenas_familias',)
+
+
+@admin.register(Midia)
+class MidiaAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'tipo', 'duracao', 'ativo')
+    list_filter = ('tipo', 'ativo')
+    search_fields = ('nome',)

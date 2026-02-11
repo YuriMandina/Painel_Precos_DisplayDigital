@@ -1,0 +1,264 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Estúdio | {{ midia.nome }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #111; color: white; overflow: hidden; }
+        .canvas-container { 
+            box-shadow: 0 0 50px rgba(0,0,0,0.5); 
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="flex h-screen flex-col">
+
+    <header class="h-16 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-6 z-20">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'midia_list' %}" class="text-gray-400 hover:text-white transition-colors">
+                <i class="ph ph-arrow-left text-xl"></i>
+            </a>
+            <div>
+                <h1 class="font-bold text-lg">{{ midia.nome }}</h1>
+                <span class="text-xs text-gray-500 uppercase tracking-wider">Estúdio de Criação</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <span id="save-status" class="text-xs font-medium text-gray-500 mr-2"></span>
+            <button onclick="salvarEstudio()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all">
+                <i class="ph ph-floppy-disk"></i> Salvar Layout
+            </button>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        
+        <aside class="w-72 bg-gray-900 border-r border-gray-800 flex flex-col z-10">
+            <div class="p-4 border-b border-gray-800">
+                <h3 class="text-xs font-bold text-gray-500 uppercase">Adicionar Elemento</h3>
+                <div class="grid grid-cols-2 gap-2 mt-3">
+                    <button onclick="addTexto()" class="flex flex-col items-center justify-center bg-gray-800 hover:bg-gray-700 p-3 rounded-lg border border-gray-700 hover:border-indigo-500 transition-all">
+                        <i class="ph ph-text-t text-2xl text-indigo-400 mb-1"></i>
+                        <span class="text-xs">Texto</span>
+                    </button>
+                    </div>
+            </div>
+
+            <div class="p-4 flex-1 overflow-y-auto">
+                <h3 class="text-xs font-bold text-gray-500 uppercase mb-3">Propriedades</h3>
+                <div id="properties-panel" class="text-sm text-gray-400 text-center py-10">
+                    Selecione um elemento para editar.
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 bg-[#1a1a1a] flex items-center justify-center relative overflow-hidden p-10">
+            
+            <div id="stage" class="canvas-container relative bg-black aspect-video w-full max-w-5xl border border-gray-800 overflow-hidden">
+                
+                {% if midia.tipo == 'VIDEO' %}
+                    <video src="{{ midia.arquivo.url }}" class="w-full h-full object-contain pointer-events-none" muted loop autoplay></video>
+                {% else %}
+                    <img src="{{ midia.arquivo.url }}" class="w-full h-full object-contain pointer-events-none">
+                {% endif %}
+
+                <div id="overlay-layer" class="absolute inset-0">
+                    </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        const midiaId = "{{ midia.id }}";
+        // Recupera dados salvos (se houver)
+        const dadosSalvos = {{ midia.dados_estudio|default:"{}"|safe }};
+        const stage = document.getElementById('overlay-layer');
+        let selectedEl = null;
+
+        // --- INICIALIZAÇÃO ---
+        window.onload = function() {
+            if (dadosSalvos.elementos) {
+                dadosSalvos.elementos.forEach(elData => criarElementoDOM(elData));
+            }
+            initInteract();
+        };
+
+        // --- FUNÇÕES CORE ---
+        function addTexto() {
+            const data = {
+                id: 'text-' + Date.now(),
+                tipo: 'texto',
+                conteudo: 'Seu Texto Aqui',
+                top: 50, left: 50,
+                style: { fontSize: '4vh', color: '#ffffff', fontWeight: 'bold' }
+            };
+            criarElementoDOM(data);
+        }
+
+        function criarElementoDOM(data) {
+            const el = document.createElement('div');
+            el.id = data.id;
+            el.className = 'absolute cursor-move border border-transparent hover:border-white/30 p-2 whitespace-nowrap select-none';
+            el.innerText = data.conteudo;
+            
+            // Aplica Posição e Estilo
+            el.style.top = data.top + '%';
+            el.style.left = data.left + '%';
+            el.style.transform = 'translate(-50%, -50%)';
+            
+            Object.assign(el.style, data.style);
+
+            // Dataset para persistência
+            el.dataset.json = JSON.stringify(data);
+            
+            // Evento de Seleção
+            el.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                selecionarElemento(el);
+            });
+
+            stage.appendChild(el);
+            selecionarElemento(el);
+        }
+
+        function selecionarElemento(el) {
+            if (selectedEl) selectedEl.classList.remove('border-indigo-500', 'border-2');
+            selectedEl = el;
+            selectedEl.classList.add('border-indigo-500', 'border-2');
+            
+            // Atualizar Painel de Propriedades (Simplificado para pragmatismo)
+            const panel = document.getElementById('properties-panel');
+            panel.innerHTML = `
+                <div class="space-y-4 text-left">
+                    <div>
+                        <label class="block text-xs mb-1">Texto</label>
+                        <input type="text" value="${el.innerText}" oninput="updateText(this.value)" class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs mb-1">Cor</label>
+                        <input type="color" value="${rgbToHex(el.style.color)}" oninput="updateStyle('color', this.value)" class="w-full h-8 bg-gray-800 border border-gray-700 rounded">
+                    </div>
+                    <button onclick="removeSelected()" class="w-full bg-red-900/50 text-red-400 py-2 rounded hover:bg-red-900 border border-red-900">Excluir Elemento</button>
+                </div>
+            `;
+        }
+
+        function updateText(val) {
+            if(selectedEl) selectedEl.innerText = val;
+        }
+
+        function updateStyle(prop, val) {
+            if(selectedEl) selectedEl.style[prop] = val;
+        }
+
+        function removeSelected() {
+            if(selectedEl) {
+                selectedEl.remove();
+                selectedEl = null;
+                document.getElementById('properties-panel').innerHTML = "Selecione um elemento.";
+            }
+        }
+
+        // --- INTERACT.JS (Drag & Drop) ---
+        function initInteract() {
+            interact('#overlay-layer > div').draggable({
+                listeners: {
+                    move(event) {
+                        const target = event.target;
+                        const parentRect = stage.getBoundingClientRect();
+                        
+                        // Converte px movido para % relativo ao pai
+                        let currentLeft = parseFloat(target.style.left) || 50;
+                        let currentTop = parseFloat(target.style.top) || 50;
+
+                        currentLeft += (event.dx / parentRect.width) * 100;
+                        currentTop += (event.dy / parentRect.height) * 100;
+
+                        target.style.left = currentLeft.toFixed(2) + '%';
+                        target.style.top = currentTop.toFixed(2) + '%';
+                    }
+                },
+                modifiers: [
+                    interact.modifiers.restrictRect({
+                        restriction: 'parent',
+                        endOnly: true
+                    })
+                ]
+            });
+            
+            // Clique fora para deselecionar
+            document.getElementById('stage').addEventListener('mousedown', (e) => {
+                if(e.target.id === 'stage' || e.target.tagName === 'VIDEO' || e.target.tagName === 'IMG') {
+                    if (selectedEl) selectedEl.classList.remove('border-indigo-500', 'border-2');
+                    selectedEl = null;
+                    document.getElementById('properties-panel').innerHTML = "Selecione um elemento.";
+                }
+            });
+        }
+
+        // --- SALVAR ---
+        function salvarEstudio() {
+            const status = document.getElementById('save-status');
+            status.innerText = "Salvando...";
+
+            const elementos = [];
+            document.querySelectorAll('#overlay-layer > div').forEach(el => {
+                elementos.push({
+                    id: el.id,
+                    tipo: 'texto',
+                    conteudo: el.innerText,
+                    top: parseFloat(el.style.top),
+                    left: parseFloat(el.style.left),
+                    style: {
+                        color: el.style.color,
+                        fontSize: el.style.fontSize,
+                        fontWeight: el.style.fontWeight
+                    }
+                });
+            });
+
+            const payload = { elementos: elementos };
+
+            fetch(`/api/estudio/salvar/${midiaId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}' // Importante para Django POST
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    status.innerText = "Salvo!";
+                    status.className = "text-xs font-bold text-green-500 mr-2";
+                } else {
+                    status.innerText = "Erro!";
+                    status.className = "text-xs font-bold text-red-500 mr-2";
+                }
+                setTimeout(() => status.innerText = "", 3000);
+            });
+        }
+
+        // Helper RGB to Hex
+        function rgbToHex(rgb) { 
+            if(!rgb) return '#ffffff';
+            if(rgb.startsWith('#')) return rgb;
+            const a = rgb.split("(")[1].split(")")[0];
+            const b = a.split(",");
+            return "#" + b.map(x => {              
+                x = parseInt(x).toString(16);      
+                return (x.length==1) ? "0"+x : x;  
+            }).join("");
+        }
+    </script>
+</body>
+</html>

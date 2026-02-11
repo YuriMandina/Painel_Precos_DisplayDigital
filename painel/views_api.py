@@ -6,7 +6,7 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import Dispositivo, Produto, VideoPropaganda, FamiliaProduto
+from .models import Dispositivo, Produto, FamiliaProduto
 from .serializers import ProdutoSerializer, DispositivoConfigSerializer
 
 logger = logging.getLogger(__name__)
@@ -82,7 +82,7 @@ def dados_painel(request, device_uuid):
 def _construir_playlist(playlist_config, catalogo_produtos):
     """
     Processa a lista de itens configurados no admin (JSON) e hidrata
-    com os dados reais do banco (Famílias, Vídeos, Produtos).
+    com os dados reais do banco (Famílias).
     """
     if not playlist_config:
         return []
@@ -92,10 +92,6 @@ def _construir_playlist(playlist_config, catalogo_produtos):
     # Otimização: Cria mapa de produtos {id: dados} para busca rápida O(1)
     mapa_produtos = {
         str(p.get('id')): p for p in catalogo_produtos
-    }
-    # Mapa alternativo por código, caso o JSON use código
-    mapa_produtos_codigo = {
-        str(p.get('codigo')): p for p in catalogo_produtos
     }
 
     for item in playlist_config:
@@ -115,29 +111,7 @@ def _construir_playlist(playlist_config, catalogo_produtos):
                 })
             except FamiliaProduto.DoesNotExist:
                 continue
-
-        elif tipo == 'propaganda':
-            # Recupera Vídeo Institucional
-            try:
-                propaganda = VideoPropaganda.objects.get(id=item_id, ativo=True)
-                playlist_processada.append({
-                    "tipo": "propaganda",
-                    "url": propaganda.arquivo_video.url,
-                    "descricao": propaganda.descricao,
-                    "duracao": propaganda.duracao
-                })
-            except VideoPropaganda.DoesNotExist:
-                continue
-
-        elif tipo == 'produto_video':
-            # Recupera Produto com Template de Vídeo
-            prod_data = mapa_produtos.get(str(item_id)) or mapa_produtos_codigo.get(str(item_id))
-
-            if prod_data and prod_data.get('template_video'):
-                novo_item = prod_data.copy()
-                novo_item['tipo'] = 'produto_video'
-                # Usa a duração definida no template do vídeo
-                novo_item['duracao'] = novo_item['template_video'].get('duracao', 15)
-                playlist_processada.append(novo_item)
+                
+        # Futuramente: Adicionar bloco 'elif tipo == "midia"' aqui
 
     return playlist_processada
