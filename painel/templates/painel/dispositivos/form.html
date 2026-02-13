@@ -90,6 +90,35 @@
                         </div>
                     </div>
 
+                    <div>
+                        <h4 class="text-xs font-bold text-pink-600 mb-3 flex items-center gap-1 uppercase tracking-wider">
+                            <i class="ph-fill ph-film-strip"></i> Mídia & Propaganda
+                        </h4>
+                        <div id="library-midias" class="space-y-2 min-h-[50px]">
+                            {% for item in todas_midias %}
+                            <div class="draggable-source group" 
+                                 data-type="midia" 
+                                 data-id="{{ item.id }}" 
+                                 data-nome="{{ item.nome }}"
+                                 data-duracao="{{ item.duracao }}">
+                                <div class="p-3 rounded-lg border border-pink-100 bg-white hover:border-pink-300 hover:shadow-md cursor-grab active:cursor-grabbing transition-all flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded bg-pink-50 text-pink-600 flex items-center justify-center">
+                                        {% if item.tipo == 'VIDEO' %}
+                                            <i class="ph-bold ph-film-strip"></i>
+                                        {% else %}
+                                            <i class="ph-bold ph-image"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-700 truncate">{{ item.nome }}</p>
+                                        <p class="text-[10px] text-gray-400">{{ item.duracao }} seg</p>
+                                    </div>
+                                    <i class="ph-bold ph-dots-six-vertical ml-auto text-gray-300 group-hover:text-gray-500"></i>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
 
                 </div>
             </aside>
@@ -165,7 +194,7 @@
     // --- Gerenciador da Playlist ---
     const playlistManager = {
         config: {
-            sources: ['library-families'],
+            sources: ['library-families', 'library-midias'], // Adicionado library-midias
             targetId: 'playlist-target',
             emptyId: 'empty-state',
             inputHiddenId: 'id_playlist',
@@ -173,7 +202,8 @@
             
             // Definições visuais por tipo
             types: {
-                'tabela_familia': { icon: 'ph-list-dashes', color: 'text-blue-600', label: 'Seg / Pág' }
+                'tabela_familia': { icon: 'ph-list-dashes', color: 'text-blue-600', label: 'Seg / Pág' },
+                'midia': { icon: 'ph-film-strip', color: 'text-pink-600', label: 'Duração' } // Configuração para mídia
             }
         },
 
@@ -249,7 +279,7 @@
 
                 <div class="flex-1 min-w-0">
                     <h5 class="text-sm font-semibold text-gray-800 truncate">${data.descricao}</h5>
-                    <p class="text-xs text-gray-500 capitalize">${data.type.replace('_', ' ')}</p>
+                    <p class="text-xs text-gray-500 capitalize">${data.type.replace('_', ' ').replace('tabela familia', 'Tabela de Preços')}</p>
                 </div>
 
                 <div class="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 group-hover:bg-white group-hover:border-indigo-200 transition-colors">

@@ -226,10 +226,9 @@ class DispositivoContextMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Apenas Famílias, pois Mídias são carregadas dinamicamente
-        # ou se precisar listar mídias para drag & drop, 
-        # deve-se injetar Midia.objects.all() aqui futuramente.
+        # Injeta Famílias e agora MÍDIAS para o Drag & Drop
         context['todas_familias'] = FamiliaProduto.objects.all().order_by('nome')
+        context['todas_midias'] = Midia.objects.filter(ativo=True).order_by('nome')
         
         return context
 
