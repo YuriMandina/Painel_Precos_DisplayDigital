@@ -6,7 +6,7 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import Dispositivo, Produto, FamiliaProduto
+from .models import Dispositivo, Produto, FamiliaProduto, Midia
 from .serializers import ProdutoSerializer, DispositivoConfigSerializer
 
 logger = logging.getLogger(__name__)
@@ -63,13 +63,13 @@ def dados_painel(request, device_uuid):
     )
     dados_produtos = produto_serializer.data
 
-    # Constrói a playlist baseada na configuração manual (Drag & Drop)
-    playlist_final = _construir_playlist(dispositivo.playlist, dados_produtos)
+    # Constrói a playlist com as entidades puras (Famílias e Mídias)
+    playlist_final = _construir_playlist(dispositivo.playlist, request)
 
     response_data = {
         "config": {
             **DispositivoConfigSerializer(dispositivo).data,
-            # Força o modo playlist pois é a nova arquitetura unificada
+            # Força o modo playlist pois é a arquitetura unificada
             "modo_exibicao": 'PLAYLIST' 
         },
         "produtos": dados_produtos,
@@ -79,39 +79,49 @@ def dados_painel(request, device_uuid):
     return Response(response_data)
 
 
-def _construir_playlist(playlist_config, catalogo_produtos):
+def _construir_playlist(playlist_config, request=None):
     """
     Processa a lista de itens configurados no admin (JSON) e hidrata
-    com os dados reais do banco (Famílias).
+    com os dados reais do banco (Famílias e Mídias limpas).
     """
     if not playlist_config:
         return []
 
     playlist_processada = []
     
-    # Otimização: Cria mapa de produtos {id: dados} para busca rápida O(1)
-    mapa_produtos = {
-        str(p.get('id')): p for p in catalogo_produtos
-    }
-
     for item in playlist_config:
         tipo = item.get('type')
         item_id = item.get('id')
-        tempo_custom = item.get('tempo', 15)
+        tempo_custom = item.get('tempo')
 
+        # 1. TABELA DE PREÇOS
         if tipo == 'tabela_familia':
-            # Recupera Família
             try:
                 familia = FamiliaProduto.objects.get(id=item_id)
                 playlist_processada.append({
                     'tipo': 'tabela',
                     'familia_id': familia.id,
-                    'descricao': familia.nome,
-                    'tempo_pagina': tempo_custom
+                    'descricao': f"Tabela: {familia.nome}",
+                    'tempo_pagina': tempo_custom or 15
                 })
             except FamiliaProduto.DoesNotExist:
                 continue
                 
-        # Futuramente: Adicionar bloco 'elif tipo == "midia"' aqui
+        # 2. MÍDIA PURA (VÍDEO/IMAGEM)
+        elif tipo == 'midia':
+            try:
+                midia = Midia.objects.get(id=item_id)
+                url_arquivo = request.build_absolute_uri(midia.arquivo.url) if (midia.arquivo and request) else (midia.arquivo.url if midia.arquivo else '')
+
+                playlist_processada.append({
+                    'tipo': 'propaganda', # O JS entende 'propaganda' como Mídia em tela cheia
+                    'url': url_arquivo,
+                    'duracao': tempo_custom or midia.duracao,
+                    'descricao': midia.nome,
+                    'tipo_midia': midia.tipo # 'VIDEO' ou 'IMAGEM'
+                })
+
+            except Midia.DoesNotExist:
+                continue
 
     return playlist_processada

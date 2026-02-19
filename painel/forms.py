@@ -18,12 +18,14 @@ CSS_FILE_BASE = (
 )
 
 CSS_FILE_INDIGO = f"{CSS_FILE_BASE} file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-CSS_FILE_PURPLE = f"{CSS_FILE_BASE} file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
 
 
 class ImportarProdutosForm(forms.Form):
     """Formulário simples para upload de planilhas Excel."""
-    arquivo_excel = forms.FileField(label='Selecione o arquivo Excel (.xlsx)')
+    arquivo_excel = forms.FileField(
+        label='Selecione o arquivo Excel (.xlsx)',
+        widget=forms.FileInput(attrs={'class': CSS_FILE_INDIGO})
+    )
     
     def clean_arquivo_excel(self):
         arquivo = self.cleaned_data.get('arquivo_excel')
@@ -78,31 +80,39 @@ class FamiliaForm(forms.ModelForm):
 class DispositivoForm(forms.ModelForm):
     class Meta:
         model = Dispositivo
-        fields = ['nome', 'orientacao', 'playlist'] 
+        fields = ['nome', 'titulo_exibicao', 'orientacao', 'playlist'] 
         widgets = {
             'nome': forms.TextInput(attrs={
                 'class': CSS_INPUT,
-                'placeholder': 'Ex: TV do Açougue (Apenas Identificação)'
+                'placeholder': 'Ex: TV do Açougue (Identificação Interna)'
+            }),
+            'titulo_exibicao': forms.TextInput(attrs={
+                'class': CSS_INPUT,
+                'placeholder': 'Título visível na TV (Opcional)'
             }),
             'orientacao': forms.Select(attrs={
                 'class': CSS_INPUT
             }),
+            # O campo playlist continua Hidden pois será manipulado via JS (Drag & Drop na view de edição da TV)
             'playlist': forms.HiddenInput()
         }
 
 
 class MidiaForm(forms.ModelForm):
+    """
+    Formulário para upload de Mídias (Vídeos ou Imagens).
+    Agora padronizado para upload direto, sem interface de estúdio.
+    """
     class Meta:
         model = Midia
         fields = ['nome', 'arquivo']
         widgets = {
             'nome': forms.TextInput(attrs={
-                'class': 'w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm text-sm',
-                'placeholder': 'Ex: Promoção de Natal ou Logo da Loja'
+                'class': CSS_INPUT,
+                'placeholder': 'Ex: Promoção de Natal'
             }),
-            # O input de arquivo será estilizado via HTML/CSS no template
             'arquivo': forms.FileInput(attrs={
-                'class': 'hidden',
+                'class': CSS_FILE_INDIGO,
                 'accept': 'video/*,image/*'
             })
         }

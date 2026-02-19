@@ -5,13 +5,8 @@ import os
 from django.db import models
 from django.core.exceptions import ValidationError
 
-def validar_porcentagem(value):
-    """Valida se o valor está entre 0 e 100."""
-    if value < 0 or value > 100:
-        raise ValidationError('O valor deve estar entre 0 e 100 (representando a % da tela).')
-
 def gerar_codigo_curto():
-    """Gera um código alfanumérico de 6 caracteres."""
+    """Gera um código alfanumérico de 6 caracteres para pareamento."""
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
 
@@ -36,8 +31,8 @@ class FamiliaProduto(models.Model):
 
 class Midia(models.Model):
     """
-    Entidade central para conteúdos de sinalização.
-    Serve como container para as camadas (Layers) do editor visual.
+    Biblioteca de Mídia (Vídeos e Imagens).
+    Armazena os arquivos que podem ser inseridos nas playlists das TVs.
     """
     class Tipo(models.TextChoices):
         VIDEO = 'VIDEO', 'Vídeo'
@@ -45,17 +40,16 @@ class Midia(models.Model):
 
     nome = models.CharField(max_length=100, help_text="Identificação interna para organização")
     
-    # Arquivo base (Background padrão ou renderização final)
     arquivo = models.FileField(upload_to='midias/')
     
     tipo = models.CharField(max_length=10, choices=Tipo.choices, editable=False)
-    duracao = models.IntegerField(default=15, help_text="Duração em segundos (padrão)")
+    duracao = models.IntegerField(default=15, help_text="Duração padrão em segundos para exibição")
     
     ativo = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        # Lógica pragmática: define tipo pela extensão
+        # Define automaticamente o tipo baseando-se na extensão do arquivo
         if self.arquivo:
             ext = os.path.splitext(self.arquivo.name)[1].lower()
             if ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
@@ -68,60 +62,8 @@ class Midia(models.Model):
         return f"{self.nome} ({self.get_tipo_display()})"
 
 
-class Layer(models.Model):
-    """
-    Representa uma camada visual no editor (Texto, Imagem, Shape ou Grupo).
-    Suporta aninhamento (grupos) e configurações flexíveis via JSON.
-    """
-    class LayerType(models.TextChoices):
-        TEXT = 'TEXT', 'Texto'
-        IMAGE = 'IMAGE', 'Imagem'
-        VIDEO = 'VIDEO', 'Vídeo'
-        SHAPE = 'SHAPE', 'Forma'
-        GROUP = 'GROUP', 'Grupo'
-
-    midia = models.ForeignKey(
-        Midia, 
-        on_delete=models.CASCADE, 
-        related_name='layers',
-        help_text="Mídia (Canvas) onde esta camada está inserida"
-    )
-    
-    # Hierarquia para suportar Grupos
-    parent = models.ForeignKey(
-        'self', 
-        null=True, 
-        blank=True, 
-        on_delete=models.CASCADE, 
-        related_name='children',
-        help_text="Camada pai, caso esta camada pertença a um grupo"
-    )
-
-    tipo = models.CharField(max_length=10, choices=LayerType.choices, default=LayerType.TEXT)
-    
-    # Armazena propriedades visuais variáveis (x, y, width, height, color, font, src, etc)
-    config = models.JSONField(
-        default=dict, 
-        blank=True,
-        help_text="Propriedades visuais e comportamentais da camada"
-    )
-    
-    # Controle de exibição e edição
-    z_index = models.IntegerField(default=0, help_text="Ordem de empilhamento (maior fica por cima)")
-    is_locked = models.BooleanField(default=False, help_text="Bloqueia edição no editor visual")
-    is_visible = models.BooleanField(default=True, help_text="Define se a camada é renderizada")
-
-    class Meta:
-        ordering = ['z_index']
-        verbose_name = "Camada"
-        verbose_name_plural = "Camadas"
-
-    def __str__(self):
-        return f"{self.get_tipo_display()} (Z: {self.z_index}) - {self.midia.nome}"
-
-
 class Produto(models.Model):
-    """Produto principal importado e exibido nas telas."""
+    """Produto principal importado e exibido nas telas (Tabela de Preços)."""
     codigo = models.CharField(max_length=50, unique=True, db_index=True)
     descricao = models.CharField(max_length=200)
     preco = models.DecimalField(max_digits=10, decimal_places=2)
@@ -132,7 +74,7 @@ class Produto(models.Model):
         related_name='produtos'
     )
     
-    # Exibição
+    # Configurações de Exibição
     ordem = models.IntegerField(
         default=0,
         help_text="Ordem de exibição na TV (Menor número aparece primeiro)"
@@ -152,7 +94,7 @@ class Produto(models.Model):
 
 
 class Dispositivo(models.Model):
-    """Representa uma TV ou painel físico."""
+    """Representa uma TV ou painel físico conectado ao sistema."""
     
     class Orientacao(models.TextChoices):
         HORIZONTAL = 'HORIZONTAL', 'Horizontal (Padrão 16:9)'
@@ -160,12 +102,12 @@ class Dispositivo(models.Model):
         VERTICAL_ESQ = 'VERTICAL_ESQ', 'Vertical 9:16 (Giro 90° Esquerda)'
 
     class ModoExibicao(models.TextChoices):
-        TABELA = 'TABELA', 'Apenas Tabela de Preços (Legado)'
-        VIDEO = 'VIDEO', 'Apenas Vídeos de Oferta (Legado)'
-        MISTO = 'MISTO', 'Tabela + Vídeos Intercalados (Legado)'
-        PLAYLIST = 'PLAYLIST', 'Usar Playlist Personalizada (Nova)'
+        TABELA = 'TABELA', 'Apenas Tabela de Preços'
+        VIDEO = 'VIDEO', 'Apenas Mídia'
+        MISTO = 'MISTO', 'Híbrido (Legado)'
+        PLAYLIST = 'PLAYLIST', 'Playlist Personalizada'
 
-    nome = models.CharField(max_length=100, help_text="Ex: TV do Açougue (Identificação Interna)")
+    nome = models.CharField(max_length=100, help_text="Ex: TV do Açougue")
     titulo_exibicao = models.CharField(
         max_length=100,
         blank=True,
@@ -188,15 +130,14 @@ class Dispositivo(models.Model):
     playlist = models.JSONField(
         default=list,
         blank=True,
-        help_text="Estrutura ordenada da playlist (Drag & Drop)"
+        help_text="Lista ordenada de itens (Mídias e Tabelas) para reprodução."
     )
 
     # Configurações de Display
     orientacao = models.CharField(
         max_length=20,
         choices=Orientacao.choices,
-        default=Orientacao.HORIZONTAL,
-        help_text="Escolha conforme a instalação física da TV"
+        default=Orientacao.HORIZONTAL
     )
     modo_exibicao = models.CharField(
         max_length=20,

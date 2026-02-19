@@ -1,6 +1,6 @@
 /**
  * TV App - Display Digital
- * Responsável por gerenciar a reprodução de conteúdo (Playlist, Vídeos e Tabelas de Preço).
+ * Responsável por gerenciar a reprodução de conteúdo (Playlist, Vídeos/Imagens e Tabelas de Preço).
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -121,7 +121,7 @@ class TVApp {
         } catch (error) {
             console.error("Erro ao atualizar dados:", error);
             
-            // Correção: Se a API retornar 404, o dispositivo foi deletado no servidor.
+            // Se a API retornar 404, o dispositivo foi deletado no servidor.
             // Devemos resetar o estado local para permitir novo pareamento.
             if (error.status === 404) {
                 this._handleDeviceUnlinked();
@@ -142,7 +142,7 @@ class TVApp {
         this._updateOrientation(newData.config.orientacao);
 
         // 2. Verifica se a Playlist mudou (usando Hash simples)
-        const newHash = JSON.stringify(newData.playlist_final.map(i => i.tipo + i.id));
+        const newHash = JSON.stringify(newData.playlist_final.map(i => i.tipo + (i.id || i.url)));
         
         if (newHash !== this.state.playlistHash) {
             console.log("Nova playlist detectada. Itens:", newData.playlist_final.length);
@@ -243,11 +243,9 @@ class PlaylistManager {
         const item = this.queue[this.currentIndex];
         this.currentIndex++;
 
-        // console.log(`Reproduzindo [${item.tipo}]: ${item.descricao}`);
-
         if (item.tipo === 'tabela') {
             this.gridRenderer.render(item, this.products, () => this.playNext());
-        } else if (item.tipo === 'propaganda' || item.tipo === 'produto_video') {
+        } else if (item.tipo === 'propaganda') {
             this.videoPlayer.play(item, () => this.playNext());
         } else {
             // Tipo desconhecido, pula
@@ -374,7 +372,7 @@ class GridRenderer {
     }
 }
 
-// --- REPRODUTOR DE VÍDEO (OVERLAY) ---
+// --- REPRODUTOR DE VÍDEO E IMAGENS ---
 class VideoPlayer {
     constructor(app) {
         this.app = app;
@@ -391,87 +389,45 @@ class VideoPlayer {
         container.innerHTML = '';
         container.style.display = 'block';
 
-        const isPropaganda = item.tipo === 'propaganda';
-        let videoUrl = isPropaganda ? item.url : (item.template_video?.arquivo_video);
-
-        if (!videoUrl) {
+        const mediaUrl = item.url;
+        if (!mediaUrl) {
             onComplete();
             return;
         }
 
-        const video = document.createElement('video');
-        video.id = 'video-bg';
-        video.src = videoUrl;
-        video.muted = true;
-        video.autoplay = true;
-        video.playsInline = true;
-
         const durationMs = (item.duracao || 15) * 1000;
-        const safetyTimeout = setTimeout(onComplete, durationMs + 1000);
+        let safetyTimeout;
 
         const finish = () => {
-            clearTimeout(safetyTimeout);
+            if (safetyTimeout) clearTimeout(safetyTimeout);
             onComplete();
         };
 
-        video.onerror = finish;
-        video.onended = finish;
+        if (item.tipo_midia === 'IMAGEM') {
+            const img = document.createElement('img');
+            img.id = 'video-bg'; // Reutilizando o ID para pegar as regras de CSS (100% width/height)
+            img.src = mediaUrl;
+            img.onload = () => {
+                safetyTimeout = setTimeout(finish, durationMs);
+            };
+            img.onerror = finish;
+            container.appendChild(img);
+        } else {
+            // Padrão: VÍDEO
+            const video = document.createElement('video');
+            video.id = 'video-bg';
+            video.src = mediaUrl;
+            video.muted = true;
+            video.autoplay = true;
+            video.playsInline = true;
 
-        container.appendChild(video);
+            // Fallback de segurança caso o vídeo não dispare o evento 'onended'
+            safetyTimeout = setTimeout(finish, durationMs + 2000);
 
-        if (!isPropaganda && item.template_video) {
-            this._renderOverlay(item);
-        }
-    }
+            video.onerror = finish;
+            video.onended = finish;
 
-    _renderOverlay(item) {
-        const template = item.template_video;
-        const css = template.estilos_css || {};
-        const container = this.app.getVideoContainer();
-
-        const createEl = (content, top, left, baseStyle, extraStyle) => {
-            if (extraStyle && extraStyle.display === 'none') return;
-
-            const el = document.createElement('div');
-            el.className = 'overlay-element pop-in';
-            
-            if (typeof content === 'string' && content.trim().startsWith('<img')) {
-                el.innerHTML = content;
-            } else {
-                el.innerText = content;
-            }
-
-            el.style.top = top + '%';
-            el.style.left = left + '%';
-            el.style.transform = `translate(-50%, -50%)`;
-
-            const styles = { ...baseStyle, ...extraStyle };
-            
-            if (styles.fontSizeVh) el.style.fontSize = styles.fontSizeVh + 'vh';
-            else if (styles.fontSize) el.style.fontSize = styles.fontSize;
-
-            ['color', 'backgroundColor', 'fontFamily', 'fontWeight', 
-             'fontStyle', 'textDecoration', 'width', 'height', 'zIndex'].forEach(prop => {
-                if(styles[prop]) el.style[prop] = styles[prop];
-            });
-
-            container.appendChild(el);
-        };
-
-        createEl(item.descricao, template.titulo_top, template.titulo_left, { color: template.titulo_cor }, css['el-titulo']);
-        
-        const priceVal = parseFloat(item.preco).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
-        createEl(priceVal, template.preco_top, template.preco_left, { color: template.preco_cor }, css['el-preco']);
-
-        if (item.imagem) {
-            const imgHTML = `<img src="${item.imagem}" style="width:100%; height:100%; object-fit:contain;">`;
-            createEl(imgHTML, template.img_top, template.img_left, { width: template.img_width + '%' }, css['el-imagem']);
-        }
-
-        if (template.elementos_extras) {
-            template.elementos_extras.forEach(extra => {
-                createEl(extra.texto, extra.top, extra.left, {}, extra.style);
-            });
+            container.appendChild(video);
         }
     }
 }
@@ -496,7 +452,6 @@ const API = {
     async getPanelData(uuid) {
         const response = await fetch(`${CONFIG.API_BASE}/${uuid}/`);
         if (!response.ok) {
-            // Correção: Lança um objeto de erro com o status para tratamento no Controller
             const error = new Error(`Erro API: ${response.status}`);
             error.status = response.status;
             throw error;

@@ -11,6 +11,7 @@ from .forms import ImportarProdutosForm
 class ProdutoAdmin(admin.ModelAdmin):
     """
     Administração de Produtos com funcionalidade de Importação via Excel.
+    Mantida integralmente pois é o core do sistema de preços.
     """
     list_display = ('ordem', 'codigo', 'descricao', 'get_preco_formatado', 'em_oferta', 'exibir_no_painel')
     list_display_links = ('codigo', 'descricao')
@@ -19,7 +20,7 @@ class ProdutoAdmin(admin.ModelAdmin):
     search_fields = ('codigo', 'descricao')
     ordering = ('ordem', 'descricao')
 
-    # Constantes das Colunas do Excel
+    # Constantes das Colunas do Excel (Mapeamento)
     COL_CODIGO = 'CÓDIGO DO PRODUTO'
     COL_DESCRICAO = 'DESCRIÇÃO DO PRODUTO'
     COL_PRECO = 'PREÇO UNITÁRIO DE VENDA'
@@ -164,6 +165,7 @@ class DispositivoAdmin(admin.ModelAdmin):
 
 @admin.register(Midia)
 class MidiaAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'tipo', 'duracao', 'ativo')
+    list_display = ('nome', 'tipo', 'duracao', 'ativo', 'created_at')
     list_filter = ('tipo', 'ativo')
     search_fields = ('nome',)
+    readonly_fields = ('tipo',)

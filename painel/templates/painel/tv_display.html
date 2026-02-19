@@ -6,27 +6,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Digital | Display</title>
     
-    <link rel="stylesheet" href="{% static 'css/painel.css' %}">
+    <link rel="stylesheet" href="{% static 'css/painel.css' %}?v={% now 'U' %}">
 
     <style>
-        /* Estilos Base para Modo Kiosk (TV)
-           Remove scroll, seleção de texto e cursor do mouse.
-        */
+        /* Estilos Base para Modo Kiosk (TV) */
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background-color: #000; /* Fundo preto evita clarão ao carregar */
+            background-color: #000;
             user-select: none;
-            cursor: none; /* Esconde o mouse na TV */
+            cursor: none; 
             font-family: sans-serif;
         }
 
-        /* Estilos da Tela de Configuração (Pareamento)
-           Centraliza o conteúdo e estiliza os inputs.
-        */
+        /* Estilos da Tela de Configuração (Pareamento) */
         #setup-screen {
-            display: none; /* Controlado via JS */
+            display: none; 
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -34,7 +30,7 @@
             color: white;
             background: #1a1a1a;
             text-align: center;
-            cursor: default; /* Mouse visível apenas aqui para digitar */
+            cursor: default; 
         }
 
         #setup-screen h1 { margin-bottom: 1rem; font-size: 2rem; }
@@ -89,12 +85,11 @@
             <h1 class="painel-titulo" id="titulo-painel">Carregando...</h1>
         </header>
 
-        <div class="painel-conteudo" id="painel-conteudo">
-            </div>
+        <div class="painel-conteudo" id="painel-conteudo"></div>
         
         <div id="video-overlay-container"></div>
     </main>
 
-    <script src="{% static 'js/tv_app.js' %}" defer></script>
+    <script src="{% static 'js/tv_app.js' %}?v={% now 'U' %}" defer></script>
 </body>
 </html>

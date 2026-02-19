@@ -226,7 +226,7 @@ class DispositivoContextMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Injeta Famílias e agora MÍDIAS para o Drag & Drop
+        # Injeta Famílias e Mídias para o Drag & Drop da playlist
         context['todas_familias'] = FamiliaProduto.objects.all().order_by('nome')
         context['todas_midias'] = Midia.objects.filter(ativo=True).order_by('nome')
         
@@ -266,6 +266,7 @@ class DispositivoDeleteView(LoginRequiredMixin, SuccessMessageMixin, DeleteView)
     success_url = reverse_lazy('dispositivo_list')
     success_message = "Dispositivo removido."
 
+
 class DispositivoDesconectarView(LoginRequiredMixin, View):
     """
     Reseta o pareamento da TV (UUID e Código) sem excluir o registro do banco.
@@ -290,6 +291,7 @@ class DispositivoDesconectarView(LoginRequiredMixin, View):
             "novo_codigo": dispositivo.codigo_acesso
         })
 
+
 # --- MÓDULO: MÍDIAS ---
 
 class MidiaListView(LoginRequiredMixin, ListView):
@@ -305,28 +307,18 @@ class MidiaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Midia
     form_class = MidiaForm
     template_name = 'painel/midias/form.html'
-    success_message = "Mídia enviada com sucesso! Configure o layout no Estúdio."
-    
-    def get_success_url(self):
-        return reverse_lazy('estudio_editor', kwargs={'pk': self.object.id})
+    success_url = reverse_lazy('midia_list')
+    success_message = "Mídia enviada com sucesso!"
 
 class MidiaUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Midia
     form_class = MidiaForm
     template_name = 'painel/midias/form.html'
-    success_message = "Mídia atualizada."
-    
-    def get_success_url(self):
-        return reverse_lazy('midia_list')
+    success_url = reverse_lazy('midia_list')
+    success_message = "Mídia atualizada com sucesso."
 
 class MidiaDeleteView(LoginRequiredMixin, SuccessMessageMixin, DeleteView):
     model = Midia
     template_name = 'painel/midias/confirm_delete.html'
     success_url = reverse_lazy('midia_list')
-    success_message = "Mídia removida."
-
-# View placeholder para o Estúdio
-@login_required
-def estudio_editor(request, pk):
-    midia = get_object_or_404(Midia, pk=pk)
-    return render(request, 'painel/estudio/editor.html', {'midia': midia})
+    success_message = "Mídia removida com sucesso."

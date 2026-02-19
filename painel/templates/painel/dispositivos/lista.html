@@ -115,7 +115,6 @@
     function copiarCodigo(el) {
         const codigo = el.querySelector('div').innerText;
         navigator.clipboard.writeText(codigo);
-        // Feedback visual simples
         const originalBorder = el.querySelector('div').className;
         el.querySelector('div').classList.add('border-green-500', 'text-green-600');
         setTimeout(() => {
@@ -126,7 +125,6 @@
     function desconectarTV(id) {
         if (!confirm('Tem certeza? A TV será desconectada e voltará para a tela de configuração.')) return;
 
-        const card = document.getElementById(`card-tv-${id}`);
         const codigoEl = document.getElementById(`codigo-tv-${id}`);
         const overlay = document.getElementById(`overlay-msg-${id}`);
 
@@ -140,10 +138,7 @@
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                // Atualiza o código na tela
                 codigoEl.innerText = data.novo_codigo;
-                
-                // Mostra feedback sem remover o card
                 overlay.classList.remove('hidden');
                 setTimeout(() => {
                     overlay.classList.add('hidden');
