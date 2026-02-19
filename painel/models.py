@@ -3,27 +3,62 @@ import random
 import string
 import os
 from django.db import models
-from django.core.exceptions import ValidationError
+from django.contrib.auth.models import User
 
 def gerar_codigo_curto():
     """Gera um código alfanumérico de 6 caracteres para pareamento."""
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
 
+class Empresa(models.Model):
+    """
+    Representa o Inquilino (Tenant) no sistema SaaS.
+    Todos os dados do sistema estarão amarrados a uma empresa.
+    """
+    nome = models.CharField(max_length=150, help_text="Nome da empresa ou cliente")
+    cnpj = models.CharField(max_length=20, blank=True, null=True)
+    ativo = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Empresa"
+        verbose_name_plural = "Empresas"
+
+    def __str__(self):
+        return self.nome
+
+
+class Perfil(models.Model):
+    """
+    Vincula o usuário de acesso do Django a uma Empresa específica.
+    """
+    usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='usuarios')
+
+    class Meta:
+        verbose_name = "Perfil de Usuário"
+        verbose_name_plural = "Perfis de Usuários"
+
+    def __str__(self):
+        return f"{self.usuario.username} ({self.empresa.nome})"
+
+
 class FamiliaProduto(models.Model):
     """
-    Categorias de produtos vindas do ERP (Ex: BOVINOS, AVÍCOLAS).
-    Utilizado para filtrar o conteúdo exibido em cada TV.
+    Categorias de produtos vindas do ERP. 
+    Agora isoladas por empresa.
     """
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='familias')
     nome = models.CharField(
         max_length=100,
-        unique=True,
         help_text="Nome da categoria vinda do ERP"
     )
 
     class Meta:
         verbose_name = "Família de Produto"
         verbose_name_plural = "Famílias de Produtos"
+        # Garante que não existam duas categorias com mesmo nome NA MESMA EMPRESA
+        unique_together = ('empresa', 'nome')
 
     def __str__(self):
         return self.nome
@@ -32,12 +67,13 @@ class FamiliaProduto(models.Model):
 class Midia(models.Model):
     """
     Biblioteca de Mídia (Vídeos e Imagens).
-    Armazena os arquivos que podem ser inseridos nas playlists das TVs.
+    Isolada por empresa.
     """
     class Tipo(models.TextChoices):
         VIDEO = 'VIDEO', 'Vídeo'
         IMAGEM = 'IMAGEM', 'Imagem'
 
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='midias')
     nome = models.CharField(max_length=100, help_text="Identificação interna para organização")
     
     arquivo = models.FileField(upload_to='midias/')
@@ -63,8 +99,12 @@ class Midia(models.Model):
 
 
 class Produto(models.Model):
-    """Produto principal importado e exibido nas telas (Tabela de Preços)."""
-    codigo = models.CharField(max_length=50, unique=True, db_index=True)
+    """
+    Produto principal importado e exibido nas telas.
+    O código do produto pode repetir entre empresas diferentes, mas não na mesma.
+    """
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='produtos')
+    codigo = models.CharField(max_length=50, db_index=True)
     descricao = models.CharField(max_length=200)
     preco = models.DecimalField(max_digits=10, decimal_places=2)
     
@@ -74,7 +114,6 @@ class Produto(models.Model):
         related_name='produtos'
     )
     
-    # Configurações de Exibição
     ordem = models.IntegerField(
         default=0,
         help_text="Ordem de exibição na TV (Menor número aparece primeiro)"
@@ -88,6 +127,8 @@ class Produto(models.Model):
 
     class Meta:
         ordering = ['descricao']
+        # Garante que o código do produto seja único apenas dentro da própria empresa
+        unique_together = ('empresa', 'codigo')
 
     def __str__(self):
         return f"{self.codigo} - {self.descricao}"
@@ -107,6 +148,7 @@ class Dispositivo(models.Model):
         MISTO = 'MISTO', 'Híbrido (Legado)'
         PLAYLIST = 'PLAYLIST', 'Playlist Personalizada'
 
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='dispositivos')
     nome = models.CharField(max_length=100, help_text="Ex: TV do Açougue")
     titulo_exibicao = models.CharField(
         max_length=100,

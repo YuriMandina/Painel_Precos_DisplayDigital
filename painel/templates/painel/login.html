@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso Restrito | DisplayDigital</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
+
+    <main class="w-full max-w-md">
+        
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 mb-4">
+                <i class="ph-fill ph-monitor-play text-4xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">DISPLAY<span class="text-indigo-600">DIGITAL</span></h1>
+            <p class="text-sm text-gray-500 mt-2">Faça login para gerenciar suas telas.</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+            
+            {% if form.errors %}
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg">
+                <div class="flex items-center gap-3">
+                    <i class="ph-fill ph-warning-circle text-red-500 text-xl"></i>
+                    <p class="text-sm text-red-700 font-medium">Usuário ou senha incorretos. Tente novamente.</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'login' %}" class="space-y-6">
+                {% csrf_token %}
+                
+                <div>
+                    <label for="id_username" class="block text-sm font-semibold text-gray-700 mb-2">Usuário</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="ph-fill ph-user text-gray-400 text-lg"></i>
+                        </div>
+                        <input type="text" name="username" id="id_username" required
+                            class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent sm:text-sm transition-colors"
+                            placeholder="Seu nome de usuário">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="id_password" class="block text-sm font-semibold text-gray-700 mb-2">Senha</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="ph-fill ph-lock-key text-gray-400 text-lg"></i>
+                        </div>
+                        <input type="password" name="password" id="id_password" required
+                            class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent sm:text-sm transition-colors"
+                            placeholder="••••••••">
+                    </div>
+                </div>
+
+                <button type="submit" 
+                        class="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all">
+                    Entrar no Painel <i class="ph-bold ph-arrow-right"></i>
+                </button>
+            </form>
+        </div>
+
+        <p class="text-center text-xs text-gray-400 mt-8">
+            &copy; {% now "Y" %} DisplayDigital. Todos os direitos reservados.
+        </p>
+    </main>
+
+</body>
+</html>

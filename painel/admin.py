@@ -3,24 +3,41 @@ from django.contrib import admin
 from django.urls import path
 from django.shortcuts import render, redirect
 from django.contrib import messages
-
-from .models import FamiliaProduto, Produto, Dispositivo, Midia
+from .models import Empresa, Perfil, FamiliaProduto, Produto, Dispositivo, Midia
 from .forms import ImportarProdutosForm
+
+
+# --- ADMIN DE USUÁRIOS E EMPRESAS (SAAS) ---
+
+@admin.register(Empresa)
+class EmpresaAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'cnpj', 'ativo', 'created_at')
+    search_fields = ('nome', 'cnpj')
+    list_filter = ('ativo',)
+
+
+@admin.register(Perfil)
+class PerfilAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'empresa')
+    search_fields = ('usuario__username', 'usuario__email', 'empresa__nome')
+    list_filter = ('empresa',)
+
+
+# --- ADMIN DE DADOS DO SISTEMA ---
 
 @admin.register(Produto)
 class ProdutoAdmin(admin.ModelAdmin):
     """
     Administração de Produtos com funcionalidade de Importação via Excel.
-    Mantida integralmente pois é o core do sistema de preços.
     """
-    list_display = ('ordem', 'codigo', 'descricao', 'get_preco_formatado', 'em_oferta', 'exibir_no_painel')
+    # Adicionada a 'empresa' na exibição e nos filtros para o SuperAdmin
+    list_display = ('empresa', 'ordem', 'codigo', 'descricao', 'get_preco_formatado', 'em_oferta', 'exibir_no_painel')
     list_display_links = ('codigo', 'descricao')
     list_editable = ('ordem', 'em_oferta', 'exibir_no_painel')
-    list_filter = ('familia', 'em_oferta', 'exibir_no_painel')
+    list_filter = ('empresa', 'familia', 'em_oferta', 'exibir_no_painel')
     search_fields = ('codigo', 'descricao')
-    ordering = ('ordem', 'descricao')
+    ordering = ('empresa', 'ordem', 'descricao')
 
-    # Constantes das Colunas do Excel (Mapeamento)
     COL_CODIGO = 'CÓDIGO DO PRODUTO'
     COL_DESCRICAO = 'DESCRIÇÃO DO PRODUTO'
     COL_PRECO = 'PREÇO UNITÁRIO DE VENDA'
@@ -29,8 +46,6 @@ class ProdutoAdmin(admin.ModelAdmin):
     def get_preco_formatado(self, obj):
         return f"R$ {obj.preco}".replace('.', ',')
     get_preco_formatado.short_description = 'Preço'
-
-    # --- Custom Views (Importação Excel) ---
 
     def get_urls(self):
         urls = super().get_urls()
@@ -49,7 +64,9 @@ class ProdutoAdmin(admin.ModelAdmin):
             if form.is_valid():
                 try:
                     arquivo = request.FILES['arquivo_excel']
-                    criados, atualizados = self.processar_arquivo(arquivo)
+                    # Passamos a empresa do superuser logado para a importação do admin
+                    empresa = request.user.perfil.empresa 
+                    criados, atualizados = self.processar_arquivo(arquivo, empresa)
                     self.message_user(
                         request, 
                         f"Sucesso! {criados} produtos criados e {atualizados} atualizados.", 
@@ -74,10 +91,8 @@ class ProdutoAdmin(admin.ModelAdmin):
 
     @staticmethod
     def _limpar_valor_monetario(valor):
-        """Converte string de moeda (R$ 1.000,00) para float (1000.00)."""
         if pd.isna(valor):
             return None
-        
         if isinstance(valor, str):
             limpo = valor.replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
             try:
@@ -86,24 +101,15 @@ class ProdutoAdmin(admin.ModelAdmin):
                 return None
         return float(valor)
 
-    def processar_arquivo(self, arquivo):
-        """Lê o Excel e atualiza/cria produtos."""
+    def processar_arquivo(self, arquivo, empresa):
         df = pd.read_excel(arquivo)
         df.columns = [str(c).strip().upper() for c in df.columns]
 
-        colunas_necessarias = [
-            self.COL_CODIGO, 
-            self.COL_DESCRICAO, 
-            self.COL_PRECO, 
-            self.COL_FAMILIA
-        ]
+        colunas_necessarias = [self.COL_CODIGO, self.COL_DESCRICAO, self.COL_PRECO, self.COL_FAMILIA]
         
         for col in colunas_necessarias:
             if col not in df.columns:
-                raise ValueError(
-                    f"Coluna obrigatória '{col}' não encontrada. "
-                    f"Colunas detectadas: {', '.join(df.columns)}"
-                )
+                raise ValueError(f"Coluna obrigatória '{col}' não encontrada.")
 
         count_criados = 0
         count_atualizados = 0
@@ -117,10 +123,11 @@ class ProdutoAdmin(admin.ModelAdmin):
             if preco is None:
                 continue
 
-            familia_obj, _ = FamiliaProduto.objects.get_or_create(nome=familia_nome)
+            familia_obj, _ = FamiliaProduto.objects.get_or_create(nome=familia_nome, empresa=empresa)
 
             _, created = Produto.objects.update_or_create(
                 codigo=codigo,
+                empresa=empresa,
                 defaults={
                     'descricao': descricao,
                     'preco': preco,
@@ -138,18 +145,21 @@ class ProdutoAdmin(admin.ModelAdmin):
 
 @admin.register(FamiliaProduto)
 class FamiliaProdutoAdmin(admin.ModelAdmin):
-    list_display = ('nome',)
-    search_fields = ('nome',)
+    list_display = ('empresa', 'nome')
+    search_fields = ('nome', 'empresa__nome')
+    list_filter = ('empresa',)
 
 
 @admin.register(Dispositivo)
 class DispositivoAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'codigo_acesso', 'uuid', 'modo_exibicao', 'orientacao')
+    list_display = ('nome', 'empresa', 'codigo_acesso', 'uuid', 'modo_exibicao', 'orientacao')
     readonly_fields = ('uuid', 'codigo_acesso')
+    list_filter = ('empresa', 'modo_exibicao', 'orientacao')
+    search_fields = ('nome', 'empresa__nome')
     
     fieldsets = (
         ('Identificação', {
-            'fields': ('nome', 'titulo_exibicao', 'uuid', 'codigo_acesso')
+            'fields': ('empresa', 'nome', 'titulo_exibicao', 'uuid', 'codigo_acesso')
         }),
         ('Configuração Técnica', {
             'fields': ('modo_exibicao', 'orientacao')
@@ -165,7 +175,7 @@ class DispositivoAdmin(admin.ModelAdmin):
 
 @admin.register(Midia)
 class MidiaAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'tipo', 'duracao', 'ativo', 'created_at')
-    list_filter = ('tipo', 'ativo')
-    search_fields = ('nome',)
+    list_display = ('nome', 'empresa', 'tipo', 'duracao', 'ativo')
+    list_filter = ('empresa', 'tipo', 'ativo')
+    search_fields = ('nome', 'empresa__nome')
     readonly_fields = ('tipo',)

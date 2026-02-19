@@ -1,7 +1,17 @@
 from django.urls import path
+from django.contrib.auth import views as auth_views
 from . import views_api, views, views_admin
 
 urlpatterns = [
+    # ==========================================
+    # AUTENTICAÇÃO (Login / Logout)
+    # ==========================================
+    path('login/', auth_views.LoginView.as_view(
+        template_name='painel/login.html', 
+        redirect_authenticated_user=True
+    ), name='login'),
+    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+
     # ==========================================
     # API ENDPOINTS (Consumidos pela TV/JS)
     # ==========================================

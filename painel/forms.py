@@ -21,7 +21,6 @@ CSS_FILE_INDIGO = f"{CSS_FILE_BASE} file:bg-indigo-50 file:text-indigo-700 hover
 
 
 class ImportarProdutosForm(forms.Form):
-    """Formulário simples para upload de planilhas Excel."""
     arquivo_excel = forms.FileField(
         label='Selecione o arquivo Excel (.xlsx)',
         widget=forms.FileInput(attrs={'class': CSS_FILE_INDIGO})
@@ -35,6 +34,15 @@ class ImportarProdutosForm(forms.Form):
 
 
 class ProdutoForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        # Captura a empresa passada pela View antes de iniciar o form
+        self.empresa = kwargs.pop('empresa', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filtra as famílias para mostrar apenas as da empresa do usuário logado
+        if self.empresa:
+            self.fields['familia'].queryset = FamiliaProduto.objects.filter(empresa=self.empresa)
+
     class Meta:
         model = Produto
         fields = [
@@ -42,24 +50,11 @@ class ProdutoForm(forms.ModelForm):
             'imagem', 'em_oferta', 'exibir_no_painel'
         ]
         widgets = {
-            'codigo': forms.TextInput(attrs={
-                'class': CSS_INPUT,
-                'placeholder': 'Ex: 78910...'
-            }),
-            'descricao': forms.TextInput(attrs={
-                'class': CSS_INPUT,
-                'placeholder': 'Nome do produto'
-            }),
-            'preco': forms.NumberInput(attrs={
-                'class': CSS_INPUT,
-                'step': '0.01'
-            }),
-            'familia': forms.Select(attrs={
-                'class': CSS_INPUT
-            }),
-            'imagem': forms.FileInput(attrs={
-                'class': CSS_FILE_INDIGO
-            }),
+            'codigo': forms.TextInput(attrs={'class': CSS_INPUT, 'placeholder': 'Ex: 78910...'}),
+            'descricao': forms.TextInput(attrs={'class': CSS_INPUT, 'placeholder': 'Nome do produto'}),
+            'preco': forms.NumberInput(attrs={'class': CSS_INPUT, 'step': '0.01'}),
+            'familia': forms.Select(attrs={'class': CSS_INPUT}),
+            'imagem': forms.FileInput(attrs={'class': CSS_FILE_INDIGO}),
             'em_oferta': forms.CheckboxInput(attrs={'class': CSS_CHECKBOX}),
             'exibir_no_painel': forms.CheckboxInput(attrs={'class': CSS_CHECKBOX}),
         }
@@ -70,10 +65,7 @@ class FamiliaForm(forms.ModelForm):
         model = FamiliaProduto
         fields = ['nome']
         widgets = {
-            'nome': forms.TextInput(attrs={
-                'class': CSS_INPUT,
-                'placeholder': 'Ex: Açougue, Bebidas, Padaria...'
-            }),
+            'nome': forms.TextInput(attrs={'class': CSS_INPUT, 'placeholder': 'Ex: Açougue, Bebidas...'}),
         }
 
 
@@ -82,37 +74,18 @@ class DispositivoForm(forms.ModelForm):
         model = Dispositivo
         fields = ['nome', 'titulo_exibicao', 'orientacao', 'playlist'] 
         widgets = {
-            'nome': forms.TextInput(attrs={
-                'class': CSS_INPUT,
-                'placeholder': 'Ex: TV do Açougue (Identificação Interna)'
-            }),
-            'titulo_exibicao': forms.TextInput(attrs={
-                'class': CSS_INPUT,
-                'placeholder': 'Título visível na TV (Opcional)'
-            }),
-            'orientacao': forms.Select(attrs={
-                'class': CSS_INPUT
-            }),
-            # O campo playlist continua Hidden pois será manipulado via JS (Drag & Drop na view de edição da TV)
+            'nome': forms.TextInput(attrs={'class': CSS_INPUT, 'placeholder': 'Ex: TV do Açougue'}),
+            'titulo_exibicao': forms.TextInput(attrs={'class': CSS_INPUT, 'placeholder': 'Opcional'}),
+            'orientacao': forms.Select(attrs={'class': CSS_INPUT}),
             'playlist': forms.HiddenInput()
         }
 
 
 class MidiaForm(forms.ModelForm):
-    """
-    Formulário para upload de Mídias (Vídeos ou Imagens).
-    Agora padronizado para upload direto, sem interface de estúdio.
-    """
     class Meta:
         model = Midia
         fields = ['nome', 'arquivo']
         widgets = {
-            'nome': forms.TextInput(attrs={
-                'class': CSS_INPUT,
-                'placeholder': 'Ex: Promoção de Natal'
-            }),
-            'arquivo': forms.FileInput(attrs={
-                'class': CSS_FILE_INDIGO,
-                'accept': 'video/*,image/*'
-            })
+            'nome': forms.TextInput(attrs={'class': CSS_INPUT, 'placeholder': 'Ex: Promoção de Natal'}),
+            'arquivo': forms.FileInput(attrs={'class': 'hidden', 'accept': 'video/*,image/*'})
         }

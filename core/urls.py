@@ -20,7 +20,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # Mude 'admin/' para algo obscuro, como 'acesso-root-sistema/' ou 'django-backend/'
+    path('acesso-root-sistema/', admin.site.urls), 
     path('', include('painel.urls')),
 ]
 

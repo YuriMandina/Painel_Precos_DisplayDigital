@@ -49,12 +49,15 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # 1. Adicionado: Serve arquivos estáticos de forma otimizada/segura
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'painel.middleware.TenantMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -131,3 +134,47 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10 MB
+
+# ==========================================
+# CONFIGURAÇÕES DE AUTENTICAÇÃO
+# ==========================================
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'login'
+
+# ==========================================
+# CONFIGURAÇÕES DE AUTENTICAÇÃO
+# ==========================================
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'login'
+
+# ==========================================
+# 🛡️ PROTEÇÕES DE SEGURANÇA E PRODUÇÃO
+# ==========================================
+
+# 1. Configuração do CORS (Proteção contra acesso cross-domain indevido)
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL', default=True, cast=bool) # Em produção, defina como False no .env
+# Se CORS_ALLOW_ALL_ORIGINS for False, o sistema usará a lista abaixo:
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:8000').split(',')
+
+# 2. Rate Limiting (Proteção contra Força Bruta na API)
+REST_FRAMEWORK = {
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '5/minute', # Permite apenas 5 tentativas de pareamento por minuto por IP
+    }
+}
+
+# 3. Blindagem de Cookies e Headers (Ativado automaticamente quando DEBUG=False no .env)
+if not DEBUG:
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=True, cast=bool)
+    SECURE_HSTS_SECONDS = 31536000  # Força HTTPS por 1 ano na máquina do usuário
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True

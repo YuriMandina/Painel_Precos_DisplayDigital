@@ -76,7 +76,7 @@
 
             <a href="{% url 'midia_list' %}" 
                class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors
-               {% if 'midia' in request.resolver_match.url_name or 'estudio' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
+               {% if 'midia' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
                 <i class="ph ph-film-slate text-lg"></i>
                 <span>Biblioteca de Mídia</span>
             </a>
@@ -84,10 +84,13 @@
         </nav>
 
         <div class="p-4 border-t border-gray-800 bg-gray-900 flex-shrink-0">
-            <a href="/admin/logout/" class="flex items-center justify-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors">
-                <i class="ph ph-sign-out text-lg"></i>
-                <span>Sair do Sistema</span>
-            </a>
+            <form method="post" action="{% url 'logout' %}" class="w-full">
+                {% csrf_token %}
+                <button type="submit" class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors">
+                    <i class="ph ph-sign-out text-lg"></i>
+                    <span>Sair do Sistema</span>
+                </button>
+            </form>
         </div>
     </aside>
 

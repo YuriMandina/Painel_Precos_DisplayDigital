@@ -1,6 +1,7 @@
 import logging
-from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes, throttle_classes
 from rest_framework.permissions import AllowAny
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 @api_view(['POST'])
 @authentication_classes([])
 @permission_classes([AllowAny])
+@throttle_classes([AnonRateThrottle])
 def parear_dispositivo(request):
     """
     Endpoint para conectar uma TV física ao sistema usando um código curto.
@@ -22,67 +24,50 @@ def parear_dispositivo(request):
     codigo = request.data.get('codigo', '').strip().upper()
     
     if not codigo:
-        return Response(
-            {"erro": "Código não fornecido"}, 
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"erro": "Código não fornecido"}, status=status.HTTP_400_BAD_REQUEST)
     
     try:
         dispositivo = Dispositivo.objects.get(codigo_acesso=codigo)
-        logger.info(f"Dispositivo pareado com sucesso: {dispositivo.nome}")
+        logger.info(f"Dispositivo pareado com sucesso: {dispositivo.nome} (Empresa: {dispositivo.empresa.nome})")
         
-        return Response({
-            "uuid": dispositivo.uuid, 
-            "nome": dispositivo.nome
-        })
+        return Response({"uuid": dispositivo.uuid, "nome": dispositivo.nome})
     except Dispositivo.DoesNotExist:
         logger.warning(f"Tentativa de pareamento falhou. Código inválido: {codigo}")
-        return Response(
-            {"erro": "Código inválido"}, 
-            status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({"erro": "Código inválido"}, status=status.HTTP_404_NOT_FOUND)
 
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def dados_painel(request, device_uuid):
     """
-    Retorna toda a configuração necessária para a TV rodar:
-    1. Configurações do Dispositivo
-    2. Lista de Produtos (Catálogo)
-    3. Playlist Sequencial (O que tocar e em qual ordem)
+    Retorna a configuração e o catálogo EXCLUSIVO da empresa deste dispositivo.
     """
     dispositivo = get_object_or_404(Dispositivo, uuid=device_uuid)
+    empresa_do_dispositivo = dispositivo.empresa
     
-    # Carrega catálogo completo de produtos ativos
-    produtos_ativos = Produto.objects.filter(exibir_no_painel=True)
-    produto_serializer = ProdutoSerializer(
-        produtos_ativos, 
-        many=True, 
-        context={'request': request}
-    )
-    dados_produtos = produto_serializer.data
+    # IMPORTANTE: Filtra produtos ativos apenas desta empresa
+    produtos_ativos = Produto.objects.filter(exibir_no_painel=True, empresa=empresa_do_dispositivo)
+    produto_serializer = ProdutoSerializer(produtos_ativos, many=True, context={'request': request})
 
-    # Constrói a playlist com as entidades puras (Famílias e Mídias)
-    playlist_final = _construir_playlist(dispositivo.playlist, request)
+    # Constrói a playlist hidratando os dados apenas desta empresa
+    playlist_final = _construir_playlist(dispositivo.playlist, empresa_do_dispositivo, request)
 
     response_data = {
         "config": {
             **DispositivoConfigSerializer(dispositivo).data,
-            # Força o modo playlist pois é a arquitetura unificada
             "modo_exibicao": 'PLAYLIST' 
         },
-        "produtos": dados_produtos,
+        "produtos": produto_serializer.data,
         "playlist_final": playlist_final
     }
 
     return Response(response_data)
 
 
-def _construir_playlist(playlist_config, request=None):
+def _construir_playlist(playlist_config, empresa, request=None):
     """
-    Processa a lista de itens configurados no admin (JSON) e hidrata
-    com os dados reais do banco (Famílias e Mídias limpas).
+    Processa a lista de itens configurados no admin e hidrata
+    respeitando o limite de Tenant (Empresa).
     """
     if not playlist_config:
         return []
@@ -94,10 +79,10 @@ def _construir_playlist(playlist_config, request=None):
         item_id = item.get('id')
         tempo_custom = item.get('tempo')
 
-        # 1. TABELA DE PREÇOS
         if tipo == 'tabela_familia':
             try:
-                familia = FamiliaProduto.objects.get(id=item_id)
+                # Busca a família apenas se pertencer à empresa correta
+                familia = FamiliaProduto.objects.get(id=item_id, empresa=empresa)
                 playlist_processada.append({
                     'tipo': 'tabela',
                     'familia_id': familia.id,
@@ -107,20 +92,19 @@ def _construir_playlist(playlist_config, request=None):
             except FamiliaProduto.DoesNotExist:
                 continue
                 
-        # 2. MÍDIA PURA (VÍDEO/IMAGEM)
         elif tipo == 'midia':
             try:
-                midia = Midia.objects.get(id=item_id)
+                # Busca a mídia apenas se pertencer à empresa correta
+                midia = Midia.objects.get(id=item_id, empresa=empresa)
                 url_arquivo = request.build_absolute_uri(midia.arquivo.url) if (midia.arquivo and request) else (midia.arquivo.url if midia.arquivo else '')
 
                 playlist_processada.append({
-                    'tipo': 'propaganda', # O JS entende 'propaganda' como Mídia em tela cheia
+                    'tipo': 'propaganda',
                     'url': url_arquivo,
                     'duracao': tempo_custom or midia.duracao,
                     'descricao': midia.nome,
-                    'tipo_midia': midia.tipo # 'VIDEO' ou 'IMAGEM'
+                    'tipo_midia': midia.tipo
                 })
-
             except Midia.DoesNotExist:
                 continue
 
