@@ -9,7 +9,7 @@ urlpatterns = [
     # REDIRECIONAMENTO DA RAIZ (Página Inicial)
     # ==========================================
     # 2. Adicione esta linha: Redireciona de "/" para "/dashboard/"
-    path('', RedirectView.as_view(url='/dashboard/'), name='root_redirect'),
+    path('', RedirectView.as_view(url='/login/'), name='root_redirect'),
 
     # ==========================================
     # AUTENTICAÇÃO (Login / Logout)
