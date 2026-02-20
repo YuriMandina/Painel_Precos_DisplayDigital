@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from pathlib import Path
 from decouple import config
 import os
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -81,15 +82,25 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-
+# ==========================================
+# BANCO DE DADOS (Dinâmico: Nuvem ou Local)
+# ==========================================
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    # Se houver um DATABASE_URL no .env (Produção), ele usa o Postgres.
+    # Se não houver (no seu PC), ele cria o sqlite3 automaticamente.
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600
+    )
 }
+
+# ==========================================
+# ARQUIVOS ESTÁTICOS (Necessário para o WhiteNoise em Produção)
+# ==========================================
+STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+
 
 
 # Password validation
