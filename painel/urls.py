@@ -1,8 +1,24 @@
 from django.urls import path
+from django.views.generic import RedirectView
 from django.contrib.auth import views as auth_views
 from . import views_api, views, views_admin
 
 urlpatterns = [
+    
+    # ==========================================
+    # REDIRECIONAMENTO DA RAIZ (Página Inicial)
+    # ==========================================
+    # 2. Adicione esta linha: Redireciona de "/" para "/dashboard/"
+    path('', RedirectView.as_view(url='/dashboard/'), name='root_redirect'),
+
+    # ==========================================
+    # AUTENTICAÇÃO (Login / Logout)
+    # ==========================================
+    path('login/', auth_views.LoginView.as_view(
+        template_name='painel/login.html', 
+        redirect_authenticated_user=True
+    ), name='login'),
+
     # ==========================================
     # AUTENTICAÇÃO (Login / Logout)
     # ==========================================
