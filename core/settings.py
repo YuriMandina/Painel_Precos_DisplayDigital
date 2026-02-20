@@ -30,6 +30,12 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
 
+# Diz ao Django para confiar no certificado HTTPS gerado pelo Render
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Permite que formulários nativos (como o login do Admin) funcionem através do domínio do Render
+CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
+
 # Application definition
 
 INSTALLED_APPS = [
