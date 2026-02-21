@@ -218,7 +218,6 @@
 </style>
 
 <script>
-    // --- Funções Auxiliares (Preview Mídia / Desconectar) ---
     function openPreviewModal(url, type) {
         const modal = document.getElementById('preview-modal');
         const content = document.getElementById('preview-content');
@@ -248,14 +247,15 @@
         });
     }
 
-    // --- Lógica do Modal de Produtos (INDEPENDENTE POR BLOCO) ---
+    // --- Lógica do Modal de Produtos (COM OVERRIDE) ---
     let currentEditingPlaylistItem = null;
 
     function openProductsModal(familiaId, familiaNome, btnElement) {
         currentEditingPlaylistItem = btnElement.closest('.playlist-item');
         
-        // BLINDAGEM 1: Converte todos os IDs da memória para Texto (String)
+        // Lê as memórias deste bloco específico
         const hiddenProducts = JSON.parse(currentEditingPlaylistItem.dataset.hiddenProducts || '[]').map(String);
+        const forcedProducts = JSON.parse(currentEditingPlaylistItem.dataset.forcedProducts || '[]').map(String);
 
         const modal = document.getElementById('products-modal');
         const title = document.getElementById('products-modal-title');
@@ -279,10 +279,13 @@
                     data.produtos.forEach(p => {
                         const precoFormatado = parseFloat(p.preco).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
                         
-                        // BLINDAGEM 2: Garante que o ID do produto vindo do painel também seja Texto
-                        const isLocallyVisible = !hiddenProducts.includes(String(p.id));
-                        
-                        const globalWarning = !p.exibir_no_painel ? `<span class="ml-2 text-[10px] text-red-500 font-bold bg-red-50 px-1.5 py-0.5 rounded" title="Desativado no Catálogo Geral">OFF GERAL</span>` : '';
+                        // LÓGICA DO SWITCH:
+                        // 1. O valor padrão é o do cadastro geral (p.exibir_no_painel)
+                        let isChecked = p.exibir_no_painel;
+                        // 2. Se o usuário forçou ON neste bloco, fica ON
+                        if (forcedProducts.includes(String(p.id))) isChecked = true;
+                        // 3. Se o usuário forçou OFF neste bloco, fica OFF
+                        if (hiddenProducts.includes(String(p.id))) isChecked = false;
 
                         const tr = document.createElement('tr');
                         tr.className = 'hover:bg-gray-50 transition-colors border-b border-gray-100';
@@ -290,12 +293,11 @@
                             <td class="px-6 py-3 text-sm font-medium text-gray-800">
                                 ${p.descricao} 
                                 ${p.em_oferta ? '<span class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700"><i class="ph-fill ph-lightning"></i></span>' : ''}
-                                ${globalWarning}
                             </td>
                             <td class="px-6 py-3 text-sm text-gray-600 font-mono text-right">R$ ${precoFormatado}</td>
                             <td class="px-6 py-3 text-center">
                                 <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" class="sr-only peer" onchange="toggleLocalProductVisibility(${p.id}, this)" ${isLocallyVisible ? 'checked' : ''}>
+                                    <input type="checkbox" class="sr-only peer" onchange="toggleLocalProductVisibility(${p.id}, ${p.exibir_no_painel}, this)" ${isChecked ? 'checked' : ''}>
                                     <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
                                 </label>
                             </td>
@@ -319,22 +321,30 @@
         currentEditingPlaylistItem = null;
     }
 
-    function toggleLocalProductVisibility(productId, checkbox) {
+    // Calcula o "Override" quando o usuário clica no Switch
+    function toggleLocalProductVisibility(productId, isGloballyOn, checkbox) {
         if (!currentEditingPlaylistItem) return;
         
-        // BLINDAGEM 3: Converte para texto ao interagir com o clique
         const pIdStr = String(productId);
         let hiddenProducts = JSON.parse(currentEditingPlaylistItem.dataset.hiddenProducts || '[]').map(String);
+        let forcedProducts = JSON.parse(currentEditingPlaylistItem.dataset.forcedProducts || '[]').map(String);
         
         if (checkbox.checked) {
-            hiddenProducts = hiddenProducts.filter(id => id !== pIdStr);
+            // Clicou para EXIBIR
+            hiddenProducts = hiddenProducts.filter(id => id !== pIdStr); // Tira da lista de bloqueados
+            if (!isGloballyOn && !forcedProducts.includes(pIdStr)) {
+                forcedProducts.push(pIdStr); // Se no cadastro geral ele for OFF, nós forçamos o ON aqui!
+            }
         } else {
-            if (!hiddenProducts.includes(pIdStr)) {
-                hiddenProducts.push(pIdStr);
+            // Clicou para ESCONDER
+            forcedProducts = forcedProducts.filter(id => id !== pIdStr); // Tira da lista de forçados
+            if (isGloballyOn && !hiddenProducts.includes(pIdStr)) {
+                hiddenProducts.push(pIdStr); // Se no cadastro geral ele for ON, nós ocultamos aqui!
             }
         }
         
         currentEditingPlaylistItem.dataset.hiddenProducts = JSON.stringify(hiddenProducts);
+        currentEditingPlaylistItem.dataset.forcedProducts = JSON.stringify(forcedProducts);
     }
 
     // --- Gerenciador da Playlist ---
@@ -400,7 +410,8 @@
                 tempo: el.dataset.duracao || 15,
                 url: el.dataset.url || null,
                 tipo_midia: el.dataset.tipomidia || null,
-                hidden_products: [] // Nasce zerado ao puxar da biblioteca
+                hidden_products: [],
+                forced_products: [] 
             };
         },
 
@@ -412,6 +423,7 @@
             div.dataset.type = data.type;
             div.dataset.id = data.id;
             div.dataset.hiddenProducts = JSON.stringify(data.hidden_products || []);
+            div.dataset.forcedProducts = JSON.stringify(data.forced_products || []);
             
             let previewBtn = '';
             let inputsTempoHtml = '';
@@ -425,7 +437,6 @@
                     <i class="ph-fill ph-lock-key text-gray-300 ml-1" title="Fixo"></i>
                 `;
             } else {
-                // É UMA TABELA: Inclui o botão de abrir o Modal de Filtro passando o botão atual ("this")
                 inputsTempoHtml = `
                     <button type="button" onclick="openProductsModal('${data.id}', '${data.descricao.replace(/'/g, "\\'")}', this)" 
                             class="flex items-center justify-center w-7 h-7 mr-2 rounded-md text-indigo-600 bg-indigo-50 hover:bg-indigo-100 hover:text-indigo-800 transition-colors" title="Ver/Filtrar Produtos">
@@ -473,7 +484,8 @@
                         tempo: item.tempo || item.duracao || 15,
                         url: url,
                         tipo_midia: tipo_midia,
-                        hidden_products: item.hidden_products || [] // Resgata ocultos do servidor
+                        hidden_products: item.hidden_products || [], 
+                        forced_products: item.forced_products || [] 
                     });
                     this.targetEl.appendChild(el);
                 });
@@ -514,8 +526,8 @@
                     id: item.dataset.id,
                     descricao: titleEl ? titleEl.innerText : 'Item',
                     tempo: tempoFinal,
-                    // Ao salvar, consolida os dados de produtos ocultos daquele card
-                    hidden_products: JSON.parse(item.dataset.hiddenProducts || '[]') 
+                    hidden_products: JSON.parse(item.dataset.hiddenProducts || '[]'),
+                    forced_products: JSON.parse(item.dataset.forcedProducts || '[]')
                 });
             });
 

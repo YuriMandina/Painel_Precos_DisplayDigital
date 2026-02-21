@@ -18,35 +18,28 @@ logger = logging.getLogger(__name__)
 @permission_classes([AllowAny])
 @throttle_classes([AnonRateThrottle])
 def parear_dispositivo(request):
-    """
-    Endpoint para conectar uma TV física ao sistema usando um código curto.
-    """
     codigo = request.data.get('codigo', '').strip().upper()
-    
     if not codigo:
         return Response({"erro": "Código não fornecido"}, status=status.HTTP_400_BAD_REQUEST)
     
     try:
         dispositivo = Dispositivo.objects.get(codigo_acesso=codigo)
-        logger.info(f"Dispositivo pareado com sucesso: {dispositivo.nome} (Empresa: {dispositivo.empresa.nome})")
-        
+        logger.info(f"Dispositivo pareado: {dispositivo.nome}")
         return Response({"uuid": dispositivo.uuid, "nome": dispositivo.nome})
     except Dispositivo.DoesNotExist:
-        logger.warning(f"Tentativa de pareamento falhou. Código inválido: {codigo}")
         return Response({"erro": "Código inválido"}, status=status.HTTP_404_NOT_FOUND)
 
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def dados_painel(request, device_uuid):
-    """
-    Retorna a configuração e o catálogo EXCLUSIVO da empresa deste dispositivo.
-    """
     dispositivo = get_object_or_404(Dispositivo, uuid=device_uuid)
     empresa_do_dispositivo = dispositivo.empresa
     
-    produtos_ativos = Produto.objects.filter(exibir_no_painel=True, empresa=empresa_do_dispositivo)
-    produto_serializer = ProdutoSerializer(produtos_ativos, many=True, context={'request': request})
+    # ATENÇÃO AQUI: Agora pegamos TODOS os produtos, sem filtrar o exibir_no_painel
+    # A própria TV vai decidir o que mostrar baseada nos filtros locais de cada página.
+    todos_produtos = Produto.objects.filter(empresa=empresa_do_dispositivo)
+    produto_serializer = ProdutoSerializer(todos_produtos, many=True, context={'request': request})
 
     playlist_final = _construir_playlist(dispositivo.playlist, empresa_do_dispositivo, request)
 
@@ -72,8 +65,9 @@ def _construir_playlist(playlist_config, empresa, request=None):
         tipo = item.get('type')
         item_id = item.get('id')
         
-        # Puxa a lista de produtos ocultados especificamente para ESTE BLOCO da playlist
+        # Lê as listas de exceções locais deste bloco da playlist
         hidden_products = item.get('hidden_products', [])
+        forced_products = item.get('forced_products', []) # <-- NOVA LISTA
         
         try:
             tempo_custom = int(item.get('tempo', 15))
@@ -88,7 +82,8 @@ def _construir_playlist(playlist_config, empresa, request=None):
                     'familia_id': familia.id,
                     'descricao': f"Tabela: {familia.nome}",
                     'tempo_pagina': tempo_custom,
-                    'hidden_products': hidden_products # <-- Envia a lista para a TV excluir
+                    'hidden_products': hidden_products,
+                    'forced_products': forced_products # <-- ENVIADO PARA A TV
                 })
             except FamiliaProduto.DoesNotExist:
                 continue
