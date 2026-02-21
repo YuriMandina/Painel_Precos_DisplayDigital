@@ -260,81 +260,83 @@ class GridRenderer {
         this.app = app;
     }
 
-    render(itemPlaylist, allProducts, onComplete) {
+    async render(itemPlaylist, allProducts, onComplete) {
         this.app.getVideoContainer().style.display = 'none';
         this.app.getVideoContainer().innerHTML = '';
 
-        // Atualiza Título
         const titulo = itemPlaylist.descricao ? itemPlaylist.descricao.replace('Tabela: ', '').toUpperCase() : '';
+        const container = this.app.getContainer();
+        
+        // Esconde suavemente antes de trocar o título para não ser brusco
+        container.style.opacity = '0';
+        await new Promise(r => setTimeout(r, 800));
+
         this.app.setTitle(titulo);
 
-        // Filtra produtos da família
         let productsToShow = allProducts;
         if (itemPlaylist.familia_id) {
             productsToShow = allProducts.filter(p => p.familia === itemPlaylist.familia_id);
         }
 
         if (productsToShow.length === 0) {
-            this.app.getContainer().innerHTML = "<h2 style='text-align:center; color:#666;'>Nenhum produto nesta categoria.</h2>";
+            container.innerHTML = "<h2 style='text-align:center; color:#666; width:100%; margin-top:20vh;'>Nenhum produto nesta categoria.</h2>";
+            container.style.opacity = '1';
             setTimeout(onComplete, 3000);
             return;
         }
 
-        this._paginate(productsToShow, itemPlaylist.tempo_pagina || 15, onComplete);
+        // Inicia a paginação usando o tempo que a API nos devolveu (tempo configurado pelo usuário)
+        await this._paginate(productsToShow, itemPlaylist.tempo_pagina || 15, onComplete);
     }
 
-    _paginate(products, durationSec, onComplete) {
-        // Verifica se o app ainda está pareado antes de continuar paginação
-        if (!this.app.state.uuid) {
-            onComplete();
-            return;
-        }
-
+    async _paginate(products, durationSec, onComplete) {
         const itemsPerPage = this.app.isVertical() ? CONFIG.ITEMS_PER_PAGE.VERTICAL : CONFIG.ITEMS_PER_PAGE.HORIZONTAL;
         const totalPages = Math.ceil(products.length / itemsPerPage);
-        let currentPage = 0;
 
-        const showPage = () => {
-            // Checagem de segurança se despareou durante a transição
-            if (!this.app.state.uuid) return;
+        // Coreografia limpa e síncrona
+        for (let i = 0; i < totalPages; i++) {
+            if (!this.app.state.uuid) return onComplete();
 
-            if (currentPage >= totalPages) {
-                onComplete();
-                return;
-            }
-
-            const start = currentPage * itemsPerPage;
+            const start = i * itemsPerPage;
             const pageProducts = products.slice(start, start + itemsPerPage);
             
-            this._drawPage(pageProducts, itemsPerPage);
-            currentPage++;
+            await this._drawPage(pageProducts, itemsPerPage);
+            
+            // Congela na tela para o cliente ler, usando exatos "durationSec"
+            await new Promise(r => setTimeout(r, durationSec * 1000));
+        }
 
-            setTimeout(showPage, durationSec * 1000);
-        };
-
-        showPage();
+        // Fade-out suave na última página antes de tocar o vídeo
+        this.app.getContainer().style.opacity = '0';
+        await new Promise(r => setTimeout(r, 800));
+        
+        onComplete();
     }
 
-    _drawPage(products, itemsPerPage) {
+    async _drawPage(products, itemsPerPage) {
         const container = this.app.getContainer();
-        container.classList.add('fade');
-
-        setTimeout(() => {
-            container.innerHTML = '';
-            
-            if (this.app.isVertical()) {
-                const col = this._createColumn(products, itemsPerPage);
-                container.appendChild(col);
-            } else {
-                const itemsPerCol = Math.ceil(itemsPerPage / 2);
-                const col1 = this._createColumn(products.slice(0, itemsPerCol), itemsPerCol);
-                const col2 = this._createColumn(products.slice(itemsPerCol), itemsPerCol);
-                
-                container.appendChild(col1);
-                container.appendChild(col2);
-            }
-            container.classList.remove('fade');
-        }, 300);
+        
+        // 1. Inicia o Fade Out (Apaga devagar)
+        container.style.opacity = '0';
+        
+        // 2. Espera a animação do CSS (1.2s configurado no painel.css) terminar antes de mexer no HTML
+        await new Promise(r => setTimeout(r, 1200));
+        
+        // 3. Monta a estrutura da próxima página nos bastidores (invisível)
+        container.innerHTML = '';
+        if (this.app.isVertical()) {
+            container.appendChild(this._createColumn(products, itemsPerPage));
+        } else {
+            const itemsPerCol = Math.ceil(itemsPerPage / 2);
+            container.appendChild(this._createColumn(products.slice(0, itemsPerCol), itemsPerCol));
+            container.appendChild(this._createColumn(products.slice(itemsPerCol), itemsPerCol));
+        }
+        
+        // 4. Inicia o Fade In (Acende a TV com dados novos)
+        container.style.opacity = '1';
+        
+        // 5. Aguarda a TV ficar totalmente visível antes de começar a cronometrar o tempo de leitura
+        await new Promise(r => setTimeout(r, 1200));
     }
 
     _createColumn(products, capacity) {

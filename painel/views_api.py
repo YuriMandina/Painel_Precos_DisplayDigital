@@ -45,11 +45,9 @@ def dados_painel(request, device_uuid):
     dispositivo = get_object_or_404(Dispositivo, uuid=device_uuid)
     empresa_do_dispositivo = dispositivo.empresa
     
-    # IMPORTANTE: Filtra produtos ativos apenas desta empresa
     produtos_ativos = Produto.objects.filter(exibir_no_painel=True, empresa=empresa_do_dispositivo)
     produto_serializer = ProdutoSerializer(produtos_ativos, many=True, context={'request': request})
 
-    # Constrói a playlist hidratando os dados apenas desta empresa
     playlist_final = _construir_playlist(dispositivo.playlist, empresa_do_dispositivo, request)
 
     response_data = {
@@ -65,10 +63,6 @@ def dados_painel(request, device_uuid):
 
 
 def _construir_playlist(playlist_config, empresa, request=None):
-    """
-    Processa a lista de itens configurados no admin e hidrata
-    respeitando o limite de Tenant (Empresa).
-    """
     if not playlist_config:
         return []
 
@@ -77,31 +71,36 @@ def _construir_playlist(playlist_config, empresa, request=None):
     for item in playlist_config:
         tipo = item.get('type')
         item_id = item.get('id')
-        tempo_custom = item.get('tempo')
+        
+        # Garante que o tempo seja um número seguro
+        try:
+            tempo_custom = int(item.get('tempo', 15))
+        except (TypeError, ValueError):
+            tempo_custom = 15
 
         if tipo == 'tabela_familia':
             try:
-                # Busca a família apenas se pertencer à empresa correta
                 familia = FamiliaProduto.objects.get(id=item_id, empresa=empresa)
                 playlist_processada.append({
                     'tipo': 'tabela',
                     'familia_id': familia.id,
                     'descricao': f"Tabela: {familia.nome}",
-                    'tempo_pagina': tempo_custom or 15
+                    # REGRA: Usa o tempo configurado pelo usuário na playlist
+                    'tempo_pagina': tempo_custom 
                 })
             except FamiliaProduto.DoesNotExist:
                 continue
                 
         elif tipo == 'midia':
             try:
-                # Busca a mídia apenas se pertencer à empresa correta
                 midia = Midia.objects.get(id=item_id, empresa=empresa)
                 url_arquivo = request.build_absolute_uri(midia.arquivo.url) if (midia.arquivo and request) else (midia.arquivo.url if midia.arquivo else '')
 
                 playlist_processada.append({
                     'tipo': 'propaganda',
                     'url': url_arquivo,
-                    'duracao': tempo_custom or midia.duracao,
+                    # REGRA: Ignora a playlist e usa estritamente o tempo nativo da mídia do banco
+                    'duracao': midia.duracao, 
                     'descricao': midia.nome,
                     'tipo_midia': midia.tipo
                 })

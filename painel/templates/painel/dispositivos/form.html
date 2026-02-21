@@ -327,6 +327,25 @@
                     </button>
                 `;
             }
+
+            // NOVA LÓGICA DE CONTROLE DE TEMPO (UI)
+            let inputsTempoHtml = '';
+            if (data.type === 'midia') {
+                inputsTempoHtml = `
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Duração</span>
+                    <span class="w-12 text-center text-sm font-bold text-gray-500">${data.tempo}s</span>
+                    <input type="hidden" class="input-tempo" value="${data.tempo}">
+                    <i class="ph-fill ph-lock-key text-gray-300 ml-1" title="Fixo conforme arquivo original"></i>
+                `;
+            } else {
+                inputsTempoHtml = `
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">${configType.label}</span>
+                    <input type="number" 
+                           class="input-tempo w-12 text-center text-sm font-bold text-gray-800 bg-transparent border-none focus:ring-0 p-0" 
+                           value="${data.tempo}" min="5" max="600">
+                    <span class="text-xs text-gray-400">s</span>
+                `;
+            }
             
             div.innerHTML = `
                 <div class="cursor-grab text-gray-300 hover:text-gray-500">
@@ -345,11 +364,7 @@
                 ${previewBtn}
 
                 <div class="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 group-hover:bg-white group-hover:border-indigo-200 transition-colors">
-                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">${configType.label}</span>
-                    <input type="number" 
-                           class="input-tempo w-12 text-center text-sm font-bold text-gray-800 bg-transparent border-none focus:ring-0 p-0" 
-                           value="${data.tempo}" min="5" max="600">
-                    <span class="text-xs text-gray-400">s</span>
+                    ${inputsTempoHtml}
                 </div>
 
                 <button type="button" onclick="this.closest('.playlist-item').remove(); playlistManager.toggleEmptyState();" 
