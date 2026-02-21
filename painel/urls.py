@@ -50,12 +50,14 @@ urlpatterns = [
     path('dashboard/produtos/importar/', views_admin.ProdutoImportView.as_view(), name='produto_importar'),
     path('dashboard/produtos/<int:pk>/editar/', views_admin.ProdutoUpdateView.as_view(), name='produto_edit'),
     path('dashboard/produtos/<int:pk>/excluir/', views_admin.ProdutoDeleteView.as_view(), name='produto_delete'),
+    path('dashboard/produtos/<int:pk>/toggle-visibilidade/', views_admin.produto_toggle_visibilidade, name='produto_toggle_visibilidade'),
 
     # --- Famílias ---
     path('dashboard/familias/', views_admin.FamiliaListView.as_view(), name='familia_list'),
     path('dashboard/familias/nova/', views_admin.FamiliaCreateView.as_view(), name='familia_create'),
     path('dashboard/familias/<int:pk>/editar/', views_admin.FamiliaUpdateView.as_view(), name='familia_edit'),
     path('dashboard/familias/<int:pk>/excluir/', views_admin.FamiliaDeleteView.as_view(), name='familia_delete'),
+    path('dashboard/familias/<int:pk>/produtos/json/', views_admin.familia_produtos_json, name='familia_produtos_json'),
 
     # --- Dispositivos (TVs) ---
     path('dashboard/dispositivos/', views_admin.DispositivoListView.as_view(), name='dispositivo_list'),

@@ -4,16 +4,14 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Inicializa a aplicação
     const app = new TVApp();
     app.init();
 });
 
-// --- CONSTANTES & CONFIGURAÇÃO ---
 const CONFIG = {
     API_BASE: '/api/painel',
-    UPDATE_INTERVAL_MS: 60000, // 1 minuto
-    RETRY_DELAY_MS: 5000,      // 5 segundos
+    UPDATE_INTERVAL_MS: 60000, 
+    RETRY_DELAY_MS: 5000,      
     DEFAULT_DURATION_MS: 15000,
     ITEMS_PER_PAGE: {
         HORIZONTAL: 18,
@@ -30,13 +28,12 @@ const CONFIG = {
     }
 };
 
-// --- CLASSE PRINCIPAL ---
 class TVApp {
     constructor() {
         this.elements = this._mapElements();
         this.state = {
             uuid: localStorage.getItem('tv_device_uuid'),
-            data: null, // Dados completos da API
+            data: null, 
             orientation: 'HORIZONTAL',
             playlistHash: ''
         };
@@ -70,32 +67,26 @@ class TVApp {
     }
 
     _showSetupScreen() {
-        // Para qualquer polling anterior para evitar chamadas fantasmas
         if (this.pollingInterval) clearInterval(this.pollingInterval);
 
         this.elements.SETUP_SCREEN.style.display = 'flex';
         this.elements.APP_SCREEN.style.display = 'none';
         
         if (this.elements.INPUT_UUID) {
-            this.elements.INPUT_UUID.value = ""; // Limpa input anterior
+            this.elements.INPUT_UUID.value = ""; 
             this.elements.INPUT_UUID.placeholder = "CÓDIGO DE 6 DÍGITOS";
             this.elements.INPUT_UUID.focus();
         }
     }
 
-    _startApp() {
+    async _startApp() {
         this.elements.SETUP_SCREEN.style.display = 'none';
         this.elements.APP_SCREEN.style.display = 'flex';
         
-        // Carga inicial
-        this._fetchData();
+        await this._fetchData();
         
-        // Polling de atualização de dados
         if (this.pollingInterval) clearInterval(this.pollingInterval);
         this.pollingInterval = setInterval(() => this._fetchData(), CONFIG.UPDATE_INTERVAL_MS);
-        
-        // Inicia o loop da playlist
-        this.playlistManager.playNext();
     }
 
     async _handlePairing() {
@@ -120,9 +111,6 @@ class TVApp {
             this._processDataUpdate(data);
         } catch (error) {
             console.error("Erro ao atualizar dados:", error);
-            
-            // Se a API retornar 404, o dispositivo foi deletado no servidor.
-            // Devemos resetar o estado local para permitir novo pareamento.
             if (error.status === 404) {
                 this._handleDeviceUnlinked();
             }
@@ -138,19 +126,16 @@ class TVApp {
     }
 
     _processDataUpdate(newData) {
-        // 1. Detecta Mudança de Orientação
         this._updateOrientation(newData.config.orientacao);
 
-        // 2. Verifica se a Playlist mudou (usando Hash simples)
-        const newHash = JSON.stringify(newData.playlist_final.map(i => i.tipo + (i.id || i.url)));
+        const newHash = JSON.stringify(newData.playlist_final);
         
         if (newHash !== this.state.playlistHash) {
-            console.log("Nova playlist detectada. Itens:", newData.playlist_final.length);
+            console.log("Nova ordem/playlist detectada. Atualizando a tela...");
             this.state.playlistHash = newHash;
             this.state.data = newData;
             this.playlistManager.updatePlaylist(newData.playlist_final, newData.produtos);
         } else {
-            // Apenas atualiza o catálogo de produtos caso preços mudem, sem resetar playlist
             this.playlistManager.updateCatalog(newData.produtos);
         }
     }
@@ -172,7 +157,6 @@ class TVApp {
         this.state.orientation = orientation;
     }
 
-    // Métodos de UI expostos para os Managers
     setTitle(text) {
         if (this.elements.TITLE) this.elements.TITLE.innerText = text || "";
     }
@@ -197,18 +181,25 @@ class PlaylistManager {
         this.queue = [];
         this.products = [];
         this.currentIndex = 0;
-        this.isPlaying = false; // Flag para evitar múltiplas execuções simultâneas
+        this.isPlaying = false; 
+        this.timeoutId = null; 
         
         this.gridRenderer = new GridRenderer(app);
         this.videoPlayer = new VideoPlayer(app);
     }
 
     updatePlaylist(playlist, products) {
+        const orderChanged = this.queue.length > 0 && JSON.stringify(this.queue) !== JSON.stringify(playlist);
+        
         this.queue = playlist;
         this.products = products;
         
-        // Se a playlist estava vazia e agora tem itens, inicia
+        if (orderChanged) {
+            this.currentIndex = 0;
+        }
+
         if (!this.isPlaying && this.queue.length > 0) {
+            if (this.timeoutId) clearTimeout(this.timeoutId);
             this.playNext();
         }
     }
@@ -218,7 +209,6 @@ class PlaylistManager {
     }
 
     playNext() {
-        // Se o UUID foi removido (despareamento), para o loop
         if (!this.app.state.uuid) {
             this.isPlaying = false;
             return;
@@ -227,12 +217,14 @@ class PlaylistManager {
         this.isPlaying = true;
 
         if (!this.queue || this.queue.length === 0) {
+            this.isPlaying = false;
             this.app.setTitle("AGUARDANDO");
             this.app.getContainer().innerHTML = 
                 "<h2 style='color:#666; text-align:center; margin-top:20vh;'>Aguardando configuração...</h2>";
             
-            // Tenta novamente em breve
-            setTimeout(() => this.playNext(), CONFIG.RETRY_DELAY_MS);
+            this.timeoutId = setTimeout(() => {
+                if (!this.isPlaying) this.playNext();
+            }, CONFIG.RETRY_DELAY_MS);
             return;
         }
 
@@ -248,8 +240,7 @@ class PlaylistManager {
         } else if (item.tipo === 'propaganda') {
             this.videoPlayer.play(item, () => this.playNext());
         } else {
-            // Tipo desconhecido, pula
-            this.playNext();
+            this.playNext(); 
         }
     }
 }
@@ -267,9 +258,8 @@ class GridRenderer {
         const titulo = itemPlaylist.descricao ? itemPlaylist.descricao.replace('Tabela: ', '').toUpperCase() : '';
         const container = this.app.getContainer();
         
-        // Esconde suavemente antes de trocar o título para não ser brusco
         container.style.opacity = '0';
-        await new Promise(r => setTimeout(r, 800));
+        await new Promise(r => setTimeout(r, 300));
 
         this.app.setTitle(titulo);
 
@@ -278,14 +268,26 @@ class GridRenderer {
             productsToShow = allProducts.filter(p => p.familia === itemPlaylist.familia_id);
         }
 
+        // --- BLINDAGEM MÁXIMA DA TV ---
+        if (itemPlaylist.hidden_products && Array.isArray(itemPlaylist.hidden_products)) {
+            // Converte todos os IDs recebidos do servidor para Texto
+            const hiddenIds = itemPlaylist.hidden_products.map(String);
+            
+            productsToShow = productsToShow.filter(p => {
+                // Garante que o ID do produto exista e seja texto
+                const productId = String(p.id);
+                // Se a ID estiver na lista negra, retorna falso e arranca ele da tabela
+                return !hiddenIds.includes(productId);
+            });
+        }
+
         if (productsToShow.length === 0) {
-            container.innerHTML = "<h2 style='text-align:center; color:#666; width:100%; margin-top:20vh;'>Nenhum produto nesta categoria.</h2>";
+            container.innerHTML = "<h2 style='text-align:center; color:#666; width:100%; margin-top:20vh;'>Nenhum produto a exibir nesta tabela.</h2>";
             container.style.opacity = '1';
             setTimeout(onComplete, 3000);
             return;
         }
 
-        // Inicia a paginação usando o tempo que a API nos devolveu (tempo configurado pelo usuário)
         await this._paginate(productsToShow, itemPlaylist.tempo_pagina || 15, onComplete);
     }
 
@@ -293,7 +295,6 @@ class GridRenderer {
         const itemsPerPage = this.app.isVertical() ? CONFIG.ITEMS_PER_PAGE.VERTICAL : CONFIG.ITEMS_PER_PAGE.HORIZONTAL;
         const totalPages = Math.ceil(products.length / itemsPerPage);
 
-        // Coreografia limpa e síncrona
         for (let i = 0; i < totalPages; i++) {
             if (!this.app.state.uuid) return onComplete();
 
@@ -301,14 +302,11 @@ class GridRenderer {
             const pageProducts = products.slice(start, start + itemsPerPage);
             
             await this._drawPage(pageProducts, itemsPerPage);
-            
-            // Congela na tela para o cliente ler, usando exatos "durationSec"
             await new Promise(r => setTimeout(r, durationSec * 1000));
         }
 
-        // Fade-out suave na última página antes de tocar o vídeo
         this.app.getContainer().style.opacity = '0';
-        await new Promise(r => setTimeout(r, 800));
+        await new Promise(r => setTimeout(r, 300));
         
         onComplete();
     }
@@ -316,13 +314,9 @@ class GridRenderer {
     async _drawPage(products, itemsPerPage) {
         const container = this.app.getContainer();
         
-        // 1. Inicia o Fade Out (Apaga devagar)
         container.style.opacity = '0';
+        await new Promise(r => setTimeout(r, 400));
         
-        // 2. Espera a animação do CSS (1.2s configurado no painel.css) terminar antes de mexer no HTML
-        await new Promise(r => setTimeout(r, 1200));
-        
-        // 3. Monta a estrutura da próxima página nos bastidores (invisível)
         container.innerHTML = '';
         if (this.app.isVertical()) {
             container.appendChild(this._createColumn(products, itemsPerPage));
@@ -332,19 +326,14 @@ class GridRenderer {
             container.appendChild(this._createColumn(products.slice(itemsPerCol), itemsPerCol));
         }
         
-        // 4. Inicia o Fade In (Acende a TV com dados novos)
         container.style.opacity = '1';
-        
-        // 5. Aguarda a TV ficar totalmente visível antes de começar a cronometrar o tempo de leitura
-        await new Promise(r => setTimeout(r, 1200));
+        await new Promise(r => setTimeout(r, 400));
     }
 
     _createColumn(products, capacity) {
         const col = document.createElement('div');
         col.className = 'coluna';
-        
         products.forEach(p => col.appendChild(this._createCard(p)));
-        
         while (col.children.length < capacity) {
             col.appendChild(this._createEmptyCard());
         }
@@ -354,15 +343,10 @@ class GridRenderer {
     _createCard(product) {
         const div = document.createElement('div');
         div.className = `item-produto ${product.em_oferta ? 'em-oferta' : ''}`;
-        
         const priceFormatted = parseFloat(product.preco).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
         const charLimit = this.app.isVertical() ? 28 : 22;
         const nameClass = product.descricao.length > charLimit ? 'nome-container marquee' : 'nome-container';
-
-        div.innerHTML = `
-            <div class="${nameClass}"><span class="nome">${product.descricao}</span></div>
-            <div class="preco">${priceFormatted}</div>
-        `;
+        div.innerHTML = `<div class="${nameClass}"><span class="nome">${product.descricao}</span></div><div class="preco">${priceFormatted}</div>`;
         return div;
     }
 
@@ -381,7 +365,6 @@ class VideoPlayer {
     }
 
     play(item, onComplete) {
-        // Verifica se despareou
         if (!this.app.state.uuid) {
             onComplete();
             return;
@@ -399,15 +382,18 @@ class VideoPlayer {
 
         const durationMs = (item.duracao || 15) * 1000;
         let safetyTimeout;
+        let isFinished = false; 
 
         const finish = () => {
+            if (isFinished) return;
+            isFinished = true;
             if (safetyTimeout) clearTimeout(safetyTimeout);
             onComplete();
         };
 
         if (item.tipo_midia === 'IMAGEM') {
             const img = document.createElement('img');
-            img.id = 'video-bg'; // Reutilizando o ID para pegar as regras de CSS (100% width/height)
+            img.id = 'video-bg'; 
             img.src = mediaUrl;
             img.onload = () => {
                 safetyTimeout = setTimeout(finish, durationMs);
@@ -415,7 +401,6 @@ class VideoPlayer {
             img.onerror = finish;
             container.appendChild(img);
         } else {
-            // Padrão: VÍDEO
             const video = document.createElement('video');
             video.id = 'video-bg';
             video.src = mediaUrl;
@@ -423,7 +408,6 @@ class VideoPlayer {
             video.autoplay = true;
             video.playsInline = true;
 
-            // Fallback de segurança caso o vídeo não dispare o evento 'onended'
             safetyTimeout = setTimeout(finish, durationMs + 2000);
 
             video.onerror = finish;

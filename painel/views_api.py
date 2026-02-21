@@ -72,7 +72,9 @@ def _construir_playlist(playlist_config, empresa, request=None):
         tipo = item.get('type')
         item_id = item.get('id')
         
-        # Garante que o tempo seja um número seguro
+        # Puxa a lista de produtos ocultados especificamente para ESTE BLOCO da playlist
+        hidden_products = item.get('hidden_products', [])
+        
         try:
             tempo_custom = int(item.get('tempo', 15))
         except (TypeError, ValueError):
@@ -85,8 +87,8 @@ def _construir_playlist(playlist_config, empresa, request=None):
                     'tipo': 'tabela',
                     'familia_id': familia.id,
                     'descricao': f"Tabela: {familia.nome}",
-                    # REGRA: Usa o tempo configurado pelo usuário na playlist
-                    'tempo_pagina': tempo_custom 
+                    'tempo_pagina': tempo_custom,
+                    'hidden_products': hidden_products # <-- Envia a lista para a TV excluir
                 })
             except FamiliaProduto.DoesNotExist:
                 continue
@@ -99,7 +101,6 @@ def _construir_playlist(playlist_config, empresa, request=None):
                 playlist_processada.append({
                     'tipo': 'propaganda',
                     'url': url_arquivo,
-                    # REGRA: Ignora a playlist e usa estritamente o tempo nativo da mídia do banco
                     'duracao': midia.duracao, 
                     'descricao': midia.nome,
                     'tipo_midia': midia.tipo

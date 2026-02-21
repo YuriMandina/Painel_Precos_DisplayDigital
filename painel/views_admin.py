@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, FormView
+from django.views.decorators.http import require_POST
 from django.db.models import Q
 from django.http import HttpRequest, HttpResponse, JsonResponse
 
@@ -51,13 +52,22 @@ class ProdutoListView(LoginRequiredMixin, TenantQuerySetMixin, ListView):
     def get_queryset(self):
         queryset = super().get_queryset().select_related('familia').order_by('ordem', 'descricao')
         term = self.request.GET.get('q')
+        familia_id = self.request.GET.get('familia') # Captura o novo filtro
+        
         if term:
             queryset = queryset.filter(Q(descricao__icontains=term) | Q(codigo__icontains=term))
+            
+        if familia_id: # Aplica o filtro de família se selecionado
+            queryset = queryset.filter(familia_id=familia_id)
+            
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['query'] = self.request.GET.get('q', '')
+        context['familia_id'] = self.request.GET.get('familia', '')
+        # Envia as famílias da empresa atual para popular o Dropdown no HTML
+        context['familias'] = FamiliaProduto.objects.filter(empresa=self.request.user.perfil.empresa).order_by('nome')
         context['total_count'] = self.get_queryset().count()
         return context
 
@@ -149,6 +159,19 @@ class ProdutoImportView(LoginRequiredMixin, SuccessMessageMixin, FormView):
             try: return float(valor_raw.replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip())
             except ValueError: return None
         return float(valor_raw)
+    
+@login_required
+@require_POST
+def produto_toggle_visibilidade(request, pk):
+    """Ativa ou desativa a exibição do produto via AJAX (Switch)."""
+    produto = get_object_or_404(Produto, pk=pk, empresa=request.user.perfil.empresa)
+    produto.exibir_no_painel = not produto.exibir_no_painel
+    produto.save()
+    
+    return JsonResponse({
+        "status": "success", 
+        "exibir_no_painel": produto.exibir_no_painel
+    })
 
 
 # --- MÓDULO: FAMÍLIAS ---
@@ -190,6 +213,29 @@ class FamiliaDeleteView(LoginRequiredMixin, SuccessMessageMixin, TenantQuerySetM
     template_name = 'painel/familias/confirm_delete.html'
     success_url = reverse_lazy('familia_list')
     success_message = "Família removida!"
+
+@login_required
+def familia_produtos_json(request, pk):
+    """
+    Retorna os produtos de uma família específica em formato JSON.
+    Usado no Modal de auditoria dentro da página de configuração da TV.
+    """
+    familia = get_object_or_404(FamiliaProduto, pk=pk, empresa=request.user.perfil.empresa)
+    
+    # Busca os produtos respeitando a mesma ordem que aparecerão na TV
+    produtos = Produto.objects.filter(familia=familia, empresa=request.user.perfil.empresa).order_by('ordem', 'descricao')
+    
+    dados = []
+    for p in produtos:
+        dados.append({
+            'id': p.id,
+            'descricao': p.descricao,
+            'preco': str(p.preco),
+            'em_oferta': p.em_oferta,
+            'exibir_no_painel': p.exibir_no_painel
+        })
+        
+    return JsonResponse({'status': 'success', 'produtos': dados})
 
 
 # --- MÓDULO: DISPOSITIVOS (TVs) ---
@@ -275,3 +321,4 @@ class MidiaDeleteView(LoginRequiredMixin, SuccessMessageMixin, TenantQuerySetMix
     template_name = 'painel/midias/confirm_delete.html'
     success_url = reverse_lazy('midia_list')
     success_message = "Mídia removida."
+

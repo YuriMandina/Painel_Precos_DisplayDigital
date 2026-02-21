@@ -95,8 +95,7 @@ body {
     height: 88%;
     display: flex;
     padding: 0 1vw;
-    /* Adicionada transição suave de opacidade (1.2 segundos com efeito de entrada/saída elegante) */
-    transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.2s ease-in-out;
     opacity: 1;
 }
 
