@@ -1,16 +1,32 @@
+# ==============================================================================
+#                                  IMPORTS
+# ==============================================================================
+from typing import Any, Tuple, Optional
+
 import pandas as pd
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.http import HttpRequest, HttpResponse
+from django.shortcuts import redirect, render
 from django.urls import path
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from .models import Empresa, Perfil, FamiliaProduto, Produto, Dispositivo, Midia
+
 from .forms import ImportarProdutosForm
+from .models import (
+    Dispositivo, 
+    Empresa, 
+    FamiliaProduto, 
+    Midia, 
+    Perfil, 
+    Produto
+)
 
 
-# --- ADMIN DE USUÁRIOS E EMPRESAS (SAAS) ---
+# ==============================================================================
+#                           ADMIN: CONTROLE DE TENANTS (SAAS)
+# ==============================================================================
 
 @admin.register(Empresa)
 class EmpresaAdmin(admin.ModelAdmin):
+    """Gestão de instâncias de Inquilinos (Tenants) via root-admin."""
     list_display = ('nome', 'cnpj', 'ativo', 'created_at')
     search_fields = ('nome', 'cnpj')
     list_filter = ('ativo',)
@@ -18,36 +34,45 @@ class EmpresaAdmin(admin.ModelAdmin):
 
 @admin.register(Perfil)
 class PerfilAdmin(admin.ModelAdmin):
+    """Gestão de vínculos de autorização (Usuário <-> Tenant)."""
     list_display = ('usuario', 'empresa')
     search_fields = ('usuario__username', 'usuario__email', 'empresa__nome')
     list_filter = ('empresa',)
 
 
-# --- ADMIN DE DADOS DO SISTEMA ---
+# ==============================================================================
+#                           ADMIN: DADOS DE NEGÓCIO E UI
+# ==============================================================================
 
 @admin.register(Produto)
 class ProdutoAdmin(admin.ModelAdmin):
     """
-    Administração de Produtos com funcionalidade de Importação via Excel.
+    Interface administrativa principal para manipulação de Produtos.
+    Inclui override de rotas para processamento em lote via planilhas.
     """
-    # Adicionada a 'empresa' na exibição e nos filtros para o SuperAdmin
-    list_display = ('empresa', 'ordem', 'codigo', 'descricao', 'get_preco_formatado', 'em_oferta', 'exibir_no_painel')
+    list_display = (
+        'empresa', 'ordem', 'codigo', 'descricao', 
+        'get_preco_formatado', 'em_oferta', 'exibir_no_painel'
+    )
     list_display_links = ('codigo', 'descricao')
     list_editable = ('ordem', 'em_oferta', 'exibir_no_painel')
     list_filter = ('empresa', 'familia', 'em_oferta', 'exibir_no_painel')
     search_fields = ('codigo', 'descricao')
     ordering = ('empresa', 'ordem', 'descricao')
 
+    # Constantes de mapeamento de colunas da planilha
     COL_CODIGO = 'CÓDIGO DO PRODUTO'
     COL_DESCRICAO = 'DESCRIÇÃO DO PRODUTO'
     COL_PRECO = 'PREÇO UNITÁRIO DE VENDA'
     COL_FAMILIA = 'FAMÍLIA DE PRODUTO'
 
-    def get_preco_formatado(self, obj):
+    @admin.display(description='Preço')
+    def get_preco_formatado(self, obj: Produto) -> str:
+        """Formata a saída decimal monetária na listagem."""
         return f"R$ {obj.preco}".replace('.', ',')
-    get_preco_formatado.short_description = 'Preço'
 
-    def get_urls(self):
+    def get_urls(self) -> list:
+        """Injeta a rota de endpoint customizada para upload de planilhas."""
         urls = super().get_urls()
         custom_urls = [
             path(
@@ -58,25 +83,26 @@ class ProdutoAdmin(admin.ModelAdmin):
         ]
         return custom_urls + urls
 
-    def importar_excel_view(self, request):
+    def importar_excel_view(self, request: HttpRequest) -> HttpResponse:
+        """View administrativa customizada para renderização e processamento do formulário de importação."""
         if request.method == "POST":
             form = ImportarProdutosForm(request.POST, request.FILES)
             if form.is_valid():
                 try:
                     arquivo = request.FILES['arquivo_excel']
-                    # Passamos a empresa do superuser logado para a importação do admin
                     empresa = request.user.perfil.empresa 
                     criados, atualizados = self.processar_arquivo(arquivo, empresa)
+                    
                     self.message_user(
                         request, 
-                        f"Sucesso! {criados} produtos criados e {atualizados} atualizados.", 
+                        f"Processamento concluído: {criados} inserções, {atualizados} atualizações.", 
                         level=messages.SUCCESS
                     )
                     return redirect('..')
                 except Exception as e:
                     self.message_user(
                         request, 
-                        f"Erro ao processar arquivo: {str(e)}", 
+                        f"Falha na integração: {str(e)}", 
                         level=messages.ERROR
                     )
         else:
@@ -85,12 +111,13 @@ class ProdutoAdmin(admin.ModelAdmin):
         context = {
             'form': form,
             'opts': self.model._meta,
-            'title': 'Importar Produtos via Excel'
+            'title': 'Importar Lote de Produtos (Excel)'
         }
         return render(request, 'admin/importar_excel.html', context)
 
     @staticmethod
-    def _limpar_valor_monetario(valor):
+    def _limpar_valor_monetario(valor: Any) -> Optional[float]:
+        """Rotina de sanitização para conversão de strings monetárias sujas do Excel para Float."""
         if pd.isna(valor):
             return None
         if isinstance(valor, str):
@@ -101,7 +128,11 @@ class ProdutoAdmin(admin.ModelAdmin):
                 return None
         return float(valor)
 
-    def processar_arquivo(self, arquivo, empresa):
+    def processar_arquivo(self, arquivo: Any, empresa: Empresa) -> Tuple[int, int]:
+        """
+        Executa a leitura do dataframe, validação de colunas e operação de Upsert (Update or Create) 
+        dos registros no banco de dados, retornando a volumetria de operações realizadas.
+        """
         df = pd.read_excel(arquivo)
         df.columns = [str(c).strip().upper() for c in df.columns]
 
@@ -109,7 +140,7 @@ class ProdutoAdmin(admin.ModelAdmin):
         
         for col in colunas_necessarias:
             if col not in df.columns:
-                raise ValueError(f"Coluna obrigatória '{col}' não encontrada.")
+                raise ValueError(f"Constraint violada: A coluna obrigatória '{col}' não foi detectada no arquivo.")
 
         count_criados = 0
         count_atualizados = 0
@@ -145,6 +176,7 @@ class ProdutoAdmin(admin.ModelAdmin):
 
 @admin.register(FamiliaProduto)
 class FamiliaProdutoAdmin(admin.ModelAdmin):
+    """Gestão de agrupamentos (Categorias) de Produtos."""
     list_display = ('empresa', 'nome')
     search_fields = ('nome', 'empresa__nome')
     list_filter = ('empresa',)
@@ -152,21 +184,22 @@ class FamiliaProdutoAdmin(admin.ModelAdmin):
 
 @admin.register(Dispositivo)
 class DispositivoAdmin(admin.ModelAdmin):
+    """Gestão de configuração técnica e autorização de Endpoints (TVs)."""
     list_display = ('nome', 'empresa', 'codigo_acesso', 'uuid', 'modo_exibicao', 'orientacao')
     readonly_fields = ('uuid', 'codigo_acesso')
     list_filter = ('empresa', 'modo_exibicao', 'orientacao')
     search_fields = ('nome', 'empresa__nome')
     
     fieldsets = (
-        ('Identificação', {
+        ('Identificação e Pareamento', {
             'fields': ('empresa', 'nome', 'titulo_exibicao', 'uuid', 'codigo_acesso')
         }),
-        ('Configuração Técnica', {
+        ('Especificações de Hardware/Layout', {
             'fields': ('modo_exibicao', 'orientacao')
         }),
-        ('Conteúdo', {
+        ('Engine de Renderização', {
             'fields': ('playlist', 'exibir_apenas_familias'),
-            'description': 'Configure o que será exibido neste dispositivo.'
+            'description': 'Estrutura de dados para o client-side player.'
         }),
     )
     
@@ -175,6 +208,7 @@ class DispositivoAdmin(admin.ModelAdmin):
 
 @admin.register(Midia)
 class MidiaAdmin(admin.ModelAdmin):
+    """Gestão do repositório de binários/assets visuais vinculados aos Tenants."""
     list_display = ('nome', 'empresa', 'tipo', 'duracao', 'ativo')
     list_filter = ('empresa', 'tipo', 'ativo')
     search_fields = ('nome', 'empresa__nome')

@@ -1,43 +1,87 @@
+# ==============================================================================
+#                                  IMPORTS
+# ==============================================================================
 import logging
-from rest_framework.decorators import api_view, permission_classes, authentication_classes, throttle_classes
-from rest_framework.permissions import AllowAny
-from rest_framework.throttling import AnonRateThrottle
-from rest_framework.response import Response
-from rest_framework import status
+from typing import List, Dict, Any, Optional
+
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
+
+from rest_framework import status
+from rest_framework.decorators import (
+    api_view, 
+    permission_classes, 
+    authentication_classes, 
+    throttle_classes
+)
+from rest_framework.permissions import AllowAny
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
 
 from .models import Dispositivo, Produto, FamiliaProduto, Midia
 from .serializers import ProdutoSerializer, DispositivoConfigSerializer
 
+
+# ==============================================================================
+#                               LOGGING SETUP
+# ==============================================================================
 logger = logging.getLogger(__name__)
+
+
+# ==============================================================================
+#                                API VIEWS
+# ==============================================================================
 
 @csrf_exempt
 @api_view(['POST'])
 @authentication_classes([])
 @permission_classes([AllowAny])
 @throttle_classes([AnonRateThrottle])
-def parear_dispositivo(request):
+def parear_dispositivo(request: Request) -> Response:
+    """
+    Endpoint de registro inicial para dispositivos.
+    Valida um código de acesso recebido via POST e retorna as credenciais (UUID) 
+    do dispositivo correspondente caso exista.
+    """
     codigo = request.data.get('codigo', '').strip().upper()
+    
     if not codigo:
-        return Response({"erro": "Código não fornecido"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"erro": "Código de acesso não fornecido."}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
     
     try:
         dispositivo = Dispositivo.objects.get(codigo_acesso=codigo)
-        logger.info(f"Dispositivo pareado: {dispositivo.nome}")
-        return Response({"uuid": dispositivo.uuid, "nome": dispositivo.nome})
+        logger.info(f"Dispositivo pareado com sucesso: {dispositivo.nome} (UUID: {dispositivo.uuid})")
+        
+        return Response({
+            "uuid": str(dispositivo.uuid), 
+            "nome": dispositivo.nome
+        }, status=status.HTTP_200_OK)
+        
     except Dispositivo.DoesNotExist:
-        return Response({"erro": "Código inválido"}, status=status.HTTP_404_NOT_FOUND)
+        logger.warning(f"Tentativa de pareamento falhou. Código inválido: {codigo}")
+        return Response(
+            {"erro": "Código de acesso inválido ou dispositivo não encontrado."}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
 
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
-def dados_painel(request, device_uuid):
+def dados_painel(request: Request, device_uuid: str) -> Response:
+    """
+    Fornece a carga de dados completa para a renderização do painel no dispositivo.
+    Inclui as configurações do dispositivo, a lista global de produtos da empresa 
+    e a estrutura processada da playlist.
+    """
     dispositivo = get_object_or_404(Dispositivo, uuid=device_uuid)
     empresa_do_dispositivo = dispositivo.empresa
     
-    # ATENÇÃO AQUI: Agora pegamos TODOS os produtos, sem filtrar o exibir_no_painel
-    # A própria TV vai decidir o que mostrar baseada nos filtros locais de cada página.
+    # Recupera o catálogo completo de produtos da empresa. 
+    # A filtragem de exibição ocorre no client-side com base nas regras de cada página.
     todos_produtos = Produto.objects.filter(empresa=empresa_do_dispositivo)
     produto_serializer = ProdutoSerializer(todos_produtos, many=True, context={'request': request})
 
@@ -52,10 +96,19 @@ def dados_painel(request, device_uuid):
         "playlist_final": playlist_final
     }
 
-    return Response(response_data)
+    return Response(response_data, status=status.HTTP_200_OK)
 
 
-def _construir_playlist(playlist_config, empresa, request=None):
+# ==============================================================================
+#                            HELPER FUNCTIONS
+# ==============================================================================
+
+def _construir_playlist(playlist_config: Optional[List[Dict[str, Any]]], empresa: Any, request: Request = None) -> List[Dict[str, Any]]:
+    """
+    Processa o dicionário de configuração da playlist bruto armazenado no banco,
+    resolvendo referências de banco de dados (Tabelas e Mídias) e gerando um 
+    array padronizado pronto para consumo pelo front-end da TV.
+    """
     if not playlist_config:
         return []
 
@@ -65,15 +118,17 @@ def _construir_playlist(playlist_config, empresa, request=None):
         tipo = item.get('type')
         item_id = item.get('id')
         
-        # Lê as listas de exceções locais deste bloco da playlist
+        # Extrai listas de produtos ocultos e forçados (exceções de exibição)
         hidden_products = item.get('hidden_products', [])
-        forced_products = item.get('forced_products', []) # <-- NOVA LISTA
+        forced_products = item.get('forced_products', [])
         
+        # Garante a conversão segura do tempo de exibição com fallback padrão
         try:
             tempo_custom = int(item.get('tempo', 15))
         except (TypeError, ValueError):
             tempo_custom = 15
 
+        # Processamento de blocos do tipo 'tabela_familia'
         if tipo == 'tabela_familia':
             try:
                 familia = FamiliaProduto.objects.get(id=item_id, empresa=empresa)
@@ -83,15 +138,21 @@ def _construir_playlist(playlist_config, empresa, request=None):
                     'descricao': f"Tabela: {familia.nome}",
                     'tempo_pagina': tempo_custom,
                     'hidden_products': hidden_products,
-                    'forced_products': forced_products # <-- ENVIADO PARA A TV
+                    'forced_products': forced_products 
                 })
             except FamiliaProduto.DoesNotExist:
+                logger.debug(f"FamiliaProduto (ID: {item_id}) ignorada na playlist: Não encontrada.")
                 continue
                 
+        # Processamento de blocos do tipo 'midia'
         elif tipo == 'midia':
             try:
                 midia = Midia.objects.get(id=item_id, empresa=empresa)
-                url_arquivo = request.build_absolute_uri(midia.arquivo.url) if (midia.arquivo and request) else (midia.arquivo.url if midia.arquivo else '')
+                
+                # Resolve a URL absoluta caso o contexto do request esteja disponível
+                url_arquivo = ''
+                if midia.arquivo:
+                    url_arquivo = request.build_absolute_uri(midia.arquivo.url) if request else midia.arquivo.url
 
                 playlist_processada.append({
                     'tipo': 'propaganda',
@@ -101,6 +162,7 @@ def _construir_playlist(playlist_config, empresa, request=None):
                     'tipo_midia': midia.tipo
                 })
             except Midia.DoesNotExist:
+                logger.debug(f"Mídia (ID: {item_id}) ignorada na playlist: Não encontrada.")
                 continue
 
     return playlist_processada

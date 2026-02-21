@@ -1,50 +1,40 @@
+# ==============================================================================
+#                                  IMPORTS
+# ==============================================================================
 from django.urls import path
 from django.views.generic import RedirectView
 from django.contrib.auth import views as auth_views
-from . import views_api, views, views_admin
+
+from . import views, views_api, views_admin
+
+
+# ==============================================================================
+#                                 URL PATTERNS
+# ==============================================================================
 
 urlpatterns = [
     
-    # ==========================================
-    # REDIRECIONAMENTO DA RAIZ (Página Inicial)
-    # ==========================================
-    # 2. Adicione esta linha: Redireciona de "/" para "/dashboard/"
+    # --- REDIRECIONAMENTO RAIZ ---
     path('', RedirectView.as_view(url='/login/'), name='root_redirect'),
 
-    # ==========================================
-    # AUTENTICAÇÃO (Login / Logout)
-    # ==========================================
-    path('login/', auth_views.LoginView.as_view(
-        template_name='painel/login.html', 
-        redirect_authenticated_user=True
-    ), name='login'),
-
-    # ==========================================
-    # AUTENTICAÇÃO (Login / Logout)
-    # ==========================================
+    # --- AUTENTICAÇÃO E SESSÃO ---
     path('login/', auth_views.LoginView.as_view(
         template_name='painel/login.html', 
         redirect_authenticated_user=True
     ), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
 
-    # ==========================================
-    # API ENDPOINTS (Consumidos pela TV/JS)
-    # ==========================================
+    # --- API ENDPOINTS (Client-side / TV) ---
     path('api/painel/parear/', views_api.parear_dispositivo, name='api_parear'),
     path('api/painel/<uuid:device_uuid>/', views_api.dados_painel, name='api_dados_painel'),
 
-    # ==========================================
-    # FRONTEND (TV Display)
-    # ==========================================
+    # --- FRONTEND (SPA TV) ---
     path('tv/', views.tv_display_view, name='tv_display'),
 
-    # ==========================================
-    # DASHBOARD ADMINISTRATIVO
-    # ==========================================
+    # --- DASHBOARD (Visão Geral) ---
     path('dashboard/', views_admin.dashboard_index, name='dashboard'),
 
-    # --- Produtos ---
+    # --- MÓDULO: PRODUTOS ---
     path('dashboard/produtos/', views_admin.ProdutoListView.as_view(), name='produtos_list'),
     path('dashboard/produtos/novo/', views_admin.ProdutoCreateView.as_view(), name='produto_create'),
     path('dashboard/produtos/importar/', views_admin.ProdutoImportView.as_view(), name='produto_importar'),
@@ -52,21 +42,21 @@ urlpatterns = [
     path('dashboard/produtos/<int:pk>/excluir/', views_admin.ProdutoDeleteView.as_view(), name='produto_delete'),
     path('dashboard/produtos/<int:pk>/toggle-visibilidade/', views_admin.produto_toggle_visibilidade, name='produto_toggle_visibilidade'),
 
-    # --- Famílias ---
+    # --- MÓDULO: FAMÍLIAS DE PRODUTOS ---
     path('dashboard/familias/', views_admin.FamiliaListView.as_view(), name='familia_list'),
     path('dashboard/familias/nova/', views_admin.FamiliaCreateView.as_view(), name='familia_create'),
     path('dashboard/familias/<int:pk>/editar/', views_admin.FamiliaUpdateView.as_view(), name='familia_edit'),
     path('dashboard/familias/<int:pk>/excluir/', views_admin.FamiliaDeleteView.as_view(), name='familia_delete'),
     path('dashboard/familias/<int:pk>/produtos/json/', views_admin.familia_produtos_json, name='familia_produtos_json'),
 
-    # --- Dispositivos (TVs) ---
+    # --- MÓDULO: DISPOSITIVOS (TVs) ---
     path('dashboard/dispositivos/', views_admin.DispositivoListView.as_view(), name='dispositivo_list'),
     path('dashboard/dispositivos/nova/', views_admin.DispositivoCreateView.as_view(), name='dispositivo_create'),
     path('dashboard/dispositivos/<int:pk>/editar/', views_admin.DispositivoUpdateView.as_view(), name='dispositivo_edit'),
     path('dashboard/dispositivos/<int:pk>/excluir/', views_admin.DispositivoDeleteView.as_view(), name='dispositivo_delete'),
     path('dashboard/dispositivos/<int:pk>/desconectar/', views_admin.DispositivoDesconectarView.as_view(), name='dispositivo_disconnect'),
 
-    # --- MÍDIAS (Biblioteca) ---
+    # --- MÓDULO: MÍDIAS (Biblioteca) ---
     path('dashboard/midias/', views_admin.MidiaListView.as_view(), name='midia_list'),
     path('dashboard/midias/nova/', views_admin.MidiaCreateView.as_view(), name='midia_create'),
     path('dashboard/midias/<int:pk>/editar/', views_admin.MidiaUpdateView.as_view(), name='midia_edit'),

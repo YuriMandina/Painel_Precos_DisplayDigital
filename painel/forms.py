@@ -1,7 +1,17 @@
-from django import forms
-from .models import Produto, FamiliaProduto, Dispositivo, Midia
+# ==============================================================================
+#                                  IMPORTS
+# ==============================================================================
+from typing import Any, Dict
 
-# --- Constantes de Estilo (Tailwind CSS) ---
+from django import forms
+
+from .models import Dispositivo, FamiliaProduto, Midia, Produto
+
+
+# ==============================================================================
+#                             CONSTANTES DE ESTILIZAÇÃO
+# ==============================================================================
+
 CSS_INPUT = (
     'w-full rounded-lg border-gray-300 focus:border-indigo-500 '
     'focus:ring-indigo-500 shadow-sm text-sm'
@@ -20,26 +30,36 @@ CSS_FILE_BASE = (
 CSS_FILE_INDIGO = f"{CSS_FILE_BASE} file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
 
 
+# ==============================================================================
+#                                  FORMULÁRIOS
+# ==============================================================================
+
 class ImportarProdutosForm(forms.Form):
+    """Formulário para upload de payload Excel contendo carga em massa de produtos."""
+    
     arquivo_excel = forms.FileField(
         label='Selecione o arquivo Excel (.xlsx)',
         widget=forms.FileInput(attrs={'class': CSS_FILE_INDIGO})
     )
     
-    def clean_arquivo_excel(self):
+    def clean_arquivo_excel(self) -> Any:
+        """Validação de extensão MIME no nível da aplicação."""
         arquivo = self.cleaned_data.get('arquivo_excel')
         if arquivo and not arquivo.name.endswith('.xlsx'):
-            raise forms.ValidationError("O arquivo deve ser um Excel (.xlsx)")
+            raise forms.ValidationError("Formato inválido. O arquivo deve ter a extensão .xlsx.")
         return arquivo
 
 
 class ProdutoForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        # Captura a empresa passada pela View antes de iniciar o form
+    """
+    Formulário principal de Produtos. 
+    Aplica restrição de QuerySet para garantir que as Famílias disponíveis
+    pertençam exclusivamente ao escopo da Empresa (Tenant) do usuário.
+    """
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.empresa = kwargs.pop('empresa', None)
         super().__init__(*args, **kwargs)
         
-        # Filtra as famílias para mostrar apenas as da empresa do usuário logado
         if self.empresa:
             self.fields['familia'].queryset = FamiliaProduto.objects.filter(empresa=self.empresa)
 
@@ -61,6 +81,7 @@ class ProdutoForm(forms.ModelForm):
 
 
 class FamiliaForm(forms.ModelForm):
+    """Formulário para manipulação de categorias/famílias de produtos."""
     class Meta:
         model = FamiliaProduto
         fields = ['nome']
@@ -70,6 +91,7 @@ class FamiliaForm(forms.ModelForm):
 
 
 class DispositivoForm(forms.ModelForm):
+    """Formulário de parametrização de endpoints físicos de exibição."""
     class Meta:
         model = Dispositivo
         fields = ['nome', 'titulo_exibicao', 'orientacao', 'playlist'] 
@@ -82,6 +104,7 @@ class DispositivoForm(forms.ModelForm):
 
 
 class MidiaForm(forms.ModelForm):
+    """Formulário de upload e gestão de ativos de mídia estática."""
     class Meta:
         model = Midia
         fields = ['nome', 'arquivo']

@@ -1,36 +1,54 @@
+# ==============================================================================
+#                                  IMPORTS
+# ==============================================================================
+import os
 import uuid
 import random
 import string
-import os
+
 from django.db import models
 from django.contrib.auth.models import User
 
-def gerar_codigo_curto():
-    """Gera um código alfanumérico de 6 caracteres para pareamento."""
+
+# ==============================================================================
+#                             FUNÇÕES AUXILIARES
+# ==============================================================================
+
+def gerar_codigo_curto() -> str:
+    """
+    Gera um código alfanumérico aleatório de 6 caracteres.
+    Utilizado primariamente para geração de tokens de pareamento de dispositivos.
+    """
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
 
+# ==============================================================================
+#                                 MODELOS
+# ==============================================================================
+
 class Empresa(models.Model):
     """
-    Representa o Inquilino (Tenant) no sistema SaaS.
-    Todos os dados do sistema estarão amarrados a uma empresa.
+    Modelo base de isolamento lógico (Tenant).
+    Centraliza todos os relacionamentos de dados do sistema por cliente.
     """
-    nome = models.CharField(max_length=150, help_text="Nome da empresa ou cliente")
+    nome = models.CharField(max_length=150, help_text="Razão social ou nome fantasia da empresa.")
     cnpj = models.CharField(max_length=20, blank=True, null=True)
     ativo = models.BooleanField(default=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Empresa"
         verbose_name_plural = "Empresas"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.nome
 
 
 class Perfil(models.Model):
     """
-    Vincula o usuário de acesso do Django a uma Empresa específica.
+    Extensão do modelo padrão de User do Django (1:1).
+    Estabelece a autorização baseada em Tenant (Empresa) para cada usuário.
     """
     usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='usuarios')
@@ -39,85 +57,44 @@ class Perfil(models.Model):
         verbose_name = "Perfil de Usuário"
         verbose_name_plural = "Perfis de Usuários"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.usuario.username} ({self.empresa.nome})"
 
 
+# ==============================================================================
+#                             CATÁLOGO E PRODUTOS
+# ==============================================================================
+
 class FamiliaProduto(models.Model):
     """
-    Categorias de produtos vindas do ERP. 
-    Agora isoladas por empresa.
+    Agrupamento lógico de produtos (Categorias).
+    Sincronizado via integração com ERPs, restrito ao escopo da Empresa.
     """
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='familias')
-    nome = models.CharField(
-        max_length=100,
-        help_text="Nome da categoria vinda do ERP"
-    )
+    nome = models.CharField(max_length=100, help_text="Nomenclatura da categoria/família originada do ERP.")
 
     class Meta:
         verbose_name = "Família de Produto"
         verbose_name_plural = "Famílias de Produtos"
-        # Garante que não existam duas categorias com mesmo nome NA MESMA EMPRESA
         unique_together = ('empresa', 'nome')
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.nome
-
-
-class Midia(models.Model):
-    """
-    Biblioteca de Mídia (Vídeos e Imagens).
-    Isolada por empresa.
-    """
-    class Tipo(models.TextChoices):
-        VIDEO = 'VIDEO', 'Vídeo'
-        IMAGEM = 'IMAGEM', 'Imagem'
-
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='midias')
-    nome = models.CharField(max_length=100, help_text="Identificação interna para organização")
-    
-    arquivo = models.FileField(upload_to='midias/')
-    
-    tipo = models.CharField(max_length=10, choices=Tipo.choices, editable=False)
-    duracao = models.IntegerField(default=15, help_text="Duração padrão em segundos para exibição")
-    
-    ativo = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def save(self, *args, **kwargs):
-        # Define automaticamente o tipo baseando-se na extensão do arquivo
-        if self.arquivo:
-            ext = os.path.splitext(self.arquivo.name)[1].lower()
-            if ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
-                self.tipo = self.Tipo.IMAGEM
-            else:
-                self.tipo = self.Tipo.VIDEO
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.nome} ({self.get_tipo_display()})"
 
 
 class Produto(models.Model):
     """
-    Produto principal importado e exibido nas telas.
-    O código do produto pode repetir entre empresas diferentes, mas não na mesma.
+    Entidade principal de exibição.
+    Armazena dados transacionais (preço) e metadados de UI (ordem, imagem, oferta).
     """
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='produtos')
+    familia = models.ForeignKey(FamiliaProduto, on_delete=models.CASCADE, related_name='produtos')
+    
     codigo = models.CharField(max_length=50, db_index=True)
     descricao = models.CharField(max_length=200)
     preco = models.DecimalField(max_digits=10, decimal_places=2)
     
-    familia = models.ForeignKey(
-        FamiliaProduto,
-        on_delete=models.CASCADE,
-        related_name='produtos'
-    )
-    
-    ordem = models.IntegerField(
-        default=0,
-        help_text="Ordem de exibição na TV (Menor número aparece primeiro)"
-    )
+    ordem = models.IntegerField(default=0, help_text="Peso de ordenação na renderização UI (Crescente).")
     imagem = models.ImageField(upload_to='produtos/', blank=True, null=True)
     em_oferta = models.BooleanField(default=False)
     exibir_no_painel = models.BooleanField(default=True)
@@ -127,16 +104,61 @@ class Produto(models.Model):
 
     class Meta:
         ordering = ['descricao']
-        # Garante que o código do produto seja único apenas dentro da própria empresa
         unique_together = ('empresa', 'codigo')
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.codigo} - {self.descricao}"
 
 
-class Dispositivo(models.Model):
-    """Representa uma TV ou painel físico conectado ao sistema."""
+# ==============================================================================
+#                             MÍDIA E CONTEÚDO
+# ==============================================================================
+
+class Midia(models.Model):
+    """
+    Repositório de assets estáticos (Vídeos e Imagens) vinculados a uma empresa
+    para utilização em Playlists e campanhas.
+    """
+    class Tipo(models.TextChoices):
+        VIDEO = 'VIDEO', 'Vídeo'
+        IMAGEM = 'IMAGEM', 'Imagem'
+
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='midias')
     
+    nome = models.CharField(max_length=100, help_text="Identificador interno do asset.")
+    arquivo = models.FileField(upload_to='midias/')
+    tipo = models.CharField(max_length=10, choices=Tipo.choices, editable=False)
+    duracao = models.IntegerField(default=15, help_text="Tempo de exibição (TTL) em segundos no client.")
+    
+    ativo = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs) -> None:
+        """
+        Gatilho pré-salvamento para inferência automática do tipo MIME 
+        baseado na extensão do payload do arquivo.
+        """
+        if self.arquivo:
+            ext = os.path.splitext(self.arquivo.name)[1].lower()
+            if ext in ('.jpg', '.jpeg', '.png', '.gif', '.webp'):
+                self.tipo = self.Tipo.IMAGEM
+            else:
+                self.tipo = self.Tipo.VIDEO
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.nome} ({self.get_tipo_display()})"
+
+
+# ==============================================================================
+#                             DISPOSITIVOS E TELAS
+# ==============================================================================
+
+class Dispositivo(models.Model):
+    """
+    Representação lógica de um endpoint físico (TV/Monitor) em execução.
+    Gerencia credenciais de pareamento, layout e fila de reprodução (Playlist).
+    """
     class Orientacao(models.TextChoices):
         HORIZONTAL = 'HORIZONTAL', 'Horizontal (Padrão 16:9)'
         VERTICAL_DIR = 'VERTICAL_DIR', 'Vertical 9:16 (Giro 90° Direita)'
@@ -148,46 +170,46 @@ class Dispositivo(models.Model):
         MISTO = 'MISTO', 'Híbrido (Legado)'
         PLAYLIST = 'PLAYLIST', 'Playlist Personalizada'
 
+    # Relacionamentos e Identificação
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='dispositivos')
-    nome = models.CharField(max_length=100, help_text="Ex: TV do Açougue")
+    nome = models.CharField(max_length=100, help_text="Identificação do local físico do dispositivo.")
     titulo_exibicao = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True,
-        help_text="Título exibido no topo da TV. Se vazio, usa o Nome."
+        max_length=100, 
+        blank=True, 
+        null=True, 
+        help_text="Header de exibição na UI. Faz fallback para o campo 'nome' se nulo."
     )
 
-    # Identificação e Segurança
+    # Segurança e Autenticação
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     codigo_acesso = models.CharField(
-        max_length=6,
-        default=gerar_codigo_curto,
-        unique=True,
+        max_length=6, 
+        default=gerar_codigo_curto, 
+        unique=True, 
         editable=False
     )
 
-    # Conteúdo
+    # Regras de Negócio e Conteúdo
     exibir_apenas_familias = models.ManyToManyField(FamiliaProduto, blank=True)
-    
     playlist = models.JSONField(
-        default=list,
-        blank=True,
-        help_text="Lista ordenada de itens (Mídias e Tabelas) para reprodução."
+        default=list, 
+        blank=True, 
+        help_text="Estrutura de dados serializada contendo a fila de mídias e tabelas."
     )
 
-    # Configurações de Display
+    # Renderização (Client-side)
     orientacao = models.CharField(
-        max_length=20,
-        choices=Orientacao.choices,
+        max_length=20, 
+        choices=Orientacao.choices, 
         default=Orientacao.HORIZONTAL
     )
     modo_exibicao = models.CharField(
-        max_length=20,
-        choices=ModoExibicao.choices,
+        max_length=20, 
+        choices=ModoExibicao.choices, 
         default=ModoExibicao.PLAYLIST
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.nome} ({self.get_orientacao_display()})"

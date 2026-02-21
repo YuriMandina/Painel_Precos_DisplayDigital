@@ -1,24 +1,24 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&family=Lato:wght@400;700&display=swap');
 
 /* ==========================================================================
-   1. VARIÁVEIS & CONFIGURAÇÕES GERAIS
+                                VARIÁVEIS DO SISTEMA
    ========================================================================== */
 :root {
     /* Paleta de Cores */
     --color-bg: #000000;
     --color-bg-panel: #111111;
     --color-text-primary: #FFFFFF;
-    --color-highlight: #FFD700; /* Ouro */
+    --color-highlight: #FFD700;
     --color-border: #333333;
     
     /* Tipografia */
     --font-primary: 'Roboto Condensed', sans-serif;
     
-    /* Dimensões do Grid */
+    /* Matriz de Grid (Variáveis injetadas/manipuladas via JS) */
     --grid-rows-horizontal: 9;
     --grid-rows-vertical: 15;
     
-    /* Z-Index Layers */
+    /* Pilha de Contexto de Empilhamento (Z-Index) */
     --z-background: 0;
     --z-content: 10;
     --z-header: 20;
@@ -26,8 +26,9 @@
     --z-setup: 999;
 }
 
+
 /* ==========================================================================
-   2. RESET & BASE
+                                RESET & BASE
    ========================================================================== */
 * {
     margin: 0;
@@ -48,35 +49,41 @@ body {
     align-items: center;
 }
 
+
 /* ==========================================================================
-   3. LAYOUT PRINCIPAL (TV WRAPPER)
+                                LAYOUT PRINCIPAL
    ========================================================================== */
-/* Mantém a proporção 16:9 independente da resolução da tela.
-   Baseado em Viewport Width (vw) para escalar perfeitamente.
+
+/* Container raiz da renderização.
+   Mantém a proporção 16:9 (Aspect Ratio) baseada nas dimensões da viewport (vw/vh),
+   garantindo escalonamento uniforme em resoluções atípicas.
 */
 .tv-wrapper {
     width: 100vw;
-    height: 56.25vw; /* 16:9 Aspect Ratio */
+    height: 56.25vw;
     max-width: 177.78vh;
     max-height: 100vh;
     
     background-color: var(--color-bg);
     border: 5px solid var(--color-bg-panel);
+    
     display: flex;
     flex-direction: column;
     position: relative;
     overflow: hidden;
 }
 
-/* --- Header --- */
+/* --- Cabeçalho de Renderização --- */
 .painel-header {
     height: 12%;
     background-color: var(--color-bg);
     border-bottom: 4px solid var(--color-highlight);
+    
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 0 2vw;
+    
     z-index: var(--z-header);
     transition: opacity 0.4s ease-in-out;
 }
@@ -91,7 +98,7 @@ body {
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* --- Área de Conteúdo --- */
+/* --- Área de Renderização de Dados --- */
 .painel-conteudo {
     height: 88%;
     display: flex;
@@ -100,7 +107,7 @@ body {
     opacity: 1;
 }
 
-/* --- Colunas do Grid --- */
+/* --- Grid de Colunas --- */
 .coluna {
     width: 50%;
     height: 100%;
@@ -120,9 +127,12 @@ body {
     padding-right: 1vw;
 }
 
+
 /* ==========================================================================
-   4. COMPONENTES: PRODUTO
+                                COMPONENTES: PRODUTO
    ========================================================================== */
+
+/* Bloco principal do item na grid */
 .item-produto {
     display: flex;
     justify-content: space-between;
@@ -135,7 +145,7 @@ body {
     position: relative;
 }
 
-/* Container do Nome (com suporte a Marquee) */
+/* Container de delimitação de strings para suporte a overflow/marquee */
 .nome-container {
     flex: 1;
     min-width: 0;
@@ -155,9 +165,9 @@ body {
     display: inline-block;
 }
 
-/* Preço
-   Usa um hack visual de z-index e background para cobrir
-   o nome do produto caso ele seja muito longo (marquee).
+/* Node de Preço.
+   Utiliza propriedades de Z-Index e Box-Shadow combinadas com o Background-Color
+   para mascarar strings estendidas do node .nome durante a animação de marquee.
 */
 .preco {
     flex-shrink: 0;
@@ -172,20 +182,22 @@ body {
     z-index: 5;
     background-color: var(--color-bg);
     padding-left: 15px;
-    box-shadow: -5px 0 10px var(--color-bg); /* Fade out suave */
+    box-shadow: -5px 0 10px var(--color-bg);
 }
 
+
 /* ==========================================================================
-   5. OVERLAYS (Vídeo, Setup)
+                                OVERLAYS & MODAIS
    ========================================================================== */
 
-/* Tela de Configuração Inicial */
+/* Tela de Configuração e Pareamento Inicial */
 #setup-screen {
     position: absolute;
     inset: 0;
     background-color: var(--color-bg);
     color: var(--color-text-primary);
     z-index: var(--z-setup);
+    
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -199,7 +211,7 @@ body {
     margin: 20px;
     border: 2px solid #333;
     background: #222;
-    color: white;
+    color: var(--color-text-primary);
 }
 
 #setup-screen button {
@@ -207,12 +219,12 @@ body {
     padding: 10px 30px;
     cursor: pointer;
     background: #28a745;
-    color: white;
+    color: var(--color-text-primary);
     border: none;
     border-radius: 5px;
 }
 
-/* Container de Vídeo/Imagem */
+/* Container de injeção de Mídia (Vídeo/Imagem) */
 #video-overlay-container {
     position: absolute;
     inset: 0;
@@ -229,15 +241,16 @@ body {
     object-fit: cover;
 }
 
+
 /* ==========================================================================
-   6. ANIMAÇÕES
+                                ANIMAÇÕES
    ========================================================================== */
 .fade {
     opacity: 0;
     transition: opacity 0.5s ease-in-out;
 }
 
-/* Marquee (Texto Rolante) */
+/* Gatilho de translação lateral para strings com overflow detectado no JS */
 .marquee .nome {
     padding-left: 0;
     animation: scroll-bounce 6s ease-in-out infinite alternate;
@@ -248,14 +261,16 @@ body {
     85%, 100% { transform: translateX(calc(-100% + 25vw)); }
 }
 
-/* ==========================================================================
-   7. MODIFICADORES DE ROTAÇÃO (Modo Vertical)
-   ========================================================================== */
-/*
-   Lógica: TVs instaladas na vertical recebendo sinal horizontal (1920x1080).
-   Rotacionamos o container e invertemos as dimensões (vh <-> vw).
-*/
 
+/* ==========================================================================
+                                MODIFICADORES DE ROTAÇÃO
+   ========================================================================== */
+
+/*
+   Rotação espacial via CSS para adequação de hardware de exibição.
+   Aplica a inversão de eixos (vh -> vw, vw -> vh) e ajusta a origem do transform
+   para centralização absoluta em displays verticais físicos recebendo sinal horizontal.
+*/
 body.rotacao-90 .tv-wrapper,
 body.rotacao-270 .tv-wrapper {
     width: 100vh;
@@ -277,13 +292,12 @@ body.rotacao-270 .tv-wrapper {
     transform: rotate(-90deg);
 }
 
-/* Ajustes internos para layout vertical */
 body.rotacao-90 .coluna,
 body.rotacao-270 .coluna {
     padding: 0 1vw;
 }
 
-/* Layout de Coluna Única (Injetado via JS: .layout-vertical) */
+/* Modificadores de nó para layout unificado (Coluna Única) */
 .painel-conteudo.layout-vertical {
     display: block;
     padding: 0 4vw;
@@ -296,7 +310,7 @@ body.rotacao-270 .coluna {
     grid-template-rows: repeat(var(--grid-rows-vertical), 1fr);
 }
 
-/* Ajuste fino de fontes para modo vertical */
+/* Tipografia adaptada para o viewport com proporção de retrato */
 .painel-conteudo.layout-vertical .item-produto .nome {
     font-size: 3.8vh;
 }

@@ -1,12 +1,20 @@
-/**
- * TV App - Display Digital
- * Responsável por gerenciar a reprodução de conteúdo (Playlist, Vídeos/Imagens e Tabelas de Preço).
- */
+/* ==========================================================================
+                                BOOTSTRAP DA APLICAÇÃO
+   ========================================================================== */
 
+/**
+ * Ponto de entrada da Single Page Application (SPA).
+ * Inicializa a instância principal do TVApp assim que o DOM for carregado.
+ */
 document.addEventListener('DOMContentLoaded', () => {
     const app = new TVApp();
     app.init();
 });
+
+
+/* ==========================================================================
+                                CONFIGURAÇÕES GERAIS
+   ========================================================================== */
 
 const CONFIG = {
     API_BASE: '/api/painel',
@@ -28,7 +36,16 @@ const CONFIG = {
     }
 };
 
+
+/* ==========================================================================
+                                CORE: CONTROLLER PRINCIPAL
+   ========================================================================== */
+
 class TVApp {
+    /**
+     * Gerencia o ciclo de vida da aplicação, estado do dispositivo e a 
+     * orquestração entre a interface de pareamento e o player.
+     */
     constructor() {
         this.elements = this._mapElements();
         this.state = {
@@ -91,7 +108,7 @@ class TVApp {
 
     async _handlePairing() {
         const code = this.elements.INPUT_UUID.value.trim();
-        if (code.length < 2) return alert("Por favor, digite o código exibido no painel.");
+        if (code.length < 2) return alert("Por favor, informe um código de acesso válido.");
 
         try {
             const data = await API.pairDevice(code);
@@ -110,7 +127,7 @@ class TVApp {
             const data = await API.getPanelData(this.state.uuid);
             this._processDataUpdate(data);
         } catch (error) {
-            console.error("Erro ao atualizar dados:", error);
+            console.error("Falha na sincronização de dados:", error);
             if (error.status === 404) {
                 this._handleDeviceUnlinked();
             }
@@ -118,7 +135,7 @@ class TVApp {
     }
 
     _handleDeviceUnlinked() {
-        console.warn("Dispositivo não reconhecido pelo servidor. Reiniciando pareamento.");
+        console.warn("Sessão invalidada pelo servidor. Exigindo repareamento.");
         localStorage.removeItem('tv_device_uuid');
         this.state.uuid = null;
         this.state.data = null;
@@ -131,7 +148,7 @@ class TVApp {
         const newHash = JSON.stringify(newData.playlist_final);
         
         if (newHash !== this.state.playlistHash) {
-            console.log("Nova ordem/playlist detectada. Atualizando a tela...");
+            console.log("Mutação de playlist detectada. Reconstruindo fila de reprodução.");
             this.state.playlistHash = newHash;
             this.state.data = newData;
             this.playlistManager.updatePlaylist(newData.playlist_final, newData.produtos);
@@ -174,8 +191,16 @@ class TVApp {
     }
 }
 
-// --- GERENCIADOR DE PLAYLIST ---
+
+/* ==========================================================================
+                                GERENCIADOR DE PLAYLIST
+   ========================================================================== */
+
 class PlaylistManager {
+    /**
+     * Máquina de estados responsável pela iteração do array de mídia/tabelas.
+     * Instancia os renderizadores adequados para cada tipo de nó da playlist.
+     */
     constructor(app) {
         this.app = app;
         this.queue = [];
@@ -220,7 +245,7 @@ class PlaylistManager {
             this.isPlaying = false;
             this.app.setTitle("AGUARDANDO");
             this.app.getContainer().innerHTML = 
-                "<h2 style='color:#666; text-align:center; margin-top:20vh;'>Aguardando configuração...</h2>";
+                "<h2 style='color:#666; text-align:center; margin-top:20vh;'>Aguardando configuração de playlist...</h2>";
             
             this.timeoutId = setTimeout(() => {
                 if (!this.isPlaying) this.playNext();
@@ -245,8 +270,16 @@ class PlaylistManager {
     }
 }
 
-// --- RENDERIZADOR DE GRADE (TABELA) ---
+
+/* ==========================================================================
+                                ENGINE: RENDERIZADOR DE GRADE
+   ========================================================================== */
+
 class GridRenderer {
+    /**
+     * Responsável pela construção algorítmica do layout de tabelas de preço,
+     * incluindo lógica de paginação e filtragem de visibilidade por item.
+     */
     constructor(app) {
         this.app = app;
     }
@@ -268,21 +301,19 @@ class GridRenderer {
             productsToShow = allProducts.filter(p => p.familia === itemPlaylist.familia_id);
         }
 
-        // --- BLINDAGEM MÁXIMA DA TV ---
+        /* Aplica filtro de restrição de exibição. Converte IDs do payload para string
+           garantindo comparação estrita com o dataset de produtos. */
         if (itemPlaylist.hidden_products && Array.isArray(itemPlaylist.hidden_products)) {
-            // Converte todos os IDs recebidos do servidor para Texto
             const hiddenIds = itemPlaylist.hidden_products.map(String);
             
             productsToShow = productsToShow.filter(p => {
-                // Garante que o ID do produto exista e seja texto
                 const productId = String(p.id);
-                // Se a ID estiver na lista negra, retorna falso e arranca ele da tabela
                 return !hiddenIds.includes(productId);
             });
         }
 
         if (productsToShow.length === 0) {
-            container.innerHTML = "<h2 style='text-align:center; color:#666; width:100%; margin-top:20vh;'>Nenhum produto a exibir nesta tabela.</h2>";
+            container.innerHTML = "<h2 style='text-align:center; color:#666; width:100%; margin-top:20vh;'>Nenhum produto indexado para exibição.</h2>";
             container.style.opacity = '1';
             setTimeout(onComplete, 3000);
             return;
@@ -343,9 +374,11 @@ class GridRenderer {
     _createCard(product) {
         const div = document.createElement('div');
         div.className = `item-produto ${product.em_oferta ? 'em-oferta' : ''}`;
+        
         const priceFormatted = parseFloat(product.preco).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
         const charLimit = this.app.isVertical() ? 28 : 22;
         const nameClass = product.descricao.length > charLimit ? 'nome-container marquee' : 'nome-container';
+        
         div.innerHTML = `<div class="${nameClass}"><span class="nome">${product.descricao}</span></div><div class="preco">${priceFormatted}</div>`;
         return div;
     }
@@ -358,8 +391,16 @@ class GridRenderer {
     }
 }
 
-// --- REPRODUTOR DE VÍDEO E IMAGENS ---
+
+/* ==========================================================================
+                                ENGINE: RENDERIZADOR DE MÍDIA
+   ========================================================================== */
+
 class VideoPlayer {
+    /**
+     * Manipula a injeção e ciclo de vida de nós de imagem/vídeo no DOM.
+     * Implementa lógicas de fallback de timeout para prevenir travamentos de hardware em Smart TVs.
+     */
     constructor(app) {
         this.app = app;
     }
@@ -372,30 +413,29 @@ class VideoPlayer {
 
         const container = this.app.getVideoContainer();
         container.innerHTML = '';
-        container.style.opacity = '0'; // Nasce invisível
+        
+        /* Define estado inicial de opacidade em zero para garantir transição suave via CSS */
+        container.style.opacity = '0'; 
         container.style.display = 'block';
 
         const durationMs = (item.duracao || 15) * 1000;
         let safetyTimeout;
         let isFinished = false; 
 
-        // Função de Saída (Encerramento da Mídia)
         const finish = async () => {
             if (isFinished) return;
             isFinished = true;
             if (safetyTimeout) clearTimeout(safetyTimeout);
             
-            // FADE OUT da Mídia
             container.style.opacity = '0';
-            await new Promise(r => setTimeout(r, 400)); // Aguarda a animação CSS
+            await new Promise(r => setTimeout(r, 400));
             
             container.style.display = 'none';
             container.innerHTML = '';
-            onComplete(); // Chama o próximo item
+            onComplete(); 
         };
 
-        // BLINDAGEM MÁXIMA: Força o Fade In independentemente da TV disparar eventos de carregamento.
-        // Espera 100ms apenas para o navegador registrar o 'display: block' antes de animar a opacidade.
+        /* Garante injeção de estilo no frame de renderização antes da opacidade ser alterada */
         setTimeout(() => {
             if (!isFinished) container.style.opacity = '1';
         }, 100);
@@ -414,7 +454,7 @@ class VideoPlayer {
             const video = document.createElement('video');
             video.id = 'video-bg';
             
-            // Reforço rigoroso de atributos para Smart TVs (Tizen, WebOS, etc)
+            /* Injeta propriedades mandatórias para reprodução autoplay e inline em engines restritivas (Tizen/WebOS) */
             video.setAttribute('muted', 'true');
             video.setAttribute('autoplay', 'true');
             video.setAttribute('playsinline', 'true');
@@ -422,19 +462,27 @@ class VideoPlayer {
             video.autoplay = true;
 
             video.onerror = finish;
-            video.onended = finish; // Quando o vídeo acabar naturalmente, chama a saída
+            video.onended = finish; 
             
             video.src = item.url; 
             container.appendChild(video);
             
-            // Fallback de segurança (Duração + 2 segundos) caso a TV trave e não dispare o evento 'onended'
+            /* Fallback de tolerância a falhas. Garante a iteração da fila caso o buffer congele
+               ou o evento nativo 'onended' não seja emitido pelo sistema operacional da TV. */
             safetyTimeout = setTimeout(finish, durationMs + 2000);
         }
     }
 }
 
-// --- API CLIENT ---
+
+/* ==========================================================================
+                                CLIENTE HTTP (API)
+   ========================================================================== */
+
 const API = {
+    /**
+     * Wrapper estático para requisições de pareamento e pull de estado via Fetch API.
+     */
     async pairDevice(code) {
         const response = await fetch(`${CONFIG.API_BASE}/parear/`, {
             method: 'POST',
@@ -443,8 +491,11 @@ const API = {
         });
 
         if (!response.ok) {
-            let msg = "Erro desconhecido";
-            try { const json = await response.json(); msg = json.erro || msg; } catch(e){}
+            let msg = "Erro desconhecido de integração.";
+            try { 
+                const json = await response.json(); 
+                msg = json.erro || msg; 
+            } catch(e) {}
             throw new Error(msg);
         }
         return await response.json();
@@ -453,7 +504,7 @@ const API = {
     async getPanelData(uuid) {
         const response = await fetch(`${CONFIG.API_BASE}/${uuid}/`);
         if (!response.ok) {
-            const error = new Error(`Erro API: ${response.status}`);
+            const error = new Error(`Falha de comunicação: Status HTTP ${response.status}`);
             error.status = response.status;
             throw error;
         }

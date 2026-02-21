@@ -1,32 +1,50 @@
-from django.shortcuts import redirect
-from django.urls import reverse
+# ==============================================================================
+#                                  IMPORTS
+# ==============================================================================
+from typing import Callable
+
 from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
+from django.shortcuts import redirect
+
+
+# ==============================================================================
+#                                MIDDLEWARES
+# ==============================================================================
 
 class TenantMiddleware:
     """
-    Verifica se o usuário logado possui um Perfil (e consequentemente uma Empresa) 
-    vinculado a ele antes de acessar qualquer página do dashboard.
+    Middleware de validação de Tenant.
+    Intercepta requisições direcionadas ao dashboard para assegurar que o usuário 
+    autenticado possua um Perfil ativo e vinculado a uma Empresa (Tenant) válida.
     """
-    def __init__(self, get_response):
+    
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
 
-    def __call__(self, request):
-        # Só aplica a verificação para URLs que começam com '/dashboard/' 
-        # (ignora tela de login, /acesso-root-sistema/ e API da TV)
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        """
+        Executa a validação de autorização de escopo por Tenant em rotas restritas.
+        Redireciona usuários sem vínculo para o painel de administração (superusers) 
+        ou encerra a sessão (usuários padrão).
+        """
         if request.path.startswith('/dashboard/') and request.user.is_authenticated:
             try:
-                # Tenta acessar o perfil para forçar o erro caso não exista
+                # Acesso forçado para acionar ObjectDoesNotExist caso o vínculo inexista
                 _ = request.user.perfil.empresa
             except ObjectDoesNotExist:
-                # Se for superuser, redireciona pro admin pra ele se arrumar
                 if request.user.is_superuser:
-                    messages.error(request, "Superusuário: Você precisa vincular seu usuário a uma Empresa (Criar Perfil) antes de acessar o Dashboard.")
+                    messages.error(
+                        request, 
+                        "Superusuário: Vínculo de Tenant (Empresa) ausente. Crie um Perfil para acessar o Dashboard."
+                    )
                     return redirect('/acesso-root-sistema/')
                 
-                # Se for usuário comum, desloga e avisa
-                messages.error(request, "Seu usuário não está vinculado a nenhuma empresa. Contate o suporte.")
+                messages.error(
+                    request, 
+                    "Acesso negado: Usuário sem vínculo de Empresa. Contate o administrador do sistema."
+                )
                 return redirect('logout')
 
-        response = self.get_response(request)
-        return response
+        return self.get_response(request)
