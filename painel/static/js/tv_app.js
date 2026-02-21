@@ -365,55 +365,70 @@ class VideoPlayer {
     }
 
     play(item, onComplete) {
-        if (!this.app.state.uuid) {
+        if (!this.app.state.uuid || !item.url) {
             onComplete();
             return;
         }
 
         const container = this.app.getVideoContainer();
         container.innerHTML = '';
+        container.style.opacity = '0'; // Nasce invisível
         container.style.display = 'block';
-
-        const mediaUrl = item.url;
-        if (!mediaUrl) {
-            onComplete();
-            return;
-        }
 
         const durationMs = (item.duracao || 15) * 1000;
         let safetyTimeout;
         let isFinished = false; 
 
-        const finish = () => {
+        // Função de Saída (Encerramento da Mídia)
+        const finish = async () => {
             if (isFinished) return;
             isFinished = true;
             if (safetyTimeout) clearTimeout(safetyTimeout);
-            onComplete();
+            
+            // FADE OUT da Mídia
+            container.style.opacity = '0';
+            await new Promise(r => setTimeout(r, 400)); // Aguarda a animação CSS
+            
+            container.style.display = 'none';
+            container.innerHTML = '';
+            onComplete(); // Chama o próximo item
         };
+
+        // BLINDAGEM MÁXIMA: Força o Fade In independentemente da TV disparar eventos de carregamento.
+        // Espera 100ms apenas para o navegador registrar o 'display: block' antes de animar a opacidade.
+        setTimeout(() => {
+            if (!isFinished) container.style.opacity = '1';
+        }, 100);
 
         if (item.tipo_midia === 'IMAGEM') {
             const img = document.createElement('img');
             img.id = 'video-bg'; 
-            img.src = mediaUrl;
-            img.onload = () => {
-                safetyTimeout = setTimeout(finish, durationMs);
-            };
+            img.src = item.url;
+            
             img.onerror = finish;
+            safetyTimeout = setTimeout(finish, durationMs);
+            
             container.appendChild(img);
+            
         } else {
             const video = document.createElement('video');
             video.id = 'video-bg';
-            video.src = mediaUrl;
+            
+            // Reforço rigoroso de atributos para Smart TVs (Tizen, WebOS, etc)
+            video.setAttribute('muted', 'true');
+            video.setAttribute('autoplay', 'true');
+            video.setAttribute('playsinline', 'true');
             video.muted = true;
             video.autoplay = true;
-            video.playsInline = true;
-
-            safetyTimeout = setTimeout(finish, durationMs + 2000);
 
             video.onerror = finish;
-            video.onended = finish;
-
+            video.onended = finish; // Quando o vídeo acabar naturalmente, chama a saída
+            
+            video.src = item.url; 
             container.appendChild(video);
+            
+            // Fallback de segurança (Duração + 2 segundos) caso a TV trave e não dispare o evento 'onended'
+            safetyTimeout = setTimeout(finish, durationMs + 2000);
         }
     }
 }

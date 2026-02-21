@@ -78,6 +78,7 @@ body {
     align-items: center;
     padding: 0 2vw;
     z-index: var(--z-header);
+    transition: opacity 0.4s ease-in-out;
 }
 
 .painel-titulo {
@@ -95,7 +96,7 @@ body {
     height: 88%;
     display: flex;
     padding: 0 1vw;
-    transition: opacity 0.2s ease-in-out;
+    transition: opacity 0.4s ease-in-out; 
     opacity: 1;
 }
 
@@ -218,6 +219,8 @@ body {
     z-index: var(--z-overlay);
     display: none;
     background-color: var(--color-bg);
+    opacity: 0; 
+    transition: opacity 0.4s ease-in-out;
 }
 
 #video-bg {
