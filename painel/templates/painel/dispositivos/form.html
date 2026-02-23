@@ -117,11 +117,10 @@
                                         <p class="text-[10px] text-gray-400">{{ item.duracao }} seg</p>
                                     </div>
                                     
-                                    <button type="button" onclick="openPreviewModal('{{ item.arquivo.url }}', '{{ item.tipo }}')" 
+                                    <button type="button" data-url="{{ item.arquivo.url }}" data-tipo="{{ item.tipo }}" onclick="openPreviewModal(this)" 
                                             class="p-1.5 text-pink-400 hover:text-pink-600 hover:bg-pink-50 rounded-lg transition-colors" title="Visualizar Mídia">
                                         <i class="ph-fill ph-play-circle text-xl"></i>
                                     </button>
-
                                     <i class="ph-bold ph-dots-six-vertical ml-1 text-gray-300 group-hover:text-gray-500 cursor-grab active:cursor-grabbing"></i>
                                 </div>
                             </div>
@@ -218,15 +217,26 @@
 </style>
 
 <script>
-    function openPreviewModal(url, type) {
+    function openPreviewModal(btnElement) {
+        const url = btnElement.dataset.url;
+        const type = btnElement.dataset.tipo;
+        
+        // Tratativa de segurança caso o link esteja quebrado/perdido
+        if (!url || url === 'undefined' || url === 'null' || url === '') {
+            alert('Erro: O link da mídia não foi encontrado. Se você ainda não configurou o Cloudinary no Render, o arquivo pode ter sido deletado pelo servidor.');
+            return;
+        }
+        
         const modal = document.getElementById('preview-modal');
         const content = document.getElementById('preview-content');
         content.innerHTML = ''; 
+        
         if (type === 'VIDEO') {
             content.innerHTML = `<video src="${url}" controls autoplay class="w-full h-full object-contain"></video>`;
         } else {
             content.innerHTML = `<img src="${url}" class="w-full h-full object-contain">`;
         }
+        
         modal.classList.remove('hidden');
         requestAnimationFrame(() => modal.classList.remove('opacity-0'));
     }
@@ -431,7 +441,7 @@
             let inputsTempoHtml = '';
 
             if (data.type === 'midia') {
-                previewBtn = `<button type="button" onclick="openPreviewModal('${data.url}', '${data.tipo_midia}')" class="p-2 text-pink-400 hover:text-pink-600 hover:bg-pink-50 rounded-lg transition-colors"><i class="ph-fill ph-play-circle text-xl"></i></button>`;
+                previewBtn = `<button type="button" data-url="${data.url}" data-tipo="${data.tipo_midia}" onclick="openPreviewModal(this)" class="p-2 text-pink-400 hover:text-pink-600 hover:bg-pink-50 rounded-lg transition-colors"><i class="ph-fill ph-play-circle text-xl"></i></button>`;
                 inputsTempoHtml = `
                     <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Duração</span>
                     <span class="w-12 text-center text-sm font-bold text-gray-500">${data.tempo}s</span>

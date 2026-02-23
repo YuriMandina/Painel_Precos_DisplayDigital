@@ -41,18 +41,30 @@
                         {{ form.arquivo }}
                     </div>
                     
-                    <div id="file-name-display" class="hidden mt-2 text-sm text-green-600 flex items-center gap-2">
+                    <div id="file-name-display" class="{% if not form.instance.arquivo %}hidden{% endif %} mt-2 text-sm text-green-600 flex items-center gap-2">
                         <i class="ph-fill ph-check-circle"></i>
-                        <span id="file-name-text">arquivo.mp4</span>
+                        <span id="file-name-text">
+                            {% if form.instance.arquivo %}
+                                Arquivo carregado: {{ form.instance.arquivo.name|truncatechars:40 }}
+                            {% else %}
+                                arquivo.mp4
+                            {% endif %}
+                        </span>
                     </div>
                 </div>
 
-                <div id="preview-area" class="hidden pt-6 border-t border-gray-100 animate-fade-in">
+                <div id="preview-area" class="pt-6 border-t border-gray-100 animate-fade-in {% if not form.instance.arquivo %}hidden{% endif %}">
                     <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Prévia do Conteúdo</h3>
                     
                     <div class="relative aspect-video bg-black rounded-lg overflow-hidden border border-gray-200 shadow-md">
-                        <video id="preview-video" class="hidden w-full h-full object-contain" controls></video>
-                        <img id="preview-image" class="hidden w-full h-full object-contain" />
+                        <video id="preview-video" 
+                               class="w-full h-full object-contain {% if form.instance.tipo != 'VIDEO' %}hidden{% endif %}" 
+                               controls 
+                               {% if form.instance.tipo == 'VIDEO' %}src="{{ form.instance.arquivo.url }}"{% endif %}></video>
+                        
+                        <img id="preview-image" 
+                             class="w-full h-full object-contain {% if form.instance.tipo != 'IMAGEM' %}hidden{% endif %}" 
+                             {% if form.instance.tipo == 'IMAGEM' %}src="{{ form.instance.arquivo.url }}"{% endif %} />
                     </div>
                 </div>
 
@@ -99,29 +111,20 @@
             previewVideo.classList.remove('hidden');
             previewVideo.load();
             previewVideo.muted = true;
-            previewVideo.play().catch(e => console.log("Autoplay bloqueado"));
+            previewVideo.play().catch(e => console.log("Autoplay bloqueado pelo navegador"));
         } else if (file.type.startsWith('image/')) {
             previewImage.src = fileURL;
             previewImage.classList.remove('hidden');
         }
     });
 
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.classList.add('border-indigo-500', 'bg-indigo-100');
-    });
-
-    dropZone.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('border-indigo-500', 'bg-indigo-100');
-    });
-
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-indigo-500', 'bg-indigo-100'); });
+    dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('border-indigo-500', 'bg-indigo-100'); });
     dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
         dropZone.classList.remove('border-indigo-500', 'bg-indigo-100');
         fileInput.files = e.dataTransfer.files;
-        const event = new Event('change');
-        fileInput.dispatchEvent(event);
+        fileInput.dispatchEvent(new Event('change'));
     });
 </script>
 {% endblock %}
