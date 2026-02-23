@@ -181,7 +181,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Ativa o Cloudinary em Produção (Protege contra apagões do Render)
 if not DEBUG:
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    DEFAULT_FILE_STORAGE = 'painel.storage.MidiaCloudinaryStorage'
     CLOUDINARY_STORAGE = {
         'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default=''),
         'API_KEY': config('CLOUDINARY_API_KEY', default=''),
