@@ -136,8 +136,9 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Limite global de payload para upload (10 MB)
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760
+# Aumentando limites de upload para suportar vídeos de até 100 MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 MB
 
 
 # ==============================================================================
@@ -168,22 +169,3 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000 
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-
-
-# ==============================================================================
-#                              ARQUIVOS E MÍDIA
-# ==============================================================================
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
-# Ativa o Cloudinary em Produção (Protege contra apagões do Render)
-if not DEBUG:
-    DEFAULT_FILE_STORAGE = 'painel.storage.MidiaCloudinaryStorage'
-    CLOUDINARY_STORAGE = {
-        'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default=''),
-        'API_KEY': config('CLOUDINARY_API_KEY', default=''),
-        'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
-    }
