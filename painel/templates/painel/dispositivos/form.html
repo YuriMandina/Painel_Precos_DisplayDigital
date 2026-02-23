@@ -274,8 +274,6 @@
             .then(data => {
                 loading.classList.add('hidden');
                 
-                // LÓGICA DE DEFAULT OFF: Se este nó da playlist nunca foi configurado,
-                // inserimos TODOS os IDs na blacklist (hidden_products) para iniciar desligado.
                 let isConfigured = currentEditingPlaylistItem.dataset.configured === 'true';
                 let hiddenProducts = JSON.parse(currentEditingPlaylistItem.dataset.hiddenProducts || '[]');
 
@@ -287,13 +285,11 @@
 
                 if (data.produtos && data.produtos.length > 0) {
                     data.produtos.forEach(p => {
-                        const isGloballyActive = p.exibir_no_painel; // Status do cadastro geral
-                        const isHiddenLocally = hiddenProducts.includes(String(p.id)); // Blacklist Local
+                        const isGloballyActive = p.exibir_no_painel; 
+                        const isHiddenLocally = hiddenProducts.includes(String(p.id)); 
                         
-                        // O Toggle só fica ligado se for globalmente ativo E não estiver na Blacklist
                         const isChecked = isGloballyActive && !isHiddenLocally;
                         
-                        // UX: Produtos Inativos Globalmente ficam opacos e desabilitados
                         const opacityClass = isGloballyActive ? '' : 'opacity-40 bg-gray-50';
                         const disabledAttr = isGloballyActive ? '' : 'disabled';
                         const cursorClass = isGloballyActive ? 'cursor-pointer' : 'cursor-not-allowed';
@@ -334,7 +330,6 @@
         currentEditingPlaylistItem = null;
     }
 
-    // Registra a decisão do usuário na Blacklist (hidden_products) do item atual da Playlist
     function toggleLocalProductVisibility(productId, checkbox) {
         if (!currentEditingPlaylistItem) return;
         
@@ -342,10 +337,8 @@
         const idStr = String(productId);
         
         if (checkbox.checked) {
-            // Usuario ligou o switch -> Retira o ID da Blacklist
             hiddenProducts = hiddenProducts.filter(id => id !== idStr);
         } else {
-            // Usuario desligou o switch -> Adiciona o ID na Blacklist
             if (!hiddenProducts.includes(idStr)) {
                 hiddenProducts.push(idStr);
             }
@@ -362,7 +355,7 @@
             sources: ['library-families', 'library-midias'],
             targetId: 'playlist-target',
             emptyId: 'empty-state',
-            inputHiddenId: 'id_playlist',
+            inputHiddenId: 'id_playlist', // Este é o ID injetado pelo Django no {{ form.playlist }}
             formId: 'form-dispositivo',
             types: {
                 'tabela_familia': { icon: 'ph-list-dashes', color: 'text-blue-600', label: 'Seg / Pág' },
@@ -420,7 +413,7 @@
                 url: el.dataset.url || null,
                 tipo_midia: el.dataset.tipomidia || null,
                 hidden_products: [],
-                configured: 'false' // Recém arrastado da biblioteca, ainda não configurado
+                configured: 'false'
             };
         },
 
@@ -476,7 +469,19 @@
         },
 
         loadExistingData() {
-            const rawData = {{ form.instance.playlist|default:"[]"|safe }};
+            let rawData = [];
+            
+            try {
+                // A FIX MÁGICA: Em vez de imprimir a variável Python direta (que gera o erro do True/False), 
+                // lemos a string JSON direto do input escondido renderizado pelo Django
+                const inputElement = document.getElementById(this.config.inputHiddenId);
+                if (inputElement && inputElement.value) {
+                    rawData = JSON.parse(inputElement.value);
+                }
+            } catch (error) {
+                console.error("Erro ao carregar a playlist salva:", error);
+            }
+
             if (Array.isArray(rawData) && rawData.length > 0) {
                 rawData.forEach(item => {
                     let url = null;
@@ -494,7 +499,7 @@
                         url: url,
                         tipo_midia: tipo_midia,
                         hidden_products: item.hidden_products || [],
-                        configured: item.configured !== undefined ? String(item.configured) : 'true' // Herança do Banco
+                        configured: item.configured !== undefined ? String(item.configured) : 'true' 
                     });
                     this.targetEl.appendChild(el);
                 });
