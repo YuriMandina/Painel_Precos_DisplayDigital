@@ -1,6 +1,7 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +10,9 @@
     <link rel="stylesheet" href="{% static 'css/painel.css' %}?v={% now 'U' %}">
 
     <style>
-        /* Estilos Base para Modo Kiosk (TV) */
+        /* ==========================================================================
+                                        DOM / KIOSK RESET
+           ========================================================================== */
         body {
             margin: 0;
             padding: 0;
@@ -20,7 +23,9 @@
             font-family: sans-serif;
         }
 
-        /* Estilos da Tela de Configuração (Pareamento) */
+        /* ==========================================================================
+                                        SETUP COMPONENT
+           ========================================================================== */
         #setup-screen {
             display: none; 
             flex-direction: column;
@@ -33,8 +38,15 @@
             cursor: default; 
         }
 
-        #setup-screen h1 { margin-bottom: 1rem; font-size: 2rem; }
-        #setup-screen p { margin-bottom: 1.5rem; color: #ccc; }
+        #setup-screen h1 { 
+            margin-bottom: 1rem; 
+            font-size: 2rem; 
+        }
+        
+        #setup-screen p { 
+            margin-bottom: 1.5rem; 
+            color: #ccc; 
+        }
 
         #input-uuid {
             padding: 15px;
@@ -50,7 +62,9 @@
             margin-bottom: 20px;
         }
         
-        #input-uuid:focus { border-color: #4F46E5; }
+        #input-uuid:focus { 
+            border-color: #4F46E5; 
+        }
 
         #btn-salvar {
             padding: 15px 40px;
@@ -63,9 +77,12 @@
             transition: background 0.2s;
         }
 
-        #btn-salvar:hover { background-color: #4338ca; }
+        #btn-salvar:hover { 
+            background-color: #4338ca; 
+        }
     </style>
 </head>
+
 <body>
 
     <section id="setup-screen">
@@ -81,6 +98,7 @@
     </section>
 
     <main class="tv-wrapper" id="app-screen" style="display:none;">
+        
         <header class="painel-header">
             <h1 class="painel-titulo" id="titulo-painel">Carregando...</h1>
         </header>
@@ -88,8 +106,10 @@
         <div class="painel-conteudo" id="painel-conteudo"></div>
         
         <div id="video-overlay-container"></div>
+        
     </main>
 
     <script src="{% static 'js/tv_app.js' %}?v={% now 'U' %}" defer></script>
+
 </body>
 </html>

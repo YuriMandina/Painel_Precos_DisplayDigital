@@ -36,7 +36,8 @@ class ProdutoSerializer(serializers.ModelSerializer):
             'familia_nome',  
             'imagem',
             'em_oferta',
-            'ordem'
+            'ordem',
+            'exibir_no_painel'
         ]
 
 

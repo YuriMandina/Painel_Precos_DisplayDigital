@@ -1,16 +1,16 @@
-"""
-WSGI config for core project.
-
-It exposes the WSGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.0/howto/deployment/wsgi/
-"""
-
+# ==============================================================================
+#                                  IMPORTS
+# ==============================================================================
 import os
-
 from django.core.wsgi import get_wsgi_application
 
+
+# ==============================================================================
+#                                WSGI RUNTIME
+# ==============================================================================
+"""
+Ponto de entrada para servidores web síncronos em produção (Gunicorn, uWSGI, etc).
+"""
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 
 application = get_wsgi_application()

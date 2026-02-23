@@ -190,7 +190,7 @@
                     <tr>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Produto</th>
                         <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">Preço</th>
-                        <th scope="col" class="px-6 py-3 text-center text-xs font-semibold text-gray-400 uppercase tracking-wider">Exibir nesta Tela</th>
+                        <th scope="col" class="px-6 py-3 text-center text-xs font-semibold text-gray-400 uppercase tracking-wider">Exibir no Display</th>
                     </tr>
                 </thead>
                 <tbody id="products-modal-body" class="bg-white"></tbody>
@@ -247,16 +247,14 @@
         });
     }
 
-    // --- Lógica do Modal de Produtos (COM OVERRIDE) ---
+    /* ==========================================================================
+                        LÓGICA DO MODAL (CONTROLE DE DISPLAY)
+       ========================================================================== */
     let currentEditingPlaylistItem = null;
 
     function openProductsModal(familiaId, familiaNome, btnElement) {
         currentEditingPlaylistItem = btnElement.closest('.playlist-item');
         
-        // Lê as memórias deste bloco específico
-        const hiddenProducts = JSON.parse(currentEditingPlaylistItem.dataset.hiddenProducts || '[]').map(String);
-        const forcedProducts = JSON.parse(currentEditingPlaylistItem.dataset.forcedProducts || '[]').map(String);
-
         const modal = document.getElementById('products-modal');
         const title = document.getElementById('products-modal-title');
         const body = document.getElementById('products-modal-body');
@@ -275,29 +273,44 @@
             .then(res => res.json())
             .then(data => {
                 loading.classList.add('hidden');
+                
+                // LÓGICA DE DEFAULT OFF: Se este nó da playlist nunca foi configurado,
+                // inserimos TODOS os IDs na blacklist (hidden_products) para iniciar desligado.
+                let isConfigured = currentEditingPlaylistItem.dataset.configured === 'true';
+                let hiddenProducts = JSON.parse(currentEditingPlaylistItem.dataset.hiddenProducts || '[]');
+
+                if (!isConfigured) {
+                    hiddenProducts = data.produtos.map(p => String(p.id));
+                    currentEditingPlaylistItem.dataset.hiddenProducts = JSON.stringify(hiddenProducts);
+                    currentEditingPlaylistItem.dataset.configured = 'true';
+                }
+
                 if (data.produtos && data.produtos.length > 0) {
                     data.produtos.forEach(p => {
-                        const precoFormatado = parseFloat(p.preco).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                        const isGloballyActive = p.exibir_no_painel; // Status do cadastro geral
+                        const isHiddenLocally = hiddenProducts.includes(String(p.id)); // Blacklist Local
                         
-                        // LÓGICA DO SWITCH:
-                        // 1. O valor padrão é o do cadastro geral (p.exibir_no_painel)
-                        let isChecked = p.exibir_no_painel;
-                        // 2. Se o usuário forçou ON neste bloco, fica ON
-                        if (forcedProducts.includes(String(p.id))) isChecked = true;
-                        // 3. Se o usuário forçou OFF neste bloco, fica OFF
-                        if (hiddenProducts.includes(String(p.id))) isChecked = false;
+                        // O Toggle só fica ligado se for globalmente ativo E não estiver na Blacklist
+                        const isChecked = isGloballyActive && !isHiddenLocally;
+                        
+                        // UX: Produtos Inativos Globalmente ficam opacos e desabilitados
+                        const opacityClass = isGloballyActive ? '' : 'opacity-40 bg-gray-50';
+                        const disabledAttr = isGloballyActive ? '' : 'disabled';
+                        const cursorClass = isGloballyActive ? 'cursor-pointer' : 'cursor-not-allowed';
 
                         const tr = document.createElement('tr');
-                        tr.className = 'hover:bg-gray-50 transition-colors border-b border-gray-100';
+                        tr.className = `hover:bg-gray-50 transition-colors border-b border-gray-100 ${opacityClass}`;
                         tr.innerHTML = `
                             <td class="px-6 py-3 text-sm font-medium text-gray-800">
                                 ${p.descricao} 
-                                ${p.em_oferta ? '<span class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700"><i class="ph-fill ph-lightning"></i></span>' : ''}
+                                ${!isGloballyActive ? '<span class="ml-2 text-[10px] font-bold text-red-500 uppercase tracking-wider">(INATIVO)</span>' : ''}
                             </td>
-                            <td class="px-6 py-3 text-sm text-gray-600 font-mono text-right">R$ ${precoFormatado}</td>
+                            <td class="px-6 py-3 text-sm text-gray-600 font-mono text-right">R$ ${parseFloat(p.preco).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                             <td class="px-6 py-3 text-center">
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" class="sr-only peer" onchange="toggleLocalProductVisibility(${p.id}, ${p.exibir_no_painel}, this)" ${isChecked ? 'checked' : ''}>
+                                <label class="relative inline-flex items-center ${cursorClass}">
+                                    <input type="checkbox" class="sr-only peer toggle-display-btn" 
+                                           value="${p.id}" ${isChecked ? 'checked' : ''} ${disabledAttr}
+                                           onchange="toggleLocalProductVisibility('${p.id}', this)">
                                     <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
                                 </label>
                             </td>
@@ -321,33 +334,29 @@
         currentEditingPlaylistItem = null;
     }
 
-    // Calcula o "Override" quando o usuário clica no Switch
-    function toggleLocalProductVisibility(productId, isGloballyOn, checkbox) {
+    // Registra a decisão do usuário na Blacklist (hidden_products) do item atual da Playlist
+    function toggleLocalProductVisibility(productId, checkbox) {
         if (!currentEditingPlaylistItem) return;
         
-        const pIdStr = String(productId);
-        let hiddenProducts = JSON.parse(currentEditingPlaylistItem.dataset.hiddenProducts || '[]').map(String);
-        let forcedProducts = JSON.parse(currentEditingPlaylistItem.dataset.forcedProducts || '[]').map(String);
+        let hiddenProducts = JSON.parse(currentEditingPlaylistItem.dataset.hiddenProducts || '[]');
+        const idStr = String(productId);
         
         if (checkbox.checked) {
-            // Clicou para EXIBIR
-            hiddenProducts = hiddenProducts.filter(id => id !== pIdStr); // Tira da lista de bloqueados
-            if (!isGloballyOn && !forcedProducts.includes(pIdStr)) {
-                forcedProducts.push(pIdStr); // Se no cadastro geral ele for OFF, nós forçamos o ON aqui!
-            }
+            // Usuario ligou o switch -> Retira o ID da Blacklist
+            hiddenProducts = hiddenProducts.filter(id => id !== idStr);
         } else {
-            // Clicou para ESCONDER
-            forcedProducts = forcedProducts.filter(id => id !== pIdStr); // Tira da lista de forçados
-            if (isGloballyOn && !hiddenProducts.includes(pIdStr)) {
-                hiddenProducts.push(pIdStr); // Se no cadastro geral ele for ON, nós ocultamos aqui!
+            // Usuario desligou o switch -> Adiciona o ID na Blacklist
+            if (!hiddenProducts.includes(idStr)) {
+                hiddenProducts.push(idStr);
             }
         }
         
         currentEditingPlaylistItem.dataset.hiddenProducts = JSON.stringify(hiddenProducts);
-        currentEditingPlaylistItem.dataset.forcedProducts = JSON.stringify(forcedProducts);
     }
 
-    // --- Gerenciador da Playlist ---
+    /* ==========================================================================
+                        GERENCIADOR DRAG-AND-DROP (PLAYLIST)
+       ========================================================================== */
     const playlistManager = {
         config: {
             sources: ['library-families', 'library-midias'],
@@ -411,7 +420,7 @@
                 url: el.dataset.url || null,
                 tipo_midia: el.dataset.tipomidia || null,
                 hidden_products: [],
-                forced_products: [] 
+                configured: 'false' // Recém arrastado da biblioteca, ainda não configurado
             };
         },
 
@@ -422,8 +431,8 @@
             
             div.dataset.type = data.type;
             div.dataset.id = data.id;
+            div.dataset.configured = data.configured || 'false';
             div.dataset.hiddenProducts = JSON.stringify(data.hidden_products || []);
-            div.dataset.forcedProducts = JSON.stringify(data.forced_products || []);
             
             let previewBtn = '';
             let inputsTempoHtml = '';
@@ -484,8 +493,8 @@
                         tempo: item.tempo || item.duracao || 15,
                         url: url,
                         tipo_midia: tipo_midia,
-                        hidden_products: item.hidden_products || [], 
-                        forced_products: item.forced_products || [] 
+                        hidden_products: item.hidden_products || [],
+                        configured: item.configured !== undefined ? String(item.configured) : 'true' // Herança do Banco
                     });
                     this.targetEl.appendChild(el);
                 });
@@ -504,7 +513,7 @@
         },
 
         clearAll() {
-            if(confirm('Tem certeza?')) { this.targetEl.innerHTML = ''; this.toggleEmptyState(); }
+            if(confirm('Tem certeza? Isso irá esvaziar a playlist.')) { this.targetEl.innerHTML = ''; this.toggleEmptyState(); }
         },
 
         saveAndSubmit() {
@@ -527,7 +536,7 @@
                     descricao: titleEl ? titleEl.innerText : 'Item',
                     tempo: tempoFinal,
                     hidden_products: JSON.parse(item.dataset.hiddenProducts || '[]'),
-                    forced_products: JSON.parse(item.dataset.forcedProducts || '[]')
+                    configured: item.dataset.configured === 'true'
                 });
             });
 

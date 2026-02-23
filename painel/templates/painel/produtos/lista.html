@@ -8,7 +8,7 @@
     <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
             <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Meus Produtos</h1>
-            <p class="text-sm text-gray-500 mt-1">Gerencie preços, ofertas e visibilidade do catálogo.</p>
+            <p class="text-sm text-gray-500 mt-1">Gerencie preços, ofertas e status de ativação no catálogo.</p>
         </div>
         
         <div class="flex items-center gap-3">
@@ -71,7 +71,7 @@
                         <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Família</th>
                         <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Preço</th>
                         <th scope="col" class="px-6 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Oferta</th>
-                        <th scope="col" class="px-6 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Painel</th>
+                        <th scope="col" class="px-6 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Ativo/Inativo</th>
                         <th scope="col" class="relative px-6 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Ações</th>
                     </tr>
                 </thead>
@@ -120,7 +120,7 @@
                         </td>
 
                         <td class="px-6 py-4 whitespace-nowrap text-center">
-                            <label class="relative inline-flex items-center cursor-pointer" title="Ativar/Desativar na TV">
+                            <label class="relative inline-flex items-center cursor-pointer" title="Ativar/Desativar Produto Globalmente">
                                 <input type="checkbox" class="sr-only peer" onchange="toggleVisibilidade({{ produto.id }}, this)" {% if produto.exibir_no_painel %}checked{% endif %}>
                                 <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
                             </label>
@@ -187,8 +187,10 @@
 </div>
 
 <script>
+    /**
+     * Alterna assincronamente o status global (ativo/inativo) do produto via API.
+     */
     function toggleVisibilidade(id, element) {
-        // Desabilita visualmente enquanto carrega
         element.disabled = true;
         element.parentNode.style.opacity = '0.5';
 
@@ -202,19 +204,16 @@
         .then(response => response.json())
         .then(data => {
             if (data.status !== 'success') {
-                // Se der erro no server, reverte o botão
                 element.checked = !element.checked;
-                alert('Erro ao atualizar visibilidade.');
+                alert('Falha ao atualizar o status do produto.');
             }
         })
         .catch(err => {
             console.error(err);
-            // Se der erro de rede, reverte o botão
             element.checked = !element.checked;
-            alert('Erro de conexão ao tentar atualizar.');
+            alert('Falha de conexão com o servidor.');
         })
         .finally(() => {
-            // Volta o visual ao normal
             element.disabled = false;
             element.parentNode.style.opacity = '1';
         });

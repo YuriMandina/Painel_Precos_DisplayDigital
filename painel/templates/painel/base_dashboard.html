@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,11 +12,14 @@
 
     <style>
         body { font-family: 'Inter', sans-serif; }
+        
+        /* Customização de Scrollbar para componentes de navegação */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #374151; border-radius: 20px; }
     </style>
 </head>
+
 <body class="bg-gray-50 text-gray-800 flex h-screen overflow-hidden">
 
     <aside id="sidebar" class="w-64 bg-gray-900 text-white flex flex-col shadow-2xl z-30 transition-transform transform -translate-x-full md:translate-x-0 md:flex fixed md:relative h-full">
@@ -27,6 +31,7 @@
                     <span class="text-white">DISPLAY</span><span class="text-indigo-500">DIGITAL</span>
                 </div>
             </div>
+            
             <button id="closeSidebar" class="md:hidden ml-auto text-gray-400 hover:text-white">
                 <i class="ph ph-x text-xl"></i>
             </button>
@@ -34,49 +39,35 @@
 
         <nav class="flex-1 overflow-y-auto py-6 px-3 custom-scrollbar space-y-1">
             
-            <p class="px-4 mt-2 mb-3 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                Principal
-            </p>
-
+            <p class="px-4 mt-2 mb-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Principal</p>
             <a href="{% url 'dashboard' %}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors
-               {% if request.resolver_match.url_name == 'dashboard' %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
+               class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'dashboard' %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
                 <i class="ph ph-squares-four text-lg"></i>
                 <span>Visão Geral</span>
             </a>
 
             <a href="{% url 'dispositivo_list' %}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors
-               {% if 'dispositivo' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
+               class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors {% if 'dispositivo' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
                 <i class="ph ph-television text-lg"></i>
                 <span>Dispositivos</span>
             </a>
 
-            <p class="px-4 mt-6 mb-3 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                Catálogo
-            </p>
-            
+            <p class="px-4 mt-6 mb-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Catálogo</p>
             <a href="{% url 'produtos_list' %}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors
-               {% if 'produto' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
+               class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors {% if 'produto' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
                 <i class="ph ph-tag text-lg"></i>
                 <span>Produtos</span>
             </a>
             
             <a href="{% url 'familia_list' %}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors
-               {% if 'familia' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
+               class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors {% if 'familia' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
                 <i class="ph ph-folders text-lg"></i>
                 <span>Famílias</span>
             </a>
 
-            <p class="px-4 mt-6 mb-3 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                Gestão de Conteúdo
-            </p>
-
+            <p class="px-4 mt-6 mb-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Gestão de Conteúdo</p>
             <a href="{% url 'midia_list' %}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors
-               {% if 'midia' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
+               class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors {% if 'midia' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
                 <i class="ph ph-film-slate text-lg"></i>
                 <span>Biblioteca de Mídia</span>
             </a>
@@ -95,6 +86,7 @@
     </aside>
 
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
+        
         <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 md:hidden flex-shrink-0 z-20">
             <div class="font-bold text-gray-900 flex items-center gap-2">
                 <i class="ph-fill ph-monitor-play text-indigo-600 text-xl"></i>
@@ -106,6 +98,7 @@
         </header>
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6 md:p-10 scroll-smooth">
+            
             {% if messages %}
                 <div class="mb-8 space-y-3 max-w-7xl mx-auto">
                     {% for message in messages %}
@@ -119,15 +112,20 @@
                     {% endfor %}
                 </div>
             {% endif %}
+            
             <div class="max-w-7xl mx-auto">
                 {% block content %}{% endblock %}
             </div>
+            
         </main>
     </div>
 
     <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-20 hidden md:hidden glass"></div>
 
     <script>
+        /**
+         * Manipulação do estado do DOM para o menu lateral responsivo.
+         */
         const sidebar = document.getElementById('sidebar');
         const openBtn = document.getElementById('openSidebar');
         const closeBtn = document.getElementById('closeSidebar');

@@ -296,13 +296,15 @@ class GridRenderer {
 
         this.app.setTitle(titulo);
 
-        let productsToShow = allProducts;
+        // 1. FILTRO GLOBAL: Remove produtos ocultados na página de Produtos
+        let productsToShow = allProducts.filter(p => p.exibir_no_painel === true);
+
+        // 2. FILTRO DE FAMÍLIA: Aplica a categoria selecionada na Playlist
         if (itemPlaylist.familia_id) {
-            productsToShow = allProducts.filter(p => p.familia === itemPlaylist.familia_id);
+            productsToShow = productsToShow.filter(p => p.familia === itemPlaylist.familia_id);
         }
 
-        /* Aplica filtro de restrição de exibição. Converte IDs do payload para string
-           garantindo comparação estrita com o dataset de produtos. */
+        // 3. FILTRO LOCAL (BLINDAGEM DA TV): Remove produtos ocultados especificamente nesta Playlist
         if (itemPlaylist.hidden_products && Array.isArray(itemPlaylist.hidden_products)) {
             const hiddenIds = itemPlaylist.hidden_products.map(String);
             
