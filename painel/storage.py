@@ -31,7 +31,9 @@ class MidiaCloudinaryStorage(MediaCloudinaryStorage):
         extensao = os.path.splitext(name)[1].lower()
         
         if extensao in ['.mp4', '.webm', '.mov', '.avi', '.ogg', '.mkv']:
-            return url_gerada.replace('/image/upload/', '/video/upload/', 1)
+            # Cobre os padrões gerados pela biblioteca (image ou raw) para forçar o player de vídeo do Cloudinary
+            url_gerada = url_gerada.replace('/image/upload/', '/video/upload/', 1)
+            url_gerada = url_gerada.replace('/raw/upload/', '/video/upload/', 1)
             
         return url_gerada
 
@@ -43,16 +45,21 @@ class MidiaCloudinaryStorage(MediaCloudinaryStorage):
         extensao = os.path.splitext(name)[1].lower()
         res_type = 'video' if extensao in ['.mp4', '.webm', '.mov', '.avi', '.ogg', '.mkv'] else 'image'
         
-        public_id = os.path.splitext(name)[0]
+        base_name = os.path.splitext(name)[0]
         
-        try:
-            cloudinary.uploader.destroy(
-                public_id, 
-                invalidate=True, 
-                resource_type=res_type
-            )
-        except Exception as e:
-            logger.error(f"Falha ao deletar asset no Cloudinary (ID: {public_id}): {e}")
+        # Matriz de tentativas para cobrir como a biblioteca salvou o public_id internamente
+        tentativas_exclusao = [
+            (name, res_type),
+            (base_name, res_type),
+            (name, 'raw'),
+            (base_name, 'raw')
+        ]
+        
+        for pid, rtype in tentativas_exclusao:
+            try:
+                cloudinary.uploader.destroy(pid, invalidate=True, resource_type=rtype)
+            except Exception:
+                pass
 
         # Garante que o Django execute sua rotina de limpeza isolando possíveis erros.
         try:
