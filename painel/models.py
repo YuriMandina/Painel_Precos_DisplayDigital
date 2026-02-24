@@ -146,6 +146,15 @@ class Midia(models.Model):
                 self.tipo = self.Tipo.VIDEO
         super().save(*args, **kwargs)
 
+    def delete(self, *args, **kwargs) -> None:
+        """
+        Gatilho ativado ao excluir a mídia. 
+        Força a exclusão física do arquivo lá no Cloudinary para não gerar lixo.
+        """
+        if self.arquivo:
+            self.arquivo.delete(save=False) # Dispara o delete() do nosso storage.py
+        super().delete(*args, **kwargs)
+
     def __str__(self) -> str:
         return f"{self.nome} ({self.get_tipo_display()})"
 
