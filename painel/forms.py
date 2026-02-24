@@ -1,6 +1,7 @@
 # ==============================================================================
 #                                  IMPORTS
 # ==============================================================================
+import os
 from typing import Any, Dict
 
 from django import forms
@@ -112,3 +113,17 @@ class MidiaForm(forms.ModelForm):
             'nome': forms.TextInput(attrs={'class': CSS_INPUT, 'placeholder': 'Ex: Promoção de Natal'}),
             'arquivo': forms.FileInput(attrs={'class': 'hidden', 'accept': 'video/*,image/*'})
         }
+
+    def clean_arquivo(self) -> Any:
+        """
+        Intercepta o arquivo antes de enviá-lo para a nuvem.
+        Encurta o nome original do arquivo para garantir que a string devolvida 
+        pelo Cloudinary não ultrapasse o limite de 100 caracteres do banco de dados (DataError).
+        """
+        arquivo = self.cleaned_data.get('arquivo')
+        if arquivo:
+            nome_base, extensao = os.path.splitext(arquivo.name)
+            # Limita o nome original a apenas 20 caracteres
+            nome_curto = nome_base[:20].strip()
+            arquivo.name = f"{nome_curto}{extensao}"
+        return arquivo
