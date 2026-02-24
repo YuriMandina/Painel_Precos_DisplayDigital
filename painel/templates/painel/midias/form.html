@@ -62,14 +62,19 @@
                     
                     <div class="relative aspect-video bg-black rounded-lg overflow-hidden border border-gray-200 shadow-md">
                         
-                        <video id="preview-video" 
-                            class="w-full h-full object-contain {% if form.instance.tipo != 'VIDEO' %}hidden{% endif %}" 
-                            controls autoplay muted loop playsinline preload="auto"
-                            {% if form.instance.tipo == 'VIDEO' and form.instance.arquivo %}src="{{ form.instance.arquivo.url }}"{% endif %}></video>
-                        
-                        <img id="preview-image" 
-                            class="w-full h-full object-contain {% if form.instance.tipo != 'IMAGEM' %}hidden{% endif %}" 
-                            {% if form.instance.tipo == 'IMAGEM' and form.instance.arquivo %}src="{{ form.instance.arquivo.url }}"{% endif %} />
+                        {% if form.instance.arquivo %}
+                            <video id="preview-video" 
+                                class="w-full h-full object-contain {% if '.mp4' not in form.instance.arquivo.name and '.webm' not in form.instance.arquivo.name %}hidden{% endif %}" 
+                                controls autoplay muted loop playsinline
+                                src="{{ form.instance.arquivo.url }}"></video>
+                            
+                            <img id="preview-image" 
+                                class="w-full h-full object-contain {% if '.mp4' in form.instance.arquivo.name or '.webm' in form.instance.arquivo.name %}hidden{% endif %}" 
+                                src="{{ form.instance.arquivo.url }}" />
+                        {% else %}
+                            <video id="preview-video" class="w-full h-full object-contain hidden" controls autoplay muted loop playsinline></video>
+                            <img id="preview-image" class="w-full h-full object-contain hidden" />
+                        {% endif %}
                     </div>
                 </div>
 
