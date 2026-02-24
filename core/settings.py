@@ -142,13 +142,26 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 MB
 
 # Ativa o Cloudinary em Produção com o nosso Storage Inteligente
 if not DEBUG:
+    import cloudinary # Importação necessária para configurar o SDK Global
+
     DEFAULT_FILE_STORAGE = 'painel.storage.MidiaCloudinaryStorage'
     
+    # 1. Configuração para a biblioteca django-cloudinary-storage (Uploads)
     CLOUDINARY_STORAGE = {
         'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default=''),
         'API_KEY': config('CLOUDINARY_API_KEY', default=''),
         'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
+        'SECURE': True, # Garante HTTPS
     }
+
+    # 2. CORREÇÃO: Injeção Global para o SDK do Cloudinary (Leitura e Exclusão)
+    # Isto resolve a exigência do "CLOUDINARY_URL" usando as suas variáveis separadas
+    cloudinary.config(
+        cloud_name=config('CLOUDINARY_CLOUD_NAME', default=''),
+        api_key=config('CLOUDINARY_API_KEY', default=''),
+        api_secret=config('CLOUDINARY_API_SECRET', default=''),
+        secure=True
+    )
 
 
 # ==============================================================================
