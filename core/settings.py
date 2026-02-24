@@ -133,12 +133,22 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Mídia (Uploads de usuários e arquivos dinâmicos)
-MEDIA_URL = 'media/'
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Aumentando limites de upload para suportar vídeos de até 100 MB
+# Aumentando limites de upload para suportar vídeos pesados
 DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 MB
+
+# Ativa o Cloudinary em Produção com o nosso Storage Inteligente
+if not DEBUG:
+    DEFAULT_FILE_STORAGE = 'painel.storage.MidiaCloudinaryStorage'
+    
+    CLOUDINARY_STORAGE = {
+        'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default=''),
+        'API_KEY': config('CLOUDINARY_API_KEY', default=''),
+        'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
+    }
 
 
 # ==============================================================================
