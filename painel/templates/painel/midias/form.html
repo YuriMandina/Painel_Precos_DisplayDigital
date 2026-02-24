@@ -62,15 +62,14 @@
                     
                     <div class="relative aspect-video bg-black rounded-lg overflow-hidden border border-gray-200 shadow-md">
                         
-                        <!-- CORREÇÃO BUG 1: Inserido preload, playsinline e #t=0.001 para forçar o thumbnail renderizado -->
                         <video id="preview-video" 
-                               class="w-full h-full object-contain {% if form.instance.tipo != 'VIDEO' %}hidden{% endif %}" 
-                               controls preload="metadata" playsinline
-                               {% if form.instance.tipo == 'VIDEO' %}src="{{ form.instance.arquivo.url }}#t=0.001"{% endif %}></video>
+                            class="w-full h-full object-contain {% if form.instance.tipo != 'VIDEO' %}hidden{% endif %}" 
+                            controls autoplay muted loop playsinline preload="auto"
+                            {% if form.instance.tipo == 'VIDEO' and form.instance.arquivo %}src="{{ form.instance.arquivo.url }}"{% endif %}></video>
                         
                         <img id="preview-image" 
-                             class="w-full h-full object-contain {% if form.instance.tipo != 'IMAGEM' %}hidden{% endif %}" 
-                             {% if form.instance.tipo == 'IMAGEM' %}src="{{ form.instance.arquivo.url }}"{% endif %} />
+                            class="w-full h-full object-contain {% if form.instance.tipo != 'IMAGEM' %}hidden{% endif %}" 
+                            {% if form.instance.tipo == 'IMAGEM' and form.instance.arquivo %}src="{{ form.instance.arquivo.url }}"{% endif %} />
                     </div>
                 </div>
 
