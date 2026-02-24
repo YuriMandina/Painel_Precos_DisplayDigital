@@ -61,10 +61,12 @@
                     <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Prévia do Conteúdo</h3>
                     
                     <div class="relative aspect-video bg-black rounded-lg overflow-hidden border border-gray-200 shadow-md">
+                        
+                        <!-- CORREÇÃO BUG 1: Inserido preload, playsinline e #t=0.001 para forçar o thumbnail renderizado -->
                         <video id="preview-video" 
                                class="w-full h-full object-contain {% if form.instance.tipo != 'VIDEO' %}hidden{% endif %}" 
-                               controls 
-                               {% if form.instance.tipo == 'VIDEO' %}src="{{ form.instance.arquivo.url }}"{% endif %}></video>
+                               controls preload="metadata" playsinline
+                               {% if form.instance.tipo == 'VIDEO' %}src="{{ form.instance.arquivo.url }}#t=0.001"{% endif %}></video>
                         
                         <img id="preview-image" 
                              class="w-full h-full object-contain {% if form.instance.tipo != 'IMAGEM' %}hidden{% endif %}" 
