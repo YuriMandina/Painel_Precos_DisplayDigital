@@ -81,6 +81,14 @@
                     <i class="ph ph-sign-out text-lg"></i>
                     <span>Sair do Sistema</span>
                 </button>
+                {% if request.user.perfil.is_admin %}
+                    <p class="px-4 mt-6 mb-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Administração</p>
+                    <a href="{% url 'equipe_list' %}" 
+                    class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors {% if 'equipe' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
+                        <i class="ph ph-users text-lg"></i>
+                        <span>Equipe & Acessos</span>
+                    </a>
+                {% endif %}
             </form>
         </div>
     </aside>

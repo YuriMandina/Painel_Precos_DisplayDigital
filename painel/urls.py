@@ -22,7 +22,10 @@ urlpatterns = [
         template_name='painel/login.html', 
         redirect_authenticated_user=True
     ), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('logout/', views.logout_customizado_view, name='logout'),
+
+    # --- AUTENTICAÇÃO ---
+    path('registro/', views.registro_view, name='registro'),
 
     # --- API ENDPOINTS (Client-side / TV) ---
     path('api/painel/parear/', views_api.parear_dispositivo, name='api_parear'),
@@ -61,4 +64,8 @@ urlpatterns = [
     path('dashboard/midias/nova/', views_admin.MidiaCreateView.as_view(), name='midia_create'),
     path('dashboard/midias/<int:pk>/editar/', views_admin.MidiaUpdateView.as_view(), name='midia_edit'),
     path('dashboard/midias/<int:pk>/excluir/', views_admin.MidiaDeleteView.as_view(), name='midia_delete'),
+
+     # --- MÓDULO: ADMINISTRAÇÃO DE EQUIPE ---
+    path('dashboard/equipe/', views_admin.EquipeListView.as_view(), name='equipe_list'),
+    path('dashboard/equipe/<int:pk>/aprovar/', views_admin.equipe_aprovar_view, name='equipe_aprovar'),
 ]

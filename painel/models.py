@@ -50,15 +50,22 @@ class Perfil(models.Model):
     Extensão do modelo padrão de User do Django (1:1).
     Estabelece a autorização baseada em Tenant (Empresa) para cada usuário.
     """
+    class Status(models.TextChoices):
+        PENDENTE = 'PENDENTE', 'Aguardando Aprovação'
+        APROVADO = 'APROVADO', 'Aprovado'
+
     usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='usuarios')
+    
+    is_admin = models.BooleanField(default=False, help_text="Usuário master/dono da conta")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDENTE)
 
     class Meta:
         verbose_name = "Perfil de Usuário"
         verbose_name_plural = "Perfis de Usuários"
 
     def __str__(self) -> str:
-        return f"{self.usuario.username} ({self.empresa.nome})"
+        return f"{self.usuario.username} ({self.empresa.nome}) - {self.status}"
 
 
 # ==============================================================================

@@ -1,16 +1,18 @@
 # ==============================================================================
 #                                  IMPORTS
 # ==============================================================================
+from pyexpat.errors import messages
 import uuid
 from typing import Any, Dict, Optional
 
 import pandas as pd
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db.models import Q, QuerySet
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.decorators.http import require_POST
@@ -32,7 +34,8 @@ from .forms import (
 from .models import (
     Dispositivo, 
     FamiliaProduto, 
-    Midia, 
+    Midia,
+    Perfil, 
     Produto, 
     gerar_codigo_curto
 )
@@ -59,6 +62,38 @@ class TenantFormSaveMixin:
     def form_valid(self, form: Any) -> HttpResponse:
         form.instance.empresa = self.request.user.perfil.empresa
         return super().form_valid(form)
+    
+
+class EquipeListView(LoginRequiredMixin, TenantQuerySetMixin, ListView):
+    model = Perfil
+    template_name = 'painel/equipe/lista.html'
+    context_object_name = 'membros'
+
+    def dispatch(self, request, *args, **kwargs):
+        # Proteção extra: Apenas admins da empresa podem acessar essa tela
+        if not request.user.perfil.is_admin:
+            messages.error(request, "Acesso restrito: Apenas administradores podem gerenciar a equipe.")
+            return redirect('dashboard')
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        # Retorna todos da mesma empresa, exceto o próprio usuário logado
+        return super().get_queryset().exclude(usuario=self.request.user).order_by('status', 'usuario__first_name')
+
+
+@login_required
+@require_POST
+def equipe_aprovar_view(request: HttpRequest, pk: int) -> HttpResponse:
+    if not request.user.perfil.is_admin:
+        messages.error(request, "Você não tem permissão para aprovar usuários.")
+        return redirect('dashboard')
+
+    perfil = get_object_or_404(Perfil, pk=pk, empresa=request.user.perfil.empresa)
+    perfil.status = Perfil.Status.APROVADO
+    perfil.save(update_fields=['status'])
+    
+    messages.success(request, f"O acesso de {perfil.usuario.first_name} foi aprovado!")
+    return redirect('equipe_list')
 
 
 # ==============================================================================

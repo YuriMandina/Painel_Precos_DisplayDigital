@@ -8,6 +8,8 @@ from django import forms
 
 from .models import Dispositivo, FamiliaProduto, Midia, Produto
 
+from django.contrib.auth.models import User
+
 
 # ==============================================================================
 #                             CONSTANTES DE ESTILIZAÇÃO
@@ -127,3 +129,53 @@ class MidiaForm(forms.ModelForm):
             nome_curto = nome_base[:20].strip()
             arquivo.name = f"{nome_curto}{extensao}"
         return arquivo
+    
+class RegistroForm(forms.Form):
+    nome = forms.CharField(widget=forms.TextInput(attrs={'class': CSS_INPUT, 'placeholder': 'Seu nome completo'}))
+    
+    # Adicionamos o username separadamente
+    username = forms.CharField(
+        max_length=150,
+        help_text="Como você fará o login no sistema.",
+        widget=forms.TextInput(attrs={'class': CSS_INPUT, 'placeholder': 'Ex: joao.silva'})
+    )
+    email = forms.EmailField(widget=forms.EmailInput(attrs={'class': CSS_INPUT, 'placeholder': 'seu@email.com'}))
+    
+    # Adicionamos a confirmação de senha
+    senha = forms.CharField(widget=forms.PasswordInput(attrs={'class': CSS_INPUT, 'placeholder': 'Crie uma senha segura'}))
+    senha_confirmacao = forms.CharField(widget=forms.PasswordInput(attrs={'class': CSS_INPUT, 'placeholder': 'Confirme sua senha'}))
+    
+    cnpj = forms.CharField(
+        max_length=20, 
+        help_text="Usado para vincular você à sua empresa.",
+        widget=forms.TextInput(attrs={'class': CSS_INPUT, 'placeholder': 'Apenas números'})
+    )
+    nome_empresa = forms.CharField(
+        max_length=150, 
+        required=False, 
+        help_text="Obrigatório apenas na primeira vez.",
+        widget=forms.TextInput(attrs={'class': CSS_INPUT, 'placeholder': 'Razão Social ou Nome Fantasia'})
+    )
+
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if User.objects.filter(username=username).exists():
+            raise forms.ValidationError("Este nome de usuário já está em uso.")
+        return username
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("Este e-mail já está em uso por outra conta.")
+        return email
+
+    def clean(self):
+        """Validação cruzada para garantir que as senhas batem."""
+        cleaned_data = super().clean()
+        senha = cleaned_data.get("senha")
+        senha_confirmacao = cleaned_data.get("senha_confirmacao")
+        
+        if senha and senha_confirmacao and senha != senha_confirmacao:
+            self.add_error('senha_confirmacao', "As senhas não coincidem. Digite novamente.")
+            
+        return cleaned_data
