@@ -17,21 +17,21 @@ from django.contrib.auth.forms import AuthenticationForm
 # ==============================================================================
 
 CSS_INPUT = (
-    'w-full rounded-lg border-gray-300 focus:border-indigo-500 '
-    'focus:ring-indigo-500 shadow-sm text-sm'
+    'w-full rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 '
+    'focus:ring-indigo-600 focus:border-transparent shadow-sm text-sm transition-all px-4 py-3'
 )
 
 CSS_CHECKBOX = (
-    'h-4 w-4 text-indigo-600 focus:ring-indigo-500 '
-    'border-gray-300 rounded'
+    'h-5 w-5 text-indigo-600 focus:ring-indigo-500 '
+    'border-slate-300 rounded shadow-sm transition-colors cursor-pointer'
 )
 
 CSS_FILE_BASE = (
-    'block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 '
-    'file:rounded-full file:border-0 file:text-xs file:font-semibold'
+    'block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 '
+    'file:rounded-full file:border-0 file:text-xs file:font-bold transition-all'
 )
 
-CSS_FILE_INDIGO = f"{CSS_FILE_BASE} file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+CSS_FILE_INDIGO = f"{CSS_FILE_BASE} file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
 
 
 # ==============================================================================

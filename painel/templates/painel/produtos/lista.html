@@ -1,44 +1,45 @@
 {% extends "painel/base_dashboard.html" %}
 
 {% block title %}Catálogo de Produtos | DisplayDigital{% endblock %}
+{% block header_title %}Produtos{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto">
     
     <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Meus Produtos</h1>
-            <p class="text-sm text-gray-500 mt-1">Gerencie preços, ofertas e status de ativação no catálogo.</p>
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Meus Produtos</h1>
+            <p class="text-sm text-slate-500 mt-1">Gerencie preços, ofertas e status de ativação no catálogo.</p>
         </div>
         
         <div class="flex items-center gap-3">
             <a href="{% url 'produto_importar' %}" 
-               class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors shadow-sm">
-                <i class="ph ph-file-xls text-green-600 text-lg"></i>
+               class="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 hover:border-emerald-200 hover:text-emerald-700 text-sm font-bold transition-all shadow-sm">
+                <i class="ph-fill ph-microsoft-excel-logo text-emerald-600 text-lg"></i>
                 Importar
             </a>
             
             <a href="{% url 'produto_create' %}" 
-               class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-md hover:shadow-lg">
-                <i class="ph ph-plus-circle text-lg"></i>
+               class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-600/30 hover:-translate-y-0.5">
+                <i class="ph-bold ph-plus text-lg"></i>
                 Novo Produto
             </a>
         </div>
     </header>
 
-    <section class="bg-white p-2 rounded-xl shadow-sm border border-gray-200 mb-6">
-        <form method="GET" action="{% url 'produtos_list' %}" class="flex flex-col md:flex-row gap-2">
+    <section class="bg-white p-2.5 rounded-2xl shadow-sm border border-slate-200 mb-8">
+        <form method="GET" action="{% url 'produtos_list' %}" class="flex flex-col md:flex-row gap-3">
             
-            <div class="relative flex-1">
-                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
+            <div class="relative flex-1 group">
+                <i class="ph-bold ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg group-focus-within:text-indigo-600 transition-colors"></i>
                 <input type="text" name="q" value="{{ query }}" 
                        placeholder="Buscar por nome, código ou categoria..." 
-                       class="w-full pl-10 pr-4 py-2.5 border-none rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all text-sm text-gray-900">
+                       class="w-full pl-11 pr-4 py-3 border-none rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-600 transition-all text-sm text-slate-900">
             </div>
             
-            <div class="md:w-64">
+            <div class="md:w-72">
                 <select name="familia" onchange="this.form.submit()" 
-                        class="w-full py-2.5 px-3 border-none rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all text-sm text-gray-900 cursor-pointer">
+                        class="w-full py-3 px-4 border-none rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-600 transition-all text-sm text-slate-900 font-medium cursor-pointer">
                     <option value="">Todas as Famílias</option>
                     {% for fam in familias %}
                         <option value="{{ fam.id }}" {% if familia_id == fam.id|stringformat:"s" %}selected{% endif %}>
@@ -48,96 +49,96 @@
                 </select>
             </div>
             
-            <button type="submit" class="px-5 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors shadow-sm whitespace-nowrap">
+            <button type="submit" class="px-6 py-3 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all shadow-md hover:-translate-y-0.5 whitespace-nowrap">
                 Buscar
             </button>
             
             {% if query or familia_id %}
-            <a href="{% url 'produtos_list' %}" class="px-4 py-2.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center border border-transparent hover:border-red-100" title="Limpar Filtros">
-                <i class="ph ph-x text-lg"></i>
+            <a href="{% url 'produtos_list' %}" class="px-4 py-3 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors flex items-center justify-center border border-transparent hover:border-red-100" title="Limpar Filtros">
+                <i class="ph-bold ph-x text-lg"></i>
             </a>
             {% endif %}
         </form>
     </section>
 
-    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
         
         {% if page_obj %}
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50/50">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50/80">
                     <tr>
-                        <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Produto</th>
-                        <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Família</th>
-                        <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Preço</th>
-                        <th scope="col" class="px-6 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Oferta</th>
-                        <th scope="col" class="px-6 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Ativo/Inativo</th>
-                        <th scope="col" class="relative px-6 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Ações</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Produto</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Família</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Preço</th>
+                        <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-widest">Oferta</th>
+                        <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-widest">Visibilidade</th>
+                        <th scope="col" class="relative px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">Ações</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 bg-white">
+                <tbody class="divide-y divide-slate-100 bg-white">
                     {% for produto in page_obj %}
-                    <tr class="hover:bg-gray-50/80 transition-colors group">
+                    <tr class="hover:bg-slate-50 transition-colors group">
                         
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="h-10 w-10 flex-shrink-0 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400 overflow-hidden">
+                            <div class="flex items-center gap-4">
+                                <div class="h-12 w-12 flex-shrink-0 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 overflow-hidden shadow-sm group-hover:border-indigo-200 transition-colors">
                                     {% if produto.imagem %}
                                         <img class="h-full w-full object-cover" src="{{ produto.imagem.url }}" alt="{{ produto.descricao }}">
                                     {% else %}
-                                        <i class="ph ph-image text-xl"></i>
+                                        <i class="ph-fill ph-image text-2xl"></i>
                                     {% endif %}
                                 </div>
-                                <div class="ml-4">
-                                    <div class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{{ produto.descricao }}</div>
-                                    <div class="text-xs text-gray-500 font-mono">#{{ produto.codigo }}</div>
+                                <div>
+                                    <div class="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{{ produto.descricao }}</div>
+                                    <div class="text-xs font-medium text-slate-500 mt-0.5">CÓD: {{ produto.codigo }}</div>
                                 </div>
                             </div>
                         </td>
 
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if produto.familia %}
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                                <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 shadow-sm">
                                     {{ produto.familia.nome }}
                                 </span>
                             {% else %}
-                                <span class="text-xs text-gray-400 italic">Sem categoria</span>
+                                <span class="text-xs text-slate-400 font-medium italic">Sem categoria</span>
                             {% endif %}
                         </td>
 
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium font-mono">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-bold font-mono">
                             R$ {{ produto.preco|floatformat:2 }}
                         </td>
 
                         <td class="px-6 py-4 whitespace-nowrap text-center">
                             {% if produto.em_oferta %}
-                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold bg-amber-100 text-amber-700">
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-amber-50 border border-amber-200 text-amber-600 shadow-sm">
                                     <i class="ph-fill ph-lightning"></i> PROMO
                                 </span>
                             {% else %}
-                                <span class="text-gray-300 text-xs">—</span>
+                                <span class="text-slate-300 text-xs">—</span>
                             {% endif %}
                         </td>
 
                         <td class="px-6 py-4 whitespace-nowrap text-center">
                             <label class="relative inline-flex items-center cursor-pointer" title="Ativar/Desativar Produto Globalmente">
                                 <input type="checkbox" class="sr-only peer" onchange="toggleVisibilidade({{ produto.id }}, this)" {% if produto.exibir_no_painel %}checked{% endif %}>
-                                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
+                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500 shadow-inner"></div>
                             </label>
                         </td>
 
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div class="flex items-center justify-end gap-1">
+                            <div class="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                 <a href="{% url 'produto_edit' produto.id %}" 
-                                   class="text-gray-400 hover:text-indigo-600 p-2 rounded-lg hover:bg-indigo-50 transition-colors" 
+                                   class="text-slate-400 hover:text-indigo-600 p-2 rounded-lg hover:bg-indigo-50 transition-colors" 
                                    title="Editar Produto">
-                                    <i class="ph ph-pencil-simple text-xl"></i>
+                                    <i class="ph-fill ph-pencil-simple text-xl"></i>
                                 </a>
                                 
                                 <a href="{% url 'produto_delete' produto.id %}" 
-                                   class="text-gray-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors" 
+                                   class="text-slate-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors" 
                                    title="Excluir Produto">
-                                    <i class="ph ph-trash text-xl"></i>
+                                    <i class="ph-fill ph-trash text-xl"></i>
                                 </a>
                             </div>
                         </td>
@@ -147,20 +148,20 @@
             </table>
         </div>
 
-        <div class="bg-gray-50 border-t border-gray-200 px-4 py-3 flex items-center justify-between sm:px-6">
-            <div class="text-xs text-gray-500">
-                Mostrando <span class="font-medium">{{ page_obj.start_index }}</span> a <span class="font-medium">{{ page_obj.end_index }}</span> de <span class="font-medium">{{ page_obj.paginator.count }}</span> resultados
+        <div class="bg-slate-50/80 border-t border-slate-200 px-6 py-4 flex items-center justify-between">
+            <div class="text-xs font-medium text-slate-500">
+                Mostrando <span class="font-bold text-slate-900">{{ page_obj.start_index }}</span> a <span class="font-bold text-slate-900">{{ page_obj.end_index }}</span> de <span class="font-bold text-slate-900">{{ page_obj.paginator.count }}</span> resultados
             </div>
             
             <div class="flex gap-2">
                 {% if page_obj.has_previous %}
-                    <a href="?page={{ page_obj.previous_page_number }}&q={{ query }}&familia={{ familia_id }}" class="px-3 py-1 bg-white border border-gray-300 rounded text-sm text-gray-600 hover:bg-gray-100 transition-colors">
+                    <a href="?page={{ page_obj.previous_page_number }}&q={{ query }}&familia={{ familia_id }}" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors shadow-sm">
                         Anterior
                     </a>
                 {% endif %}
                 
                 {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}&q={{ query }}&familia={{ familia_id }}" class="px-3 py-1 bg-white border border-gray-300 rounded text-sm text-gray-600 hover:bg-gray-100 transition-colors">
+                    <a href="?page={{ page_obj.next_page_number }}&q={{ query }}&familia={{ familia_id }}" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors shadow-sm">
                         Próxima
                     </a>
                 {% endif %}
@@ -169,15 +170,15 @@
 
         {% else %}
         <div class="text-center py-20 px-6">
-            <div class="bg-gray-50 rounded-full h-24 w-24 flex items-center justify-center mx-auto mb-4 border border-gray-100">
-                <i class="ph ph-magnifying-glass text-4xl text-gray-300"></i>
+            <div class="bg-slate-50 rounded-full h-24 w-24 flex items-center justify-center mx-auto mb-6 border border-slate-100 shadow-inner">
+                <i class="ph-bold ph-magnifying-glass text-4xl text-slate-300"></i>
             </div>
-            <h3 class="text-lg font-medium text-gray-900">Nenhum produto encontrado</h3>
-            <p class="text-gray-500 mt-2 max-w-sm mx-auto">Tente ajustar seus filtros ou adicione novos itens ao catálogo.</p>
+            <h3 class="text-xl font-bold text-slate-900">Nenhum produto encontrado</h3>
+            <p class="text-slate-500 mt-2 max-w-sm mx-auto">Tente ajustar seus filtros ou adicione novos itens ao catálogo.</p>
             
-            <div class="mt-8">
-                 <a href="{% url 'produto_create' %}" class="text-indigo-600 font-semibold hover:text-indigo-700 text-sm">
-                    + Adicionar manualmente
+            <div class="mt-8 flex justify-center gap-4">
+                 <a href="{% url 'produto_create' %}" class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-indigo-700 hover:-translate-y-0.5 transition-all">
+                    <i class="ph-bold ph-plus"></i> Adicionar manualmente
                  </a>
             </div>
         </div>
@@ -187,9 +188,6 @@
 </div>
 
 <script>
-    /**
-     * Alterna assincronamente o status global (ativo/inativo) do produto via API.
-     */
     function toggleVisibilidade(id, element) {
         element.disabled = true;
         element.parentNode.style.opacity = '0.5';

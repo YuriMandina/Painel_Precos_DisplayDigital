@@ -1,41 +1,36 @@
 {% extends "painel/base_dashboard.html" %}
 
 {% block title %}Excluir Família | DisplayDigital{% endblock %}
+{% block header_title %}Famílias{% endblock %}
 
 {% block content %}
-<main class="min-h-[60vh] flex items-center justify-center p-4">
-    <div class="bg-white border border-gray-200 rounded-xl shadow-xl max-w-md w-full overflow-hidden text-center p-8">
+<main class="min-h-[70vh] flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-3xl shadow-xl max-w-md w-full overflow-hidden text-center p-10 relative">
         
-        <div class="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-red-50/50">
-            <i class="ph-fill ph-trash text-3xl"></i>
-        </div>
-        
-        <h2 class="text-xl font-bold text-gray-900 mb-2">Confirmar Exclusão</h2>
-        
-        <div class="mb-8">
-            <p class="text-gray-500 leading-relaxed mb-4">
-                Você está prestes a excluir a categoria <br>
-                <strong class="text-gray-900 text-lg">"{{ object.nome }}"</strong>.
-            </p>
+        <div class="absolute top-0 left-0 w-full h-2 bg-red-500"></div>
 
-            <div class="bg-orange-50 border border-orange-100 rounded-lg p-3 text-left flex items-start gap-3">
-                <i class="ph-fill ph-warning text-orange-500 text-xl mt-0.5 flex-shrink-0"></i>
-                <p class="text-sm text-orange-800 leading-tight">
-                    <strong>Atenção:</strong> Produtos vinculados a esta família ficarão "Sem Categoria" e poderão não aparecer em filtros de playlist.
-                </p>
-            </div>
+        <div class="w-20 h-20 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner ring-8 ring-red-50/50">
+            <i class="ph-fill ph-trash text-4xl"></i>
         </div>
+        
+        <h1 class="text-2xl font-bold text-slate-900 mb-3 tracking-tight">Confirmar Exclusão</h1>
+        
+        <p class="text-slate-500 mb-10 leading-relaxed text-sm">
+            Você está prestes a remover permanentemente a categoria <br>
+            <span class="inline-block mt-2 font-bold text-slate-800 bg-slate-100 px-3 py-1 rounded-lg">"{{ object.nome }}"</span>
+            <br><span class="block mt-4 text-red-500 font-bold flex items-center justify-center gap-1.5"><i class="ph-fill ph-warning-circle"></i> Os produtos desta categoria ficarão "Sem categoria".</span>
+        </p>
 
         <form method="post" class="flex flex-col sm:flex-row gap-3 justify-center">
             {% csrf_token %}
             
             <a href="{% url 'familia_list' %}" 
-               class="flex-1 px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+               class="flex-1 px-6 py-3.5 text-sm font-bold text-slate-600 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
                 Cancelar
             </a>
             
             <button type="submit" 
-                    class="flex-1 px-5 py-2.5 text-sm font-bold text-white bg-red-600 rounded-lg hover:bg-red-700 shadow-md hover:shadow-lg transition-all">
+                    class="flex-1 px-6 py-3.5 text-sm font-bold text-white bg-red-600 rounded-xl hover:bg-red-700 shadow-lg shadow-red-600/30 hover:-translate-y-0.5 transition-all">
                 Sim, Excluir
             </button>
         </form>

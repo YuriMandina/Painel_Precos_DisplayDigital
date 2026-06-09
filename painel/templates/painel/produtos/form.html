@@ -1,144 +1,148 @@
 {% extends "painel/base_dashboard.html" %}
 
 {% block title %}{{ titulo }} | DisplayDigital{% endblock %}
+{% block header_title %}Produtos{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto">
     
-    <header class="flex items-center justify-between mb-8">
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">{{ titulo }}</h1>
-            <p class="text-sm text-gray-500 mt-1">Gerencie as informações detalhadas deste item.</p>
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">{{ titulo }}</h1>
+            <p class="text-sm text-slate-500 mt-1">Gerencie as informações detalhadas deste item do catálogo.</p>
         </div>
-        <a href="{% url 'produtos_list' %}" class="group text-gray-500 hover:text-gray-900 font-medium text-sm flex items-center gap-2 transition-colors">
-            <i class="ph ph-arrow-left group-hover:-translate-x-1 transition-transform"></i> 
-            Voltar para lista
+        <a href="{% url 'produtos_list' %}" class="group bg-white border border-slate-200 px-4 py-2 rounded-xl text-slate-600 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 shadow-sm font-bold text-sm flex items-center gap-2 transition-all">
+            <i class="ph-bold ph-arrow-left group-hover:-translate-x-1 transition-transform"></i> Voltar
         </a>
     </header>
 
-    <section class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+    <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
         <form method="post" enctype="multipart/form-data" class="p-6 md:p-8 space-y-8">
             {% csrf_token %}
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
                 <div>
-                    <label for="{{ form.codigo.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                    <label for="{{ form.codigo.id_for_label }}" class="block text-sm font-bold text-slate-700 mb-2">
                         Código (EAN/Interno) <span class="text-red-500">*</span>
                     </label>
                     {{ form.codigo }}
                     {% if form.codigo.errors %}
-                        <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                        <p class="text-red-500 text-xs mt-1.5 font-medium flex items-center gap-1">
                             <i class="ph-fill ph-warning-circle"></i> {{ form.codigo.errors.0 }}
                         </p>
                     {% endif %}
                 </div>
 
                 <div>
-                    <label for="{{ form.descricao.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                    <label for="{{ form.descricao.id_for_label }}" class="block text-sm font-bold text-slate-700 mb-2">
                         Nome do Produto <span class="text-red-500">*</span>
                     </label>
                     {{ form.descricao }}
                     {% if form.descricao.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ form.descricao.errors.0 }}</p>
+                        <p class="text-red-500 text-xs mt-1.5 font-medium flex items-center gap-1">
+                            <i class="ph-fill ph-warning-circle"></i> {{ form.descricao.errors.0 }}
+                        </p>
                     {% endif %}
                 </div>
 
                 <div>
-                    <label for="{{ form.preco.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                    <label for="{{ form.preco.id_for_label }}" class="block text-sm font-bold text-slate-700 mb-2">
                         Preço de Venda <span class="text-red-500">*</span>
                     </label>
-                    <div class="relative">
-                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                            <span class="text-gray-500 sm:text-sm font-medium">R$</span>
+                    <div class="relative group">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                            <span class="text-slate-400 group-focus-within:text-indigo-600 font-bold transition-colors">R$</span>
                         </div>
                         {{ form.preco }}
                     </div>
                     {% if form.preco.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ form.preco.errors.0 }}</p>
+                        <p class="text-red-500 text-xs mt-1.5 font-medium flex items-center gap-1">
+                            <i class="ph-fill ph-warning-circle"></i> {{ form.preco.errors.0 }}
+                        </p>
                     {% endif %}
                 </div>
 
                 <div>
-                    <label for="{{ form.familia.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                    <label for="{{ form.familia.id_for_label }}" class="block text-sm font-bold text-slate-700 mb-2">
                         Categoria / Família
                     </label>
                     {{ form.familia }}
                 </div>
             </div>
 
-            <hr class="border-gray-100">
+            <hr class="border-slate-100">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-3">Imagem do Produto</label>
-                    <div class="flex items-start gap-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                        <div class="h-24 w-24 bg-white border border-gray-200 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center relative shadow-sm">
+                    <label class="block text-sm font-bold text-slate-700 mb-3">Imagem do Produto</label>
+                    <div class="flex items-start gap-4 p-5 bg-slate-50/80 rounded-xl border border-slate-200">
+                        <div class="h-28 w-28 bg-white border border-slate-200 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center relative shadow-sm group">
                             <img id="img-preview" 
                                  src="{% if produto.imagem %}{{ produto.imagem.url }}{% endif %}" 
                                  class="w-full h-full object-cover transition-opacity {% if not produto.imagem %}opacity-0 absolute{% endif %}">
                             
-                            <i id="img-placeholder" class="ph ph-image text-3xl text-gray-300 {% if produto.imagem %}hidden{% endif %}"></i>
+                            <i id="img-placeholder" class="ph-fill ph-image text-4xl text-slate-300 {% if produto.imagem %}hidden{% endif %} group-hover:scale-110 transition-transform"></i>
                         </div>
                         
                         <div class="flex-1 min-w-0">
                             {{ form.imagem }}
-                            <p class="text-xs text-gray-500 mt-2 leading-relaxed">
+                            <p class="text-xs text-slate-500 mt-3 leading-relaxed">
                                 Formatos: JPG, PNG ou WEBP.<br>
-                                <span class="text-indigo-600">Dica: Use fundo transparente.</span>
+                                <span class="font-bold text-indigo-600">Dica: Use fundo transparente.</span>
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <div class="space-y-3">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Status e Configurações</label>
+                <div class="space-y-4">
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Configurações</label>
                     
-                    <div class="flex items-center justify-between p-3 rounded-lg border transition-colors
-                                {% if form.em_oferta.value %}bg-amber-50 border-amber-200{% else %}bg-white border-gray-200{% endif %}">
+                    <label class="flex items-center justify-between p-4 rounded-xl border transition-colors cursor-pointer group hover:shadow-md
+                                {% if form.em_oferta.value %}bg-amber-50 border-amber-200 shadow-sm{% else %}bg-white border-slate-200 hover:border-amber-200 hover:bg-amber-50/50{% endif %}">
                         <div class="flex items-center gap-3">
-                            <div class="p-2 bg-amber-100 rounded text-amber-600">
+                            <div class="p-2.5 rounded-lg text-lg transition-colors {% if form.em_oferta.value %}bg-amber-200 text-amber-700{% else %}bg-slate-100 text-slate-500 group-hover:bg-amber-100 group-hover:text-amber-600{% endif %}">
                                 <i class="ph-fill ph-lightning"></i>
                             </div>
                             <div>
-                                <p class="text-sm font-medium text-gray-900">Em Oferta</p>
-                                <p class="text-xs text-gray-500">Destaca o preço na tela.</p>
+                                <p class="text-sm font-bold text-slate-900">Produto em Oferta</p>
+                                <p class="text-xs text-slate-500">Aplica selo de promoção na TV.</p>
                             </div>
                         </div>
                         {{ form.em_oferta }}
-                    </div>
+                    </label>
 
-                    <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-white">
+                    <label class="flex items-center justify-between p-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors cursor-pointer group hover:shadow-md">
                         <div class="flex items-center gap-3">
-                            <div class="p-2 bg-gray-100 rounded text-gray-600">
+                            <div class="p-2.5 rounded-lg text-lg bg-slate-100 text-slate-600 group-hover:bg-slate-200 transition-colors">
                                 <i class="ph-fill ph-power"></i>
                             </div>
                             <div>
-                                <p class="text-sm font-medium text-gray-900">Ativo / Inativo</p>
-                                <p class="text-xs text-gray-500">Habilita o produto para compor as playlists das TVs.</p>
+                                <p class="text-sm font-bold text-slate-900">Ativo / Visível</p>
+                                <p class="text-xs text-slate-500">Exibe o produto nas listas ativas.</p>
                             </div>
                         </div>
                         {{ form.exibir_no_painel }}
-                    </div>
+                    </label>
                 </div>
             </div>
 
-            <div class="pt-6 border-t border-gray-100 flex items-center justify-end gap-3">
+            <div class="pt-8 border-t border-slate-100 flex flex-col-reverse sm:flex-row items-center justify-end gap-3">
                 {% if produto %}
                     <a href="{% url 'produto_delete' produto.id %}" 
-                       class="mr-auto text-red-600 hover:text-red-700 text-sm font-medium px-4 py-2 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2">
-                        <i class="ph ph-trash"></i> 
-                        <span class="hidden sm:inline">Excluir Produto</span>
+                       class="sm:mr-auto text-red-600 hover:text-red-700 text-sm font-bold px-5 py-3 hover:bg-red-50 rounded-xl transition-colors flex items-center gap-2">
+                        <i class="ph-bold ph-trash text-lg"></i> 
+                        <span>Excluir Produto</span>
                     </a>
                 {% endif %}
 
-                <a href="{% url 'produtos_list' %}" class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <a href="{% url 'produtos_list' %}" class="w-full sm:w-auto text-center px-5 py-3 text-sm font-bold text-slate-600 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 shadow-sm hover:text-slate-900 transition-colors">
                     Cancelar
                 </a>
                 
-                <button type="submit" class="px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all flex items-center gap-2">
-                    <i class="ph ph-check"></i>
+                <button type="submit" class="w-full sm:w-auto px-6 py-3 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-600/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
+                    <i class="ph-bold ph-check"></i>
                     Salvar Alterações
                 </button>
             </div>
@@ -147,10 +151,6 @@
 </div>
 
 <script>
-    /**
-     * Manipula a injeção do payload visual do FileInput para renderizar 
-     * um preview do binário antes do formulário ser submetido (UX).
-     */
     document.addEventListener('DOMContentLoaded', () => {
         const fileInput = document.querySelector('input[type="file"]');
         const previewImg = document.getElementById('img-preview');
@@ -167,6 +167,26 @@
                         placeholderIcon.classList.add('hidden');
                     };
                     reader.readAsDataURL(file);
+                }
+            });
+        }
+        
+        // Fix the padding for the preco input since we added 'pl-4' wrapper
+        const precoInput = document.getElementById('id_preco');
+        if(precoInput) {
+            precoInput.classList.remove('pl-4');
+            precoInput.classList.add('pl-11');
+
+            // Force max 2 decimal places during typing
+            precoInput.addEventListener('input', function(e) {
+                let val = e.target.value;
+                if (val.includes('.') || val.includes(',')) {
+                    let sep = val.includes(',') ? ',' : '.';
+                    let parts = val.split(sep);
+                    if (parts[1] && parts[1].length > 2) {
+                        parts[1] = parts[1].substring(0, 2);
+                        e.target.value = parts.join(sep);
+                    }
                 }
             });
         }

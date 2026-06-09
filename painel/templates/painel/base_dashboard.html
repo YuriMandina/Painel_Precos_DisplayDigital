@@ -8,132 +8,171 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Outfit', sans-serif; }
         
         /* Customização de Scrollbar para componentes de navegação */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #374151; border-radius: 20px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.2); border-radius: 20px; }
+        
+        .main-scrollbar::-webkit-scrollbar { width: 8px; }
+        .main-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .main-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+
+        .glass-header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
     </style>
 </head>
 
-<body class="bg-gray-50 text-gray-800 flex h-screen overflow-hidden">
+<body class="bg-slate-50 text-slate-800 flex h-screen overflow-hidden">
 
-    <aside id="sidebar" class="w-64 bg-gray-900 text-white flex flex-col shadow-2xl z-30 transition-transform transform -translate-x-full md:translate-x-0 md:flex fixed md:relative h-full">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-72 bg-slate-900 flex flex-col z-30 transition-transform transform -translate-x-full md:translate-x-0 md:flex fixed md:relative h-full border-r border-slate-800 shadow-xl overflow-hidden">
         
-        <div class="h-20 flex items-center px-6 border-b border-gray-800 flex-shrink-0">
-            <div class="flex items-center gap-2 text-xl font-bold tracking-tight">
-                <i class="ph-fill ph-monitor-play text-indigo-500 text-2xl"></i>
+        <!-- Abstract Decoration for sidebar -->
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-20">
+            <div class="absolute -top-32 -left-32 w-64 h-64 rounded-full bg-indigo-500 blur-3xl opacity-30"></div>
+            <div class="absolute bottom-0 right-0 w-64 h-64 rounded-full bg-purple-500 blur-3xl opacity-20 translate-x-1/2 translate-y-1/2"></div>
+        </div>
+
+        <div class="h-20 flex items-center px-6 border-b border-slate-800/50 flex-shrink-0 relative z-10">
+            <div class="flex items-center gap-3 text-xl font-bold tracking-tight">
+                <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/30">
+                    <i class="ph-fill ph-monitor-play text-2xl"></i>
+                </div>
                 <div>
-                    <span class="text-white">DISPLAY</span><span class="text-indigo-500">DIGITAL</span>
+                    <span class="text-white">DISPLAY</span><span class="text-indigo-400">DIGITAL</span>
                 </div>
             </div>
             
-            <button id="closeSidebar" class="md:hidden ml-auto text-gray-400 hover:text-white">
-                <i class="ph ph-x text-xl"></i>
+            <button id="closeSidebar" class="md:hidden ml-auto text-slate-400 hover:text-white transition-colors">
+                <i class="ph ph-x text-2xl"></i>
             </button>
         </div>
 
-        <nav class="flex-1 overflow-y-auto py-6 px-3 custom-scrollbar space-y-1">
+        <nav class="flex-1 overflow-y-auto py-6 px-4 custom-scrollbar space-y-1.5 relative z-10">
             
-            <p class="px-4 mt-2 mb-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Principal</p>
+            <p class="px-3 mt-2 mb-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Principal</p>
             <a href="{% url 'dashboard' %}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'dashboard' %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
-                <i class="ph ph-squares-four text-lg"></i>
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if request.resolver_match.url_name == 'dashboard' %}bg-indigo-600 text-white shadow-lg shadow-indigo-600/20{% else %}text-slate-400 hover:bg-slate-800/50 hover:text-white{% endif %}">
+                <i class="{% if request.resolver_match.url_name == 'dashboard' %}ph-fill{% else %}ph{% endif %} ph-squares-four text-xl"></i>
                 <span>Visão Geral</span>
             </a>
 
             <a href="{% url 'dispositivo_list' %}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors {% if 'dispositivo' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
-                <i class="ph ph-television text-lg"></i>
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'dispositivo' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-600/20{% else %}text-slate-400 hover:bg-slate-800/50 hover:text-white{% endif %}">
+                <i class="{% if 'dispositivo' in request.resolver_match.url_name %}ph-fill{% else %}ph{% endif %} ph-television text-xl"></i>
                 <span>Dispositivos</span>
             </a>
 
-            <p class="px-4 mt-6 mb-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Catálogo</p>
+            <p class="px-3 mt-8 mb-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Catálogo</p>
             <a href="{% url 'produtos_list' %}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors {% if 'produto' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
-                <i class="ph ph-tag text-lg"></i>
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'produto' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-600/20{% else %}text-slate-400 hover:bg-slate-800/50 hover:text-white{% endif %}">
+                <i class="{% if 'produto' in request.resolver_match.url_name %}ph-fill{% else %}ph{% endif %} ph-tag text-xl"></i>
                 <span>Produtos</span>
             </a>
             
             <a href="{% url 'familia_list' %}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors {% if 'familia' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
-                <i class="ph ph-folders text-lg"></i>
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'familia' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-600/20{% else %}text-slate-400 hover:bg-slate-800/50 hover:text-white{% endif %}">
+                <i class="{% if 'familia' in request.resolver_match.url_name %}ph-fill{% else %}ph{% endif %} ph-folders text-xl"></i>
                 <span>Famílias</span>
             </a>
 
-            <p class="px-4 mt-6 mb-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Gestão de Conteúdo</p>
+            <p class="px-3 mt-8 mb-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Conteúdo</p>
             <a href="{% url 'midia_list' %}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors {% if 'midia' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
-                <i class="ph ph-film-slate text-lg"></i>
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'midia' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-600/20{% else %}text-slate-400 hover:bg-slate-800/50 hover:text-white{% endif %}">
+                <i class="{% if 'midia' in request.resolver_match.url_name %}ph-fill{% else %}ph{% endif %} ph-image text-xl"></i>
                 <span>Biblioteca de Mídia</span>
             </a>
 
+            {% if request.user.perfil.is_admin %}
+                <p class="px-3 mt-8 mb-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Administração</p>
+                <a href="{% url 'equipe_list' %}" 
+                class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'equipe' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-600/20{% else %}text-slate-400 hover:bg-slate-800/50 hover:text-white{% endif %}">
+                    <i class="{% if 'equipe' in request.resolver_match.url_name %}ph-fill{% else %}ph{% endif %} ph-users text-xl"></i>
+                    <span>Equipe & Acessos</span>
+                </a>
+            {% endif %}
+
         </nav>
 
-        <div class="p-4 border-t border-gray-800 bg-gray-900 flex-shrink-0">
+        <div class="p-4 border-t border-slate-800/50 flex-shrink-0 relative z-10">
+            <div class="flex items-center gap-3 mb-4 px-2">
+                <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-indigo-400 font-bold border border-slate-700">
+                    {{ request.user.first_name|default:request.user.email|make_list|first|upper }}
+                </div>
+                <div class="overflow-hidden">
+                    <p class="text-sm font-medium text-white truncate">{{ request.user.first_name|default:"Usuário" }}</p>
+                    <p class="text-xs text-slate-500 truncate">{{ request.user.email }}</p>
+                </div>
+            </div>
             <form method="post" action="{% url 'logout' %}" class="w-full">
                 {% csrf_token %}
-                <button type="submit" class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors">
-                    <i class="ph ph-sign-out text-lg"></i>
+                <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors border border-transparent hover:border-red-500/20">
+                    <i class="ph-bold ph-sign-out text-lg"></i>
                     <span>Sair do Sistema</span>
                 </button>
-                {% if request.user.perfil.is_admin %}
-                    <p class="px-4 mt-6 mb-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Administração</p>
-                    <a href="{% url 'equipe_list' %}" 
-                    class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors {% if 'equipe' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-500/30{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %}">
-                        <i class="ph ph-users text-lg"></i>
-                        <span>Equipe & Acessos</span>
-                    </a>
-                {% endif %}
             </form>
         </div>
     </aside>
 
-    <div class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative w-full bg-slate-50/50">
         
-        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 md:hidden flex-shrink-0 z-20">
-            <div class="font-bold text-gray-900 flex items-center gap-2">
-                <i class="ph-fill ph-monitor-play text-indigo-600 text-xl"></i>
-                <span>DISPLAYDIGITAL</span>
+        <!-- Top Navbar -->
+        <header class="h-20 glass-header border-b border-slate-200/60 flex items-center justify-between px-6 md:px-10 flex-shrink-0 z-20 w-full relative">
+            <div class="flex items-center gap-4">
+                <button id="openSidebar" class="md:hidden text-slate-500 hover:text-indigo-600 p-2 -ml-2 rounded-lg hover:bg-slate-100 transition-colors focus:outline-none">
+                    <i class="ph-bold ph-list text-2xl"></i>
+                </button>
+                <div class="font-semibold text-slate-800 text-lg md:text-xl flex items-center gap-2 tracking-tight">
+                    {% block header_title %}Painel{% endblock %}
+                </div>
             </div>
-            <button id="openSidebar" class="text-gray-500 hover:text-indigo-600 p-2 rounded-md focus:outline-none">
-                <i class="ph ph-list text-2xl"></i>
-            </button>
+            <div class="flex items-center gap-4">
+                <div class="hidden sm:flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-full shadow-sm text-sm font-bold text-slate-700">
+                    <i class="ph-fill ph-storefront text-indigo-500"></i>
+                    {{ request.user.perfil.empresa.nome }}
+                </div>
+            </div>
         </header>
 
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6 md:p-10 scroll-smooth">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto main-scrollbar p-6 md:p-10 scroll-smooth">
             
             {% if messages %}
                 <div class="mb-8 space-y-3 max-w-7xl mx-auto">
                     {% for message in messages %}
-                        <div class="p-4 rounded-lg border-l-4 shadow-sm flex items-center gap-3 text-sm
-                            {% if message.tags == 'error' %} bg-red-50 border-red-500 text-red-700
-                            {% elif message.tags == 'success' %} bg-green-50 border-green-500 text-green-700
-                            {% else %} bg-blue-50 border-blue-500 text-blue-700 {% endif %}">
-                            <i class="ph-fill text-xl {% if message.tags == 'error' %} ph-warning-circle {% elif message.tags == 'success' %} ph-check-circle {% else %} ph-info {% endif %}"></i>
-                            <span class="font-medium">{{ message }}</span>
+                        <div class="p-4 rounded-xl border shadow-sm flex items-start gap-3 text-sm transition-all
+                            {% if message.tags == 'error' %} bg-red-50 border-red-200 text-red-800
+                            {% elif message.tags == 'success' %} bg-emerald-50 border-emerald-200 text-emerald-800
+                            {% else %} bg-blue-50 border-blue-200 text-blue-800 {% endif %}">
+                            <i class="ph-fill text-xl mt-0.5 shrink-0
+                                {% if message.tags == 'error' %} ph-warning-circle text-red-500
+                                {% elif message.tags == 'success' %} ph-check-circle text-emerald-500
+                                {% else %} ph-info text-blue-500 {% endif %}"></i>
+                            <span class="font-medium leading-relaxed">{{ message }}</span>
                         </div>
                     {% endfor %}
                 </div>
             {% endif %}
             
-            <div class="max-w-7xl mx-auto">
+            <div class="max-w-7xl mx-auto pb-12">
                 {% block content %}{% endblock %}
             </div>
             
         </main>
     </div>
 
-    <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-20 hidden md:hidden glass"></div>
+    <!-- Mobile Overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-20 hidden md:hidden transition-opacity"></div>
 
     <script>
-        /**
-         * Manipulação do estado do DOM para o menu lateral responsivo.
-         */
         const sidebar = document.getElementById('sidebar');
         const openBtn = document.getElementById('openSidebar');
         const closeBtn = document.getElementById('closeSidebar');
