@@ -144,18 +144,18 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-# Configuração de E-mail — django-anymail + Resend
-# Usa a API do Resend (não SMTP) — compatível com o plano gratuito do Render.
-# Configure RESEND_API_KEY no painel de variáveis de ambiente do Render.
+# Configuração de E-mail — django-anymail + Brevo
+# Usa a API do Brevo (não SMTP) — ideal para contornar bloqueios e não exige domínio de imediato.
+# Configure BREVO_API_KEY no painel de variáveis de ambiente do Render.
 # Localmente: deixe em branco para usar o console (imprime no terminal).
-_resend_api_key = config('RESEND_API_KEY', default='')
+_brevo_api_key = config('BREVO_API_KEY', default='')
 
-if _resend_api_key:
-    EMAIL_BACKEND = 'anymail.backends.resend.EmailBackend'
+if _brevo_api_key:
+    EMAIL_BACKEND = 'anymail.backends.brevo.EmailBackend'
     ANYMAIL = {
-        'RESEND_API_KEY': _resend_api_key,
+        'BREVO_API_KEY': _brevo_api_key,
     }
-    DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='DisplayDigital <onboarding@resend.dev>')
+    DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='DisplayDigital <seu_email_brevo@gmail.com>')
 else:
     # Fallback seguro: imprime e-mails no terminal quando não há credenciais configuradas
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
