@@ -144,15 +144,10 @@ class RegistroForm(forms.Form):
     senha = forms.CharField(widget=forms.PasswordInput(attrs={'class': premium_input_css, 'placeholder': 'Crie uma senha segura'}))
     senha_confirmacao = forms.CharField(widget=forms.PasswordInput(attrs={'class': premium_input_css, 'placeholder': 'Confirme sua senha'}))
     
-    cnpj = forms.CharField(
-        max_length=20, 
-        help_text="Usado para vincular você à sua empresa.",
-        widget=forms.TextInput(attrs={'class': premium_input_css, 'placeholder': 'Apenas números'})
-    )
     nome_empresa = forms.CharField(
         max_length=150, 
-        required=False, 
-        help_text="Obrigatório apenas na primeira vez.",
+        required=True, 
+        help_text="Obrigatório para criarmos seu espaço de trabalho.",
         widget=forms.TextInput(attrs={'class': premium_input_css, 'placeholder': 'Razão Social ou Nome Fantasia'})
     )
 
@@ -165,6 +160,49 @@ class RegistroForm(forms.Form):
 
     def clean(self):
         """Validação cruzada para garantir que as senhas batem."""
+        cleaned_data = super().clean()
+        senha = cleaned_data.get("senha")
+        senha_confirmacao = cleaned_data.get("senha_confirmacao")
+        
+        if senha and senha_confirmacao and senha != senha_confirmacao:
+            self.add_error('senha_confirmacao', "As senhas não coincidem. Digite novamente.")
+            
+        return cleaned_data
+
+class ConviteEmailForm(forms.Form):
+    """
+    Formulário para o Admin convidar um novo membro via e-mail.
+    """
+    email = forms.EmailField(
+        label="E-mail do novo membro",
+        widget=forms.EmailInput(attrs={
+            'class': 'block w-full pl-4 pr-3 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent text-sm transition-colors',
+            'placeholder': 'colega@empresa.com'
+        })
+    )
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("Este e-mail já possui uma conta no sistema.")
+        return email
+
+class AceiteConviteForm(forms.Form):
+    """
+    Formulário para o Convidado preencher seus dados (Nome e Senha) ao aceitar o convite.
+    """
+    premium_input_css = 'block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent sm:text-sm transition-colors'
+    
+    nome = forms.CharField(widget=forms.TextInput(attrs={'class': premium_input_css, 'placeholder': 'Seu nome completo'}))
+    
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={'class': premium_input_css, 'readonly': 'readonly', 'style': 'background-color: #f3f4f6;'})
+    )
+    
+    senha = forms.CharField(widget=forms.PasswordInput(attrs={'class': premium_input_css, 'placeholder': 'Crie uma senha segura'}))
+    senha_confirmacao = forms.CharField(widget=forms.PasswordInput(attrs={'class': premium_input_css, 'placeholder': 'Confirme sua senha'}))
+
+    def clean(self):
         cleaned_data = super().clean()
         senha = cleaned_data.get("senha")
         senha_confirmacao = cleaned_data.get("senha_confirmacao")

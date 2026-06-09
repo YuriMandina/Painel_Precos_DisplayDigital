@@ -89,7 +89,10 @@ urlpatterns = [
     path('dashboard/midias/<int:pk>/editar/', views_admin.MidiaUpdateView.as_view(), name='midia_edit'),
     path('dashboard/midias/<int:pk>/excluir/', views_admin.MidiaDeleteView.as_view(), name='midia_delete'),
 
-     # --- MÓDULO: ADMINISTRAÇÃO DE EQUIPE ---
+    # --- MÓDULO: ADMINISTRAÇÃO DE EQUIPE ---
     path('dashboard/equipe/', views_admin.EquipeListView.as_view(), name='equipe_list'),
-    path('dashboard/equipe/<int:pk>/aprovar/', views_admin.equipe_aprovar_view, name='equipe_aprovar'),
+    path('dashboard/equipe/convidar/', views_admin.EquipeConvidarView.as_view(), name='equipe_convidar'),
+    
+    # --- CONVITES (Público) ---
+    path('convite/<uuid:token>/', views.aceitar_convite_view, name='aceitar_convite'),
 ]

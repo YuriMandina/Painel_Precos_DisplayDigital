@@ -68,6 +68,29 @@ class Perfil(models.Model):
         return f"{self.usuario.username} ({self.empresa.nome}) - {self.status}"
 
 
+class Convite(models.Model):
+    """
+    Representa um convite de acesso pendente para um usuário ingressar na empresa.
+    """
+    class Status(models.TextChoices):
+        PENDENTE = 'PENDENTE', 'Pendente'
+        ACEITO = 'ACEITO', 'Aceito'
+
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='convites')
+    email = models.EmailField()
+    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDENTE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Convite"
+        verbose_name_plural = "Convites"
+        unique_together = ('empresa', 'email')
+
+    def __str__(self) -> str:
+        return f"Convite para {self.email} ({self.status})"
+
+
 # ==============================================================================
 #                             CATÁLOGO E PRODUTOS
 # ==============================================================================

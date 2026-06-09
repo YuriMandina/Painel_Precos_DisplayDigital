@@ -36,10 +36,20 @@ from .models import (
     FamiliaProduto, 
     Midia,
     Perfil, 
-    Produto, 
+    Produto,
+    Convite,
     gerar_codigo_curto
 )
-
+from .forms import (
+    DispositivoForm, 
+    FamiliaForm, 
+    ImportarProdutosForm, 
+    MidiaForm, 
+    ProdutoForm,
+    ConviteEmailForm
+)
+from django.core.mail import send_mail
+from django.conf import settings
 
 # ==============================================================================
 #                          MIXINS: ISOLAMENTO TENANT
@@ -79,21 +89,64 @@ class EquipeListView(LoginRequiredMixin, TenantQuerySetMixin, ListView):
     def get_queryset(self):
         # Retorna todos da mesma empresa, exceto o próprio usuário logado
         return super().get_queryset().exclude(usuario=self.request.user).order_by('status', 'usuario__first_name')
+        
+    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        context['convites'] = Convite.objects.filter(
+            empresa=self.request.user.perfil.empresa, 
+            status=Convite.Status.PENDENTE
+        ).order_by('-created_at')
+        context['convite_form'] = ConviteEmailForm()
+        return context
 
 
-@login_required
-@require_POST
-def equipe_aprovar_view(request: HttpRequest, pk: int) -> HttpResponse:
-    if not request.user.perfil.is_admin:
-        messages.error(request, "Você não tem permissão para aprovar usuários.")
-        return redirect('dashboard')
+class EquipeConvidarView(LoginRequiredMixin, FormView):
+    template_name = 'painel/equipe/lista.html'
+    form_class = ConviteEmailForm
+    success_url = reverse_lazy('equipe_list')
 
-    perfil = get_object_or_404(Perfil, pk=pk, empresa=request.user.perfil.empresa)
-    perfil.status = Perfil.Status.APROVADO
-    perfil.save(update_fields=['status'])
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.perfil.is_admin:
+            messages.error(request, "Acesso restrito.")
+            return redirect('dashboard')
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form: ConviteEmailForm) -> HttpResponse:
+        email = form.cleaned_data['email']
+        empresa = self.request.user.perfil.empresa
+        
+        # Evitar convites duplicados
+        if Convite.objects.filter(empresa=empresa, email=email, status=Convite.Status.PENDENTE).exists():
+            messages.warning(self.request, f"Um convite já está pendente para {email}.")
+            return redirect(self.success_url)
+
+        convite = Convite.objects.create(empresa=empresa, email=email)
+        
+        # Enviar E-mail
+        link = self.request.build_absolute_uri(reverse_lazy('aceitar_convite', kwargs={'token': convite.token}))
+        assunto = f"Convite para acessar {empresa.nome} no DisplayDigital"
+        mensagem = f"Olá!\n\nVocê foi convidado para acessar o painel administrativo de {empresa.nome}.\n\nClique no link abaixo para criar sua senha e acessar:\n{link}\n\nBem-vindo à equipe!"
+        
+        try:
+            send_mail(
+                subject=assunto,
+                message=mensagem,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False,
+            )
+            messages.success(self.request, f"Convite enviado com sucesso para {email}!")
+        except Exception as e:
+            convite.delete()
+            messages.error(self.request, f"Falha ao enviar e-mail: {str(e)}")
+            
+        return super().form_valid(form)
     
-    messages.success(request, f"O acesso de {perfil.usuario.first_name} foi aprovado!")
-    return redirect('equipe_list')
+    def form_invalid(self, form):
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(self.request, error)
+        return redirect(self.success_url)
 
 
 # ==============================================================================
