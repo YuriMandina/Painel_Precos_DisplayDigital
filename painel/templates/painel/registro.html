@@ -6,78 +6,123 @@
     <title>Criar Conta | DisplayDigital</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Inter', sans-serif; }</style>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Outfit', sans-serif; }</style>
 </head>
-<body class="bg-gray-50 flex items-center justify-center min-h-screen p-4 py-10">
+<body class="bg-white min-h-screen flex text-slate-800">
 
-    <main class="w-full max-w-lg">
-        <div class="text-center mb-8">
-            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">CRIAR<span class="text-indigo-600">CONTA</span></h1>
-            <p class="text-sm text-gray-500 mt-2">Junte-se à sua empresa ou cadastre uma nova.</p>
-        </div>
+    <!-- Left Pane - Form -->
+    <div class="w-full lg:w-[55%] flex items-center justify-center p-8 sm:p-12 overflow-y-auto">
+        <div class="w-full max-w-lg my-auto py-8">
+            
+            <div class="mb-8 lg:hidden text-center">
+                <h1 class="text-2xl font-bold text-gray-900 tracking-tight">DISPLAY<span class="text-indigo-600">DIGITAL</span></h1>
+            </div>
 
-        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+            <div class="mb-10 text-center lg:text-left">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2">Crie sua conta</h2>
+                <p class="text-slate-500">Junte-se à sua empresa ou cadastre uma nova gratuitamente.</p>
+            </div>
+            
             <form method="post" action="{% url 'registro' %}" class="space-y-5">
                 {% csrf_token %}
                 
                 {% if form.errors %}
-                <div class="bg-red-50 text-red-700 p-3 rounded-lg text-sm mb-4">
-                    Verifique os erros abaixo e tente novamente.
+                <div class="bg-red-50/50 border border-red-200 text-red-700 p-4 rounded-xl text-sm mb-6 flex gap-3">
+                    <i class="ph-fill ph-warning-circle text-red-500 text-xl shrink-0 mt-0.5"></i>
+                    <div>Verifique os erros no formulário e tente novamente.</div>
                 </div>
                 {% endif %}
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Nome Completo</label>
-                        {{ form.nome }}
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Nome Completo</label>
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-indigo-600 text-slate-400">
+                                <i class="ph-bold ph-user text-lg"></i>
+                            </div>
+                            {{ form.nome }}
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Usuário</label>
-                        {{ form.username }}
-                        {% if form.username.errors %}<p class="text-xs text-red-600 mt-1">{{ form.username.errors.0 }}</p>{% endif %}
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">E-mail</label>
+                            <div class="relative group">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-indigo-600 text-slate-400">
+                                    <i class="ph-bold ph-envelope-simple text-lg"></i>
+                                </div>
+                                {{ form.email }}
+                            </div>
+                            {% if form.email.errors %}<p class="text-xs text-red-600 mt-1">{{ form.email.errors.0 }}</p>{% endif %}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">CNPJ da Empresa</label>
+                            <div class="relative group">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-indigo-600 text-slate-400">
+                                    <i class="ph-bold ph-buildings text-lg"></i>
+                                </div>
+                                {{ form.cnpj }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Senha</label>
+                            <div class="relative group">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-indigo-600 text-slate-400">
+                                    <i class="ph-bold ph-lock-key text-lg"></i>
+                                </div>
+                                {{ form.senha }}
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Confirmar Senha</label>
+                            <div class="relative group">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-indigo-600 text-slate-400">
+                                    <i class="ph-bold ph-lock-key text-lg"></i>
+                                </div>
+                                {{ form.senha_confirmacao }}
+                            </div>
+                            {% if form.senha_confirmacao.errors %}<p class="text-xs text-red-600 mt-1">{{ form.senha_confirmacao.errors.0 }}</p>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="p-5 bg-slate-50 border border-slate-100 rounded-xl mt-6">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Nome da Empresa</label>
+                        <p class="text-xs text-slate-500 mb-3">{{ form.nome_empresa.help_text }}</p>
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-indigo-600 text-slate-400">
+                                <i class="ph-bold ph-storefront text-lg"></i>
+                            </div>
+                            {{ form.nome_empresa }}
+                        </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Email</label>
-                        {{ form.email }}
-                        {% if form.email.errors %}<p class="text-xs text-red-600 mt-1">{{ form.email.errors.0 }}</p>{% endif %}
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">CNPJ</label>
-                        {{ form.cnpj }}
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Senha</label>
-                        {{ form.senha }}
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Confirmar Senha</label>
-                        {{ form.senha_confirmacao }}
-                        {% if form.senha_confirmacao.errors %}<p class="text-xs text-red-600 mt-1">{{ form.senha_confirmacao.errors.0 }}</p>{% endif %}
-                    </div>
-                </div>
-
-                <div class="pt-4 border-t border-gray-100 mt-4">
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">Nome da Empresa</label>
-                    <p class="text-xs text-gray-400 mb-2">{{ form.nome_empresa.help_text }}</p>
-                    {{ form.nome_empresa }}
-                </div>
-
-                <button type="submit" class="w-full py-3 mt-4 border border-transparent rounded-lg shadow-md text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all">
-                    Finalizar Cadastro
+                <button type="submit" class="w-full flex justify-center items-center gap-2 py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-600/20 shadow-lg shadow-indigo-600/30 transition-all hover:-translate-y-0.5 mt-8">
+                    Finalizar Cadastro <i class="ph-bold ph-check-circle"></i>
                 </button>
             </form>
             
-            <p class="text-center text-sm text-gray-500 mt-6">
-                Já tem uma conta? <a href="{% url 'login' %}" class="text-indigo-600 font-semibold hover:underline">Faça login</a>
+            <p class="text-center text-sm text-slate-500 mt-8">
+                Já tem uma conta? <a href="{% url 'login' %}" class="text-indigo-600 font-bold hover:underline transition-all">Faça login aqui</a>
             </p>
         </div>
-    </main>
+    </div>
+
+    <!-- Right Pane - Branding -->
+    <div class="hidden lg:flex lg:w-[45%] relative bg-slate-900 overflow-hidden items-center justify-center">
+        <!-- Abstract Decoration for Tech Vibe -->
+        <div class="absolute inset-0 bg-gradient-to-br from-slate-900 to-indigo-900"></div>
+        <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(#6366f1 1px, transparent 1px); background-size: 24px 24px;"></div>
+        
+        <div class="relative z-10 text-center px-12">
+            <h2 class="text-3xl font-bold text-white mb-4">Gerencie preços de forma centralizada</h2>
+            <p class="text-indigo-200 text-lg">Atualize suas TVs em tempo real e decole o seu faturamento.</p>
+        </div>
+    </div>
+
 </body>
 </html>

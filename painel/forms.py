@@ -9,6 +9,7 @@ from django import forms
 from .models import Dispositivo, FamiliaProduto, Midia, Produto
 
 from django.contrib.auth.models import User
+from django.contrib.auth.forms import AuthenticationForm
 
 
 # ==============================================================================
@@ -131,37 +132,30 @@ class MidiaForm(forms.ModelForm):
         return arquivo
     
 class RegistroForm(forms.Form):
-    nome = forms.CharField(widget=forms.TextInput(attrs={'class': CSS_INPUT, 'placeholder': 'Seu nome completo'}))
+    premium_input_css = 'block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent sm:text-sm transition-colors'
     
-    # Adicionamos o username separadamente
-    username = forms.CharField(
-        max_length=150,
-        help_text="Como você fará o login no sistema.",
-        widget=forms.TextInput(attrs={'class': CSS_INPUT, 'placeholder': 'Ex: joao.silva'})
-    )
-    email = forms.EmailField(widget=forms.EmailInput(attrs={'class': CSS_INPUT, 'placeholder': 'seu@email.com'}))
+    nome = forms.CharField(widget=forms.TextInput(attrs={'class': premium_input_css, 'placeholder': 'Seu nome completo'}))
+    
+    # O username foi removido para usar apenas email
+
+    email = forms.EmailField(widget=forms.EmailInput(attrs={'class': premium_input_css, 'placeholder': 'seu@email.com'}))
     
     # Adicionamos a confirmação de senha
-    senha = forms.CharField(widget=forms.PasswordInput(attrs={'class': CSS_INPUT, 'placeholder': 'Crie uma senha segura'}))
-    senha_confirmacao = forms.CharField(widget=forms.PasswordInput(attrs={'class': CSS_INPUT, 'placeholder': 'Confirme sua senha'}))
+    senha = forms.CharField(widget=forms.PasswordInput(attrs={'class': premium_input_css, 'placeholder': 'Crie uma senha segura'}))
+    senha_confirmacao = forms.CharField(widget=forms.PasswordInput(attrs={'class': premium_input_css, 'placeholder': 'Confirme sua senha'}))
     
     cnpj = forms.CharField(
         max_length=20, 
         help_text="Usado para vincular você à sua empresa.",
-        widget=forms.TextInput(attrs={'class': CSS_INPUT, 'placeholder': 'Apenas números'})
+        widget=forms.TextInput(attrs={'class': premium_input_css, 'placeholder': 'Apenas números'})
     )
     nome_empresa = forms.CharField(
         max_length=150, 
         required=False, 
         help_text="Obrigatório apenas na primeira vez.",
-        widget=forms.TextInput(attrs={'class': CSS_INPUT, 'placeholder': 'Razão Social ou Nome Fantasia'})
+        widget=forms.TextInput(attrs={'class': premium_input_css, 'placeholder': 'Razão Social ou Nome Fantasia'})
     )
 
-    def clean_username(self):
-        username = self.cleaned_data.get('username')
-        if User.objects.filter(username=username).exists():
-            raise forms.ValidationError("Este nome de usuário já está em uso.")
-        return username
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -179,3 +173,26 @@ class RegistroForm(forms.Form):
             self.add_error('senha_confirmacao', "As senhas não coincidem. Digite novamente.")
             
         return cleaned_data
+
+class EmailLoginForm(AuthenticationForm):
+    """
+    Substitui o formulário padrão de login para usar Email em vez de Username.
+    """
+    username = forms.EmailField(
+        label="E-mail",
+        widget=forms.EmailInput(attrs={
+            'class': 'block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent sm:text-sm transition-colors',
+            'placeholder': 'seu@email.com',
+            'id': 'id_username',
+            'required': True
+        })
+    )
+    password = forms.CharField(
+        label="Senha",
+        widget=forms.PasswordInput(attrs={
+            'class': 'block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent sm:text-sm transition-colors',
+            'placeholder': '••••••••',
+            'id': 'id_password',
+            'required': True
+        })
+    )

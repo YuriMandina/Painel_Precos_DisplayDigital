@@ -32,7 +32,9 @@ def registro_view(request: HttpRequest) -> HttpResponse:
     if request.method == 'POST':
         form = RegistroForm(request.POST)
         if form.is_valid():
-            username = form.cleaned_data['username'] # Captura o novo campo
+            import uuid
+            # Gera um username único usando UUID para satisfazer o modelo User do Django
+            username = uuid.uuid4().hex[:30]
             email = form.cleaned_data['email']
             senha = form.cleaned_data['senha']
             nome = form.cleaned_data['nome']
