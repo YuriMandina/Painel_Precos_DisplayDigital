@@ -164,10 +164,21 @@ def _construir_playlist(playlist_config: Optional[List[Dict[str, Any]]], empresa
             try:
                 midia = Midia.objects.get(id=item_id, empresa=empresa)
                 
-                # Resolve a URL absoluta caso o contexto do request esteja disponível
+                # Resolve a URL absoluta de forma segura:
+                # - Se a URL já for absoluta (Cloudinary em produção), usa diretamente.
+                # - Se for relativa (arquivo local em dev), constrói a URL absoluta com o host do servidor.
                 url_arquivo = ''
                 if midia.arquivo:
-                    url_arquivo = request.build_absolute_uri(midia.arquivo.url) if request else midia.arquivo.url
+                    raw_url = midia.arquivo.url
+                    if raw_url.startswith(('http://', 'https://')):
+                        # URL já é absoluta (ex: Cloudinary). Usa diretamente.
+                        url_arquivo = raw_url
+                    elif request:
+                        # URL relativa em dev: constrói URL absoluta usando o host do request.
+                        # O endpoint /media/stream/ suporta Range Requests, necessário para TVs.
+                        url_arquivo = request.build_absolute_uri(raw_url)
+                    else:
+                        url_arquivo = raw_url
 
                 playlist_processada.append({
                     'tipo': 'propaganda',

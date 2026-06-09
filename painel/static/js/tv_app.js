@@ -412,77 +412,159 @@ class GridRenderer {
 class VideoPlayer {
     /**
      * Manipula a injeção e ciclo de vida de nós de imagem/vídeo no DOM.
-     * Implementa lógicas de fallback de timeout para prevenir travamentos de hardware em Smart TVs.
+     * 
+     * Implementa múltiplas camadas de proteção contra falhas silenciosas em Smart TVs
+     * (WebOS/Tizen/Android TV), que frequentemente:
+     *  - Não disparam `onerror` em broken pipe — apenas travam silenciosamente
+     *  - Rejeitam `video.play()` via Promise se a política de autoplay bloqueia
+     *  - Emitem `onstalled` / `onsuspend` quando o buffer congela
+     *  - Não suportam Range Requests (resolvido pelo media_stream_view no backend)
      */
     constructor(app) {
         this.app = app;
+        this._stallCount = 0;
     }
 
     play(item, onComplete) {
         if (!this.app.state.uuid || !item.url) {
+            console.warn('[VideoPlayer] Item inválido ou sem URL. Avançando playlist.');
             onComplete();
             return;
         }
 
         const container = this.app.getVideoContainer();
         container.innerHTML = '';
-        
-        /* Define estado inicial de opacidade em zero para garantir transição suave via CSS */
-        container.style.opacity = '0'; 
+        container.style.opacity = '0';
         container.style.display = 'block';
 
         const durationMs = (item.duracao || 15) * 1000;
-        let safetyTimeout;
-        let isFinished = false; 
+        let isFinished = false;
+        let safetyTimeout = null;
+        let stallTimeout = null;
+        let loadTimeout = null;
 
-        const finish = async () => {
+        const finish = async (reason) => {
             if (isFinished) return;
             isFinished = true;
+
+            // Limpa todos os timers pendentes
             if (safetyTimeout) clearTimeout(safetyTimeout);
-            
+            if (stallTimeout) clearTimeout(stallTimeout);
+            if (loadTimeout) clearTimeout(loadTimeout);
+
+            console.log(`[VideoPlayer] Finalizando: "${item.descricao}" (motivo: ${reason})`);
+
             container.style.opacity = '0';
             await new Promise(r => setTimeout(r, 400));
-            
+
+            // Para e destroi o elemento de vídeo antes de limpar o DOM
+            const vid = container.querySelector('video');
+            if (vid) {
+                vid.pause();
+                vid.removeAttribute('src');
+                vid.load();
+            }
+
             container.style.display = 'none';
             container.innerHTML = '';
-            onComplete(); 
+            onComplete();
         };
 
-        /* Garante injeção de estilo no frame de renderização antes da opacidade ser alterada */
+        // Fade-in suave
         setTimeout(() => {
             if (!isFinished) container.style.opacity = '1';
         }, 100);
 
         if (item.tipo_midia === 'IMAGEM') {
+            // --- PLAYER DE IMAGEM ---
             const img = document.createElement('img');
-            img.id = 'video-bg'; 
+            img.id = 'video-bg';
             img.src = item.url;
-            
-            img.onerror = finish;
-            safetyTimeout = setTimeout(finish, durationMs);
-            
+            img.onerror = () => finish('image-error');
+            safetyTimeout = setTimeout(() => finish('image-duration'), durationMs);
             container.appendChild(img);
-            
+
         } else {
+            // --- PLAYER DE VÍDEO ---
             const video = document.createElement('video');
             video.id = 'video-bg';
-            
-            /* Injeta propriedades mandatórias para reprodução autoplay e inline em engines restritivas (Tizen/WebOS) */
+
+            // Atributos mandatórios para autoplay em engines de TV restritivas (Tizen/WebOS)
             video.setAttribute('muted', 'true');
             video.setAttribute('autoplay', 'true');
             video.setAttribute('playsinline', 'true');
+            video.setAttribute('preload', 'auto');
             video.muted = true;
             video.autoplay = true;
 
-            video.onerror = finish;
-            video.onended = finish; 
-            
-            video.src = item.url; 
+            // Quando o vídeo termina naturalmente → avança imediatamente
+            video.onended = () => finish('video-ended');
+
+            // Erro de decodificação / URL inválida → avança
+            video.onerror = (e) => {
+                console.error('[VideoPlayer] Erro no elemento <video>:', e, video.error);
+                finish('video-error');
+            };
+
+            // Timeout de carregamento inicial: se não iniciar reprodução em 8s, desiste.
+            // TVs lentas podem demorar no primeiro buffer, então usamos 8s de tolerância.
+            loadTimeout = setTimeout(() => {
+                if (!isFinished && video.readyState < 3) { // < HAVE_FUTURE_DATA
+                    console.warn('[VideoPlayer] Timeout de carregamento inicial. URL:', item.url);
+                    finish('load-timeout');
+                }
+            }, 8000);
+
+            // Quando começar a reproduzir: cancela o loadTimeout e arma o safetyTimeout
+            video.oncanplay = () => {
+                if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
+                // Safety timeout: garante avanço mesmo se onended não disparar
+                if (!safetyTimeout) {
+                    safetyTimeout = setTimeout(() => finish('safety-duration'), durationMs + 3000);
+                }
+            };
+
+            // Detecta buffer travado (stalled) — comum em TVs Android e WebOS
+            const handleStall = () => {
+                if (isFinished) return;
+                // Dá 5s de tolerância para o buffer se recuperar antes de desistir
+                if (stallTimeout) clearTimeout(stallTimeout);
+                stallTimeout = setTimeout(() => {
+                    if (!isFinished && video.paused) {
+                        console.warn('[VideoPlayer] Buffer travado e vídeo pausado. Tentando retomar...');
+                        video.play().catch(() => finish('stall-unrecoverable'));
+                    }
+                }, 5000);
+            };
+
+            video.onstalled = handleStall;
+            video.onsuspend = () => {
+                // onsuspend também pode indicar que o browser parou o download
+                if (!isFinished && video.readyState < 2) handleStall();
+            };
+
+            // Safety timeout de emergência: garante que a playlist SEMPRE avança
+            // Ativado imediatamente como última barreira — usando duracao + 15s de buffer total
+            safetyTimeout = setTimeout(() => finish('emergency-timeout'), durationMs + 15000);
+
             container.appendChild(video);
-            
-            /* Fallback de tolerância a falhas. Garante a iteração da fila caso o buffer congele
-               ou o evento nativo 'onended' não seja emitido pelo sistema operacional da TV. */
-            safetyTimeout = setTimeout(finish, durationMs + 2000);
+
+            // Injeta a URL e força o carregamento
+            video.src = item.url;
+            video.load();
+
+            // Tenta reproduzir. Em TVs, play() retorna uma Promise que pode ser rejeitada.
+            const playPromise = video.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(err => {
+                    console.warn('[VideoPlayer] video.play() rejeitado:', err.message);
+                    // Se a política de autoplay bloqueou, tenta silenciosamente com muted
+                    if (!isFinished) {
+                        video.muted = true;
+                        video.play().catch(() => finish('autoplay-blocked'));
+                    }
+                });
+            }
         }
     }
 }

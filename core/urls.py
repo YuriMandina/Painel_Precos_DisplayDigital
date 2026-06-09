@@ -17,7 +17,6 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
-from django.conf.urls.static import static
 
 urlpatterns = [
     # Mude 'admin/' para algo obscuro, como 'acesso-root-sistema/' ou 'django-backend/'
@@ -25,6 +24,20 @@ urlpatterns = [
     path('', include('painel.urls')),
 ]
 
-# Configuração para servir imagens/media em modo DEBUG (Local)
+# Configuração para servir arquivos de mídia em modo DEBUG (Local)
+# IMPORTANTE: Usamos nossa própria view de streaming (media_stream_view) em vez do
+# helper static() do Django porque o servidor de desenvolvimento não suporta
+# HTTP Range Requests nativamente. Smart TVs exigem Range Requests para reproduzir
+# vídeos — sem isso, gera "broken pipe" e o vídeo nunca toca na TV.
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    from painel.views import media_stream_view
+    from django.urls import re_path
+    
+    urlpatterns += [
+        # Endpoint de streaming com suporte a Range Requests (necessário para TVs)
+        re_path(
+            r'^media/(?P<file_path>.+)$',
+            media_stream_view,
+            name='media_stream'
+        ),
+    ]
