@@ -51,3 +51,39 @@ class TenantMiddleware:
                 return redirect('logout')
 
         return self.get_response(request)
+
+
+class AutoplayPermissionsMiddleware:
+    """
+    Middleware que injeta headers de permissão de autoplay nas respostas HTTP.
+
+    Por que isso é necessário?
+    --------------------------
+    Browsers modernos (Chrome 66+, Firefox 74+) e proxies de nuvem (Render, Cloudflare)
+    podem enviar headers `Permissions-Policy: autoplay=()` que bloqueiam COMPLETAMENTE
+    o autoplay de vídeo — mesmo com `muted` e `autoplay` definidos no elemento HTML.
+
+    Smart TVs com SamsungBrowser (Tizen) são especialmente sensíveis a isso.
+
+    Este middleware garante que o header correto seja enviado para:
+    - /tv/          — A página da SPA da TV
+    - /api/painel/  — As respostas da API (para o player saber que pode rodar)
+
+    Headers injetados:
+    - Permissions-Policy: autoplay=*          → Libera autoplay para qualquer origem
+    - Cross-Origin-Embedder-Policy: unsafe-none → Evita bloqueio por isolamento de origem
+    """
+
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        response = self.get_response(request)
+
+        # Aplica apenas às rotas relevantes da TV e da API
+        if request.path.startswith('/tv') or request.path.startswith('/api/painel'):
+            response['Permissions-Policy'] = 'autoplay=*, fullscreen=*'
+            response['Cross-Origin-Embedder-Policy'] = 'unsafe-none'
+            response['Cross-Origin-Opener-Policy'] = 'unsafe-none'
+
+        return response

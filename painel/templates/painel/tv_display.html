@@ -5,6 +5,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <!-- Libera autoplay e mídia do Cloudinary sem prompts do browser -->
+    <meta http-equiv="Feature-Policy" content="autoplay *; fullscreen *">
+    <!-- CSP: permite carregar mídia do Cloudinary e fontes do Google -->
+    <meta http-equiv="Content-Security-Policy" 
+          content="default-src 'self'; 
+                   script-src 'self' 'unsafe-inline'; 
+                   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
+                   font-src 'self' https://fonts.gstatic.com; 
+                   img-src 'self' data: https://res.cloudinary.com blob:; 
+                   media-src 'self' https://res.cloudinary.com blob:;
+                   connect-src 'self';">
     <title>Painel Digital | Display</title>
     
     <link rel="stylesheet" href="{% static 'css/painel.css' %}?v={% now 'U' %}">
@@ -22,6 +34,23 @@
             cursor: none; 
             font-family: 'Outfit', sans-serif;
         }
+
+        /* ==========================================================================
+                                        VÍDEO — CONTROLES OCULTOS
+           Garante que NENHUM controle nativo apareça na TV em modo kiosk.
+           Funciona no Chrome, SamsungBrowser/Tizen e WebOS.
+           ========================================================================== */
+        video::-webkit-media-controls             { display: none !important; }
+        video::-webkit-media-controls-enclosure   { display: none !important; }
+        video::-webkit-media-controls-panel       { display: none !important; }
+        video::-webkit-media-controls-play-button { display: none !important; }
+        video::-webkit-media-controls-timeline    { display: none !important; }
+        video::-webkit-media-controls-current-time-display { display: none !important; }
+        video::-webkit-media-controls-time-remaining-display { display: none !important; }
+        video::-webkit-media-controls-mute-button { display: none !important; }
+        video::-webkit-media-controls-volume-slider { display: none !important; }
+        video::-webkit-media-controls-fullscreen-button { display: none !important; }
+        video { pointer-events: none; }
 
         /* ==========================================================================
                                         SETUP COMPONENT

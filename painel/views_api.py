@@ -99,6 +99,42 @@ def dados_painel(request: Request, device_uuid: str) -> Response:
     return Response(response_data, status=status.HTTP_200_OK)
 
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def debug_midias(request: Request, device_uuid: str) -> Response:
+    """
+    Endpoint de diagnóstico: inspeciona as URLs reais geradas para as mídias do dispositivo.
+    Útil para verificar se o Cloudinary está retornando URLs acessíveis.
+    Disponível em produção temporariamente para diagnóstico.
+    """
+    dispositivo = get_object_or_404(Dispositivo, uuid=device_uuid)
+    empresa = dispositivo.empresa
+
+    midias = Midia.objects.filter(empresa=empresa, ativo=True)
+    resultado = []
+
+    for m in midias:
+        raw_url = m.arquivo.url if m.arquivo else ''
+        is_absolute = raw_url.startswith(('http://', 'https://'))
+
+        resultado.append({
+            'id': m.id,
+            'nome': m.nome,
+            'tipo': m.tipo,
+            'duracao': m.duracao,
+            'arquivo_name': m.arquivo.name if m.arquivo else '',
+            'url_raw': raw_url,
+            'url_is_absolute': is_absolute,
+            'url_final': request.build_absolute_uri(raw_url) if not is_absolute and raw_url else raw_url,
+        })
+
+    return Response({
+        'empresa': empresa.nome,
+        'total_midias': len(resultado),
+        'midias': resultado,
+    }, status=status.HTTP_200_OK)
+
+
 # ==============================================================================
 #                            HELPER FUNCTIONS
 # ==============================================================================

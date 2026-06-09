@@ -54,6 +54,7 @@ urlpatterns = [
     # --- API ENDPOINTS (Client-side / TV) ---
     path('api/painel/parear/', views_api.parear_dispositivo, name='api_parear'),
     path('api/painel/<uuid:device_uuid>/', views_api.dados_painel, name='api_dados_painel'),
+    path('api/debug/midias/<uuid:device_uuid>/', views_api.debug_midias, name='api_debug_midias'),
 
     # --- FRONTEND (SPA TV) ---
     path('tv/', views.tv_display_view, name='tv_display'),
