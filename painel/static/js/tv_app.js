@@ -18,12 +18,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 const CONFIG = {
     API_BASE: '/api/painel',
-    UPDATE_INTERVAL_MS: 60000, 
-    RETRY_DELAY_MS: 5000,      
+    UPDATE_INTERVAL_MS: 60000,
+    RETRY_DELAY_MS: 5000,
     DEFAULT_DURATION_MS: 15000,
     ITEMS_PER_PAGE: {
         HORIZONTAL: 18,
-        VERTICAL: 15
+        VERTICAL: 14
     },
     SELECTORS: {
         SETUP_SCREEN: 'setup-screen',
@@ -50,11 +50,11 @@ class TVApp {
         this.elements = this._mapElements();
         this.state = {
             uuid: localStorage.getItem('tv_device_uuid'),
-            data: null, 
+            data: null,
             orientation: 'HORIZONTAL',
             playlistHash: ''
         };
-        
+
         this.playlistManager = new PlaylistManager(this);
         this.pollingInterval = null;
     }
@@ -88,9 +88,9 @@ class TVApp {
 
         this.elements.SETUP_SCREEN.style.display = 'flex';
         this.elements.APP_SCREEN.style.display = 'none';
-        
+
         if (this.elements.INPUT_UUID) {
-            this.elements.INPUT_UUID.value = ""; 
+            this.elements.INPUT_UUID.value = "";
             this.elements.INPUT_UUID.placeholder = "CÓDIGO DE 6 DÍGITOS";
             this.elements.INPUT_UUID.focus();
         }
@@ -99,9 +99,9 @@ class TVApp {
     async _startApp() {
         this.elements.SETUP_SCREEN.style.display = 'none';
         this.elements.APP_SCREEN.style.display = 'flex';
-        
+
         await this._fetchData();
-        
+
         if (this.pollingInterval) clearInterval(this.pollingInterval);
         this.pollingInterval = setInterval(() => this._fetchData(), CONFIG.UPDATE_INTERVAL_MS);
     }
@@ -146,7 +146,7 @@ class TVApp {
         this._updateOrientation(newData.config.orientacao);
 
         const newHash = JSON.stringify(newData.playlist_final);
-        
+
         if (newHash !== this.state.playlistHash) {
             console.log("Mutação de playlist detectada. Reconstruindo fila de reprodução.");
             this.state.playlistHash = newHash;
@@ -206,19 +206,19 @@ class PlaylistManager {
         this.queue = [];
         this.products = [];
         this.currentIndex = 0;
-        this.isPlaying = false; 
-        this.timeoutId = null; 
-        
+        this.isPlaying = false;
+        this.timeoutId = null;
+
         this.gridRenderer = new GridRenderer(app);
         this.videoPlayer = new VideoPlayer(app);
     }
 
     updatePlaylist(playlist, products) {
         const orderChanged = this.queue.length > 0 && JSON.stringify(this.queue) !== JSON.stringify(playlist);
-        
+
         this.queue = playlist;
         this.products = products;
-        
+
         if (orderChanged) {
             this.currentIndex = 0;
         }
@@ -244,9 +244,9 @@ class PlaylistManager {
         if (!this.queue || this.queue.length === 0) {
             this.isPlaying = false;
             this.app.setTitle("AGUARDANDO");
-            this.app.getContainer().innerHTML = 
+            this.app.getContainer().innerHTML =
                 "<h2 style='color:#666; text-align:center; margin-top:20vh;'>Aguardando configuração de playlist...</h2>";
-            
+
             this.timeoutId = setTimeout(() => {
                 if (!this.isPlaying) this.playNext();
             }, CONFIG.RETRY_DELAY_MS);
@@ -265,7 +265,7 @@ class PlaylistManager {
         } else if (item.tipo === 'propaganda') {
             this.videoPlayer.play(item, () => this.playNext());
         } else {
-            this.playNext(); 
+            this.playNext();
         }
     }
 }
@@ -290,7 +290,7 @@ class GridRenderer {
 
         const titulo = itemPlaylist.descricao ? itemPlaylist.descricao.replace('Tabela: ', '').toUpperCase() : '';
         const container = this.app.getContainer();
-        
+
         container.style.opacity = '0';
         await new Promise(r => setTimeout(r, 300));
 
@@ -306,7 +306,7 @@ class GridRenderer {
             productsToShow = orderedIds
                 .map(id => productsToShow.find(p => String(p.id) === id))
                 .filter(p => p !== undefined); // Remove se algum produto da lista foi apagado
-                
+
         } else {
             // RENDERIZAÇÃO TRADICIONAL (POR FAMÍLIA)
             // 2. FILTRO DE FAMÍLIA: Aplica a categoria selecionada na Playlist
@@ -317,7 +317,7 @@ class GridRenderer {
             // 3. FILTRO LOCAL (BLINDAGEM DA TV): Remove produtos ocultados especificamente nesta Playlist
             if (itemPlaylist.hidden_products && Array.isArray(itemPlaylist.hidden_products)) {
                 const hiddenIds = itemPlaylist.hidden_products.map(String);
-                
+
                 productsToShow = productsToShow.filter(p => {
                     const productId = String(p.id);
                     return !hiddenIds.includes(productId);
@@ -344,23 +344,23 @@ class GridRenderer {
 
             const start = i * itemsPerPage;
             const pageProducts = products.slice(start, start + itemsPerPage);
-            
+
             await this._drawPage(pageProducts, itemsPerPage);
             await new Promise(r => setTimeout(r, durationSec * 1000));
         }
 
         this.app.getContainer().style.opacity = '0';
         await new Promise(r => setTimeout(r, 300));
-        
+
         onComplete();
     }
 
     async _drawPage(products, itemsPerPage) {
         const container = this.app.getContainer();
-        
+
         container.style.opacity = '0';
         await new Promise(r => setTimeout(r, 400));
-        
+
         container.innerHTML = '';
         if (this.app.isVertical()) {
             container.appendChild(this._createColumn(products, itemsPerPage));
@@ -369,7 +369,7 @@ class GridRenderer {
             container.appendChild(this._createColumn(products.slice(0, itemsPerCol), itemsPerCol));
             container.appendChild(this._createColumn(products.slice(itemsPerCol), itemsPerCol));
         }
-        
+
         container.style.opacity = '1';
         await new Promise(r => setTimeout(r, 400));
     }
@@ -387,11 +387,11 @@ class GridRenderer {
     _createCard(product) {
         const div = document.createElement('div');
         div.className = `item-produto ${product.em_oferta ? 'em-oferta' : ''}`;
-        
-        const priceFormatted = parseFloat(product.preco).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+
+        const priceFormatted = parseFloat(product.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         const charLimit = this.app.isVertical() ? 28 : 22;
         const nameClass = product.descricao.length > charLimit ? 'nome-container marquee' : 'nome-container';
-        
+
         div.innerHTML = `<div class="${nameClass}"><span class="nome">${product.descricao}</span></div><div class="preco">${priceFormatted}</div>`;
         return div;
     }
@@ -581,16 +581,16 @@ const API = {
     async pairDevice(code) {
         const response = await fetch(`${CONFIG.API_BASE}/parear/`, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ codigo: code })
         });
 
         if (!response.ok) {
             let msg = "Erro desconhecido de integração.";
-            try { 
-                const json = await response.json(); 
-                msg = json.erro || msg; 
-            } catch(e) {}
+            try {
+                const json = await response.json();
+                msg = json.erro || msg;
+            } catch (e) { }
             throw new Error(msg);
         }
         return await response.json();
