@@ -19,7 +19,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 
-from .models import Dispositivo, Produto, FamiliaProduto, Midia
+from .models import Dispositivo, Produto, FamiliaProduto, Midia, ListaPersonalizada
 from .serializers import ProdutoSerializer, DispositivoConfigSerializer
 
 
@@ -142,6 +142,21 @@ def _construir_playlist(playlist_config: Optional[List[Dict[str, Any]]], empresa
                 })
             except FamiliaProduto.DoesNotExist:
                 logger.debug(f"FamiliaProduto (ID: {item_id}) ignorada na playlist: Não encontrada.")
+                continue
+
+        # Processamento de blocos do tipo 'lista_personalizada'
+        elif tipo == 'lista_personalizada':
+            try:
+                lista = ListaPersonalizada.objects.get(id=item_id, empresa=empresa)
+                produtos_ids = list(lista.itens.order_by('ordem').values_list('produto_id', flat=True))
+                playlist_processada.append({
+                    'tipo': 'tabela',
+                    'descricao': lista.nome,
+                    'tempo_pagina': tempo_custom,
+                    'produtos_ordenados': produtos_ids
+                })
+            except ListaPersonalizada.DoesNotExist:
+                logger.debug(f"ListaPersonalizada (ID: {item_id}) ignorada na playlist: Não encontrada.")
                 continue
                 
         # Processamento de blocos do tipo 'midia'

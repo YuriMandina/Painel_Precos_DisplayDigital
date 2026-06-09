@@ -1,0 +1,291 @@
+{% extends "painel/base_dashboard.html" %}
+
+{% block title %}{{ titulo }} | DisplayDigital{% endblock %}
+{% block header_title %}Listas Personalizadas{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
+    
+    <header>
+        <div class="flex items-center gap-3 mb-2">
+            <a href="{% url 'lista_personalizada_list' %}" class="text-slate-400 hover:text-indigo-600 transition-colors">
+                <i class="ph-bold ph-arrow-left text-xl"></i>
+            </a>
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">{{ titulo }}</h1>
+        </div>
+        <p class="text-sm text-slate-500 ml-8">Configure o agrupamento de produtos e sua exibição na TV.</p>
+    </header>
+
+    <form method="post" class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        {% csrf_token %}
+        <div class="p-8">
+            <div class="max-w-2xl">
+                {{ form.nome.label_tag }}
+                <div class="mt-2">{{ form.nome }}</div>
+                {% if form.nome.errors %}<p class="text-red-500 text-sm mt-1">{{ form.nome.errors.0 }}</p>{% endif %}
+            </div>
+            
+            <div class="mt-8 flex gap-3">
+                <button type="submit" class="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md">
+                    <i class="ph-bold ph-floppy-disk mr-2"></i> Salvar Nome
+                </button>
+                <a href="{% url 'lista_personalizada_list' %}" class="px-6 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">
+                    Voltar
+                </a>
+            </div>
+        </div>
+    </form>
+
+    {% if object %}
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mt-8">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <div>
+                <h2 class="text-xl font-bold text-slate-900">Gerenciar Produtos</h2>
+                <p class="text-sm text-slate-500 mt-1">Arraste produtos do catálogo para a sua lista e defina a ordem de exibição.</p>
+            </div>
+            <button id="btn-salvar-itens" class="px-5 py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-md hidden flex items-center gap-2">
+                <i class="ph-bold ph-check"></i> Salvar Ordem
+            </button>
+        </div>
+
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50/50">
+            <!-- Catálogo (Todos os Produtos) -->
+            <div class="flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-bold text-slate-700 uppercase tracking-widest"><i class="ph-bold ph-books mr-1"></i> Seu Catálogo</h3>
+                    <input type="text" id="busca-catalogo" placeholder="Buscar produto..." class="px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                
+                <div class="bg-white border border-slate-200 rounded-2xl shadow-inner h-[600px] overflow-y-auto custom-scrollbar p-2" id="lista-catalogo">
+                    {% regroup todos_produtos by familia as familias_list %}
+                    {% for familia in familias_list %}
+                    <details class="mb-2 bg-white border border-slate-200 rounded-xl overflow-hidden group familia-accordion">
+                        <summary class="p-4 bg-slate-50 font-bold cursor-pointer flex justify-between items-center group-open:border-b border-slate-200 hover:bg-slate-100 transition-colors">
+                            <span class="text-slate-800 text-sm"><i class="ph-bold ph-folder mr-2 text-indigo-500"></i> {{ familia.grouper.nome }}</span>
+                            <i class="ph-bold ph-caret-down group-open:rotate-180 transition-transform text-slate-400"></i>
+                        </summary>
+                        <div class="p-2 space-y-2 sortable-source min-h-[20px]">
+                            {% for p in familia.list %}
+                            <div class="produto-item bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center cursor-grab hover:border-indigo-300 hover:shadow-md transition-all group/item" data-id="{{ p.id }}" data-nome="{{ p.descricao|lower }}">
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-bold text-slate-800">{{ p.descricao }}</span>
+                                    <span class="text-xs text-slate-500">{{ p.familia.nome }} &bull; R$ {{ p.preco }}</span>
+                                </div>
+                                <i class="ph-bold ph-dots-six-vertical text-slate-400 group-hover/item:text-indigo-400"></i>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </details>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Lista Personalizada -->
+            <div class="flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-bold text-indigo-700 uppercase tracking-widest"><i class="ph-bold ph-list-dashes mr-1"></i> Nesta Lista</h3>
+                    <span class="text-xs font-bold bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full" id="contador-lista">{{ itens_lista.count }} itens</span>
+                </div>
+                
+                <div class="bg-indigo-50/30 border-2 border-indigo-100 border-dashed rounded-2xl h-[600px] overflow-y-auto custom-scrollbar p-2 relative sortable-target" id="lista-ativa">
+                    {% if not itens_lista %}
+                    <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 pointer-events-none empty-state">
+                        <i class="ph-fill ph-hand-grabbing text-4xl mb-2 text-indigo-200"></i>
+                        <span class="text-sm font-bold">Arraste produtos para cá</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% for item in itens_lista %}
+                    <div class="produto-item bg-white border border-slate-200 rounded-xl p-3 mb-2 flex justify-between items-center cursor-grab hover:border-indigo-300 hover:shadow-md transition-all group/item" data-id="{{ item.produto.id }}">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold text-slate-800">{{ item.produto.descricao }}</span>
+                            <span class="text-xs text-slate-500">{{ item.produto.familia.nome }} &bull; R$ {{ item.produto.preco }}</span>
+                        </div>
+                        <div class="flex items-center gap-2 actions-container">
+                            <button type="button" class="btn-remover text-slate-400 hover:text-red-500 p-1 bg-slate-50 rounded-md hover:bg-red-50">
+                                <i class="ph-bold ph-x"></i>
+                            </button>
+                            <i class="ph-bold ph-dots-six-vertical text-slate-400 group-hover/item:text-indigo-400 cursor-grab"></i>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Sortable JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const catalogoEl = document.getElementById('lista-catalogo');
+            const listaAtivaEl = document.getElementById('lista-ativa');
+            const btnSalvar = document.getElementById('btn-salvar-itens');
+            const buscaInput = document.getElementById('busca-catalogo');
+            
+            let mudouAlgo = false;
+
+            // Filtro de busca no catálogo
+            buscaInput.addEventListener('input', function(e) {
+                const term = e.target.value.toLowerCase();
+                
+                document.querySelectorAll('.familia-accordion').forEach(acc => {
+                    let hasVisible = false;
+                    acc.querySelectorAll('.produto-item').forEach(el => {
+                        const nome = el.getAttribute('data-nome');
+                        if(nome.includes(term)) {
+                            el.style.display = 'flex';
+                            hasVisible = true;
+                        } else {
+                            el.style.display = 'none';
+                        }
+                    });
+                    
+                    if (hasVisible) {
+                        acc.style.display = 'block';
+                        if (term.length > 0) acc.open = true; // Abre se tiver busca
+                    } else {
+                        acc.style.display = 'none';
+                    }
+                });
+            });
+
+            function updateUI() {
+                // Atualiza contador
+                const itemsCount = listaAtivaEl.querySelectorAll('.produto-item').length;
+                document.getElementById('contador-lista').textContent = itemsCount + ' itens';
+                
+                // Mostrar/Esconder empty state
+                const emptyState = listaAtivaEl.querySelector('.empty-state');
+                if (emptyState) {
+                    emptyState.style.display = itemsCount === 0 ? 'flex' : 'none';
+                }
+                
+                // Adicionar botões de remover nos itens da lista ativa se não tiver
+                listaAtivaEl.querySelectorAll('.produto-item').forEach(item => {
+                    let actions = item.querySelector('.actions-container');
+                    if (!actions) {
+                        const oldIcon = item.querySelector('.ph-dots-six-vertical');
+                        const div = document.createElement('div');
+                        div.className = 'flex items-center gap-2 actions-container';
+                        div.innerHTML = `
+                            <button type="button" class="btn-remover text-slate-400 hover:text-red-500 p-1 bg-slate-50 rounded-md hover:bg-red-50">
+                                <i class="ph-bold ph-x"></i>
+                            </button>
+                            <i class="ph-bold ph-dots-six-vertical text-slate-400 group-hover/item:text-indigo-400 cursor-grab"></i>
+                        `;
+                        if(oldIcon) item.replaceChild(div, oldIcon);
+                    }
+                    item.classList.add('mb-2'); // Espaçamento na lista ativa
+                });
+                
+                // Ações de remover (destruir o item da lista ativa)
+                listaAtivaEl.querySelectorAll('.btn-remover').forEach(btn => {
+                    btn.onclick = function() {
+                        const item = this.closest('.produto-item');
+                        item.remove();
+                        assinalarMudanca();
+                        updateUI();
+                    };
+                });
+            }
+
+            function assinalarMudanca() {
+                mudouAlgo = true;
+                btnSalvar.classList.remove('hidden');
+                btnSalvar.classList.add('flex');
+            }
+
+            // Instancia Sortable para CADA categoria no catálogo
+            document.querySelectorAll('.sortable-source').forEach(sourceEl => {
+                new Sortable(sourceEl, {
+                    group: {
+                        name: 'shared',
+                        pull: 'clone', 
+                        put: false     
+                    },
+                    draggable: '.produto-item',
+                    animation: 150,
+                    sort: false, // Não reordena o catálogo
+                    onEnd: function (evt) {
+                        if (evt.to === listaAtivaEl) {
+                            updateUI();
+                        }
+                    }
+                });
+            });
+
+            // Instancia Sortable para a Lista Ativa
+            new Sortable(listaAtivaEl, {
+                group: {
+                    name: 'shared',
+                    pull: false,
+                    put: true
+                },
+                draggable: '.produto-item',
+                animation: 150,
+                ghostClass: 'opacity-50',
+                onAdd: function (evt) {
+                    assinalarMudanca();
+                    updateUI();
+                },
+                onUpdate: function (evt) {
+                    assinalarMudanca();
+                }
+            });
+
+            btnSalvar.addEventListener('click', function() {
+                const itens = Array.from(listaAtivaEl.querySelectorAll('.produto-item')).map(el => el.getAttribute('data-id'));
+                
+                this.innerHTML = '<i class="ph-bold ph-spinner-gap animate-spin"></i> Salvando...';
+                this.disabled = true;
+
+                fetch("{% url 'lista_personalizada_update_items' object.id %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ produtos: itens })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if(data.status === 'success') {
+                        btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvo!';
+                        btnSalvar.classList.replace('bg-emerald-600', 'bg-indigo-600');
+                        btnSalvar.classList.replace('hover:bg-emerald-700', 'hover:bg-indigo-700');
+                        setTimeout(() => {
+                            btnSalvar.classList.add('hidden');
+                            btnSalvar.classList.remove('flex');
+                            btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Ordem';
+                            btnSalvar.classList.replace('bg-indigo-600', 'bg-emerald-600');
+                            btnSalvar.classList.replace('hover:bg-indigo-700', 'hover:bg-emerald-700');
+                            btnSalvar.disabled = false;
+                            mudouAlgo = false;
+                        }, 2000);
+                    } else {
+                        alert('Erro ao salvar: ' + data.message);
+                        btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Ordem';
+                        btnSalvar.disabled = false;
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Erro de conexão ao salvar.');
+                    btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Ordem';
+                    btnSalvar.disabled = false;
+                });
+            });
+
+            updateUI();
+        });
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+    </style>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -95,6 +95,30 @@
                     </div>
 
                     <div class="pt-6 border-t border-slate-100">
+                        <h4 class="text-xs font-bold text-purple-600 mb-4 flex items-center gap-1.5 uppercase tracking-widest bg-purple-50 w-fit px-3 py-1 rounded-md">
+                            <i class="ph-fill ph-list-dashes text-base"></i> Listas Customizadas
+                        </h4>
+                        <div id="library-listas" class="space-y-3 min-h-[50px]">
+                            {% for lista in todas_listas %}
+                            <div class="draggable-source group" 
+                                 data-type="lista_personalizada" 
+                                 data-id="{{ lista.id }}" 
+                                 data-nome="{{ lista.nome }}"
+                                 data-duracao="15">
+                                <div class="p-3.5 rounded-xl border-2 border-slate-100 bg-white hover:border-purple-300 hover:shadow-md cursor-grab active:cursor-grabbing transition-all flex items-center gap-3 relative overflow-hidden">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-purple-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+                                        <i class="ph-bold ph-list-dashes text-lg"></i>
+                                    </div>
+                                    <span class="text-sm font-bold text-slate-700 group-hover:text-purple-700">{{ lista.nome }}</span>
+                                    <i class="ph-bold ph-dots-six-vertical ml-auto text-slate-300 group-hover:text-slate-500"></i>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="pt-6 border-t border-slate-100">
                         <h4 class="text-xs font-bold text-pink-600 mb-4 flex items-center gap-1.5 uppercase tracking-widest bg-pink-50 w-fit px-3 py-1 rounded-md">
                             <i class="ph-fill ph-film-strip text-base"></i> Mídia & Propaganda
                         </h4>
@@ -360,14 +384,15 @@
 
     const playlistManager = {
         config: {
-            sources: ['library-families', 'library-midias'],
+            sources: ['library-families', 'library-midias', 'library-listas'],
             targetId: 'playlist-target',
             emptyId: 'empty-state',
             inputHiddenId: 'id_playlist', 
             formId: 'form-dispositivo',
             types: {
                 'tabela_familia': { icon: 'ph-list-dashes', color: 'text-blue-600 bg-blue-50 border-blue-100', label: 'Seg / Pág' },
-                'midia': { icon: 'ph-film-strip', color: 'text-pink-600 bg-pink-50 border-pink-100', label: 'Duração' }
+                'midia': { icon: 'ph-film-strip', color: 'text-pink-600 bg-pink-50 border-pink-100', label: 'Duração' },
+                'lista_personalizada': { icon: 'ph-list-dashes', color: 'text-purple-600 bg-purple-50 border-purple-100', label: 'Seg / Pág' }
             }
         },
 
@@ -447,12 +472,19 @@
                     <i class="ph-bold ph-lock-key text-slate-300 ml-1" title="Fixo"></i>
                 `;
             } else {
+                let filterBtn = '';
+                if (data.type === 'tabela_familia') {
+                    filterBtn = `
+                        <button type="button" onclick="openProductsModal('${data.id}', '${data.descricao.replace(/'/g, "\\'")}', this)" 
+                                class="flex items-center justify-center w-8 h-8 mr-3 rounded-lg text-indigo-600 bg-indigo-50 hover:bg-indigo-600 hover:text-white transition-colors border border-indigo-100 shadow-sm" title="Ver/Filtrar Produtos">
+                            <i class="ph-bold ph-list-magnifying-glass text-lg"></i>
+                        </button>
+                        <div class="h-6 w-px bg-slate-200 mr-4"></div>
+                    `;
+                }
+
                 inputsTempoHtml = `
-                    <button type="button" onclick="openProductsModal('${data.id}', '${data.descricao.replace(/'/g, "\\'")}', this)" 
-                            class="flex items-center justify-center w-8 h-8 mr-3 rounded-lg text-indigo-600 bg-indigo-50 hover:bg-indigo-600 hover:text-white transition-colors border border-indigo-100 shadow-sm" title="Ver/Filtrar Produtos">
-                        <i class="ph-bold ph-list-magnifying-glass text-lg"></i>
-                    </button>
-                    <div class="h-6 w-px bg-slate-200 mr-4"></div>
+                    ${filterBtn}
 
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${configType.label}</span>
                     <input type="number" class="input-tempo w-14 text-center text-base font-bold text-slate-800 bg-transparent border-none focus:ring-0 p-0" value="${data.tempo}" min="5" max="600">

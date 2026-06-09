@@ -299,19 +299,30 @@ class GridRenderer {
         // 1. FILTRO GLOBAL: Remove produtos ocultados na página de Produtos
         let productsToShow = allProducts.filter(p => p.exibir_no_painel === true);
 
-        // 2. FILTRO DE FAMÍLIA: Aplica a categoria selecionada na Playlist
-        if (itemPlaylist.familia_id) {
-            productsToShow = productsToShow.filter(p => p.familia === itemPlaylist.familia_id);
-        }
+        if (itemPlaylist.produtos_ordenados && Array.isArray(itemPlaylist.produtos_ordenados)) {
+            // RENDERIZAÇÃO DE LISTA PERSONALIZADA
+            // Mapeia estritamente os IDs na ordem definida, ignorando filtros de família e ocultos locais
+            const orderedIds = itemPlaylist.produtos_ordenados.map(String);
+            productsToShow = orderedIds
+                .map(id => productsToShow.find(p => String(p.id) === id))
+                .filter(p => p !== undefined); // Remove se algum produto da lista foi apagado
+                
+        } else {
+            // RENDERIZAÇÃO TRADICIONAL (POR FAMÍLIA)
+            // 2. FILTRO DE FAMÍLIA: Aplica a categoria selecionada na Playlist
+            if (itemPlaylist.familia_id) {
+                productsToShow = productsToShow.filter(p => p.familia === itemPlaylist.familia_id);
+            }
 
-        // 3. FILTRO LOCAL (BLINDAGEM DA TV): Remove produtos ocultados especificamente nesta Playlist
-        if (itemPlaylist.hidden_products && Array.isArray(itemPlaylist.hidden_products)) {
-            const hiddenIds = itemPlaylist.hidden_products.map(String);
-            
-            productsToShow = productsToShow.filter(p => {
-                const productId = String(p.id);
-                return !hiddenIds.includes(productId);
-            });
+            // 3. FILTRO LOCAL (BLINDAGEM DA TV): Remove produtos ocultados especificamente nesta Playlist
+            if (itemPlaylist.hidden_products && Array.isArray(itemPlaylist.hidden_products)) {
+                const hiddenIds = itemPlaylist.hidden_products.map(String);
+                
+                productsToShow = productsToShow.filter(p => {
+                    const productId = String(p.id);
+                    return !hiddenIds.includes(productId);
+                });
+            }
         }
 
         if (productsToShow.length === 0) {

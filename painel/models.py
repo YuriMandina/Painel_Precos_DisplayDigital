@@ -141,6 +141,45 @@ class Produto(models.Model):
 
 
 # ==============================================================================
+#                             LISTAS PERSONALIZADAS
+# ==============================================================================
+
+class ListaPersonalizada(models.Model):
+    """
+    Agrupamento manual de produtos com ordenação arbitrária.
+    Permite definir um header (nome) personalizado para exibição na TV.
+    """
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='listas_personalizadas')
+    nome = models.CharField(max_length=150, help_text="Título customizado que aparecerá no cabeçalho da TV.")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Lista Personalizada"
+        verbose_name_plural = "Listas Personalizadas"
+
+    def __str__(self) -> str:
+        return self.nome
+
+
+class ListaProduto(models.Model):
+    """
+    Tabela de junção (Through) para armazenar os produtos de uma lista
+    e sua ordenação estrita.
+    """
+    lista = models.ForeignKey(ListaPersonalizada, on_delete=models.CASCADE, related_name='itens')
+    produto = models.ForeignKey(Produto, on_delete=models.CASCADE)
+    ordem = models.IntegerField(default=0, help_text="Posição do produto dentro da lista")
+
+    class Meta:
+        ordering = ['ordem']
+        unique_together = ('lista', 'produto')
+
+    def __str__(self) -> str:
+        return f"{self.produto.descricao} na lista {self.lista.nome}"
+
+
+# ==============================================================================
 #                             MÍDIA E CONTEÚDO
 # ==============================================================================
 

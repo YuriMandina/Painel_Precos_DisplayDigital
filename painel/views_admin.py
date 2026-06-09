@@ -417,16 +417,90 @@ def familia_produtos_json(request: HttpRequest, pk: int) -> JsonResponse:
 
 
 # ==============================================================================
+#                        MÓDULO: LISTAS PERSONALIZADAS
+# ==============================================================================
+
+from .models import ListaPersonalizada, ListaProduto
+from .forms import ListaPersonalizadaForm
+import json
+
+class ListaPersonalizadaListView(LoginRequiredMixin, TenantQuerySetMixin, ListView):
+    model = ListaPersonalizada
+    template_name = 'painel/listas/lista.html'
+    context_object_name = 'listas'
+
+class ListaPersonalizadaCreateView(LoginRequiredMixin, SuccessMessageMixin, TenantFormSaveMixin, CreateView):
+    model = ListaPersonalizada
+    form_class = ListaPersonalizadaForm
+    template_name = 'painel/listas/form.html'
+    success_url = reverse_lazy('lista_personalizada_list')
+    success_message = "Lista Personalizada criada com sucesso!"
+    extra_context = {'titulo': 'Nova Lista Personalizada'}
+
+class ListaPersonalizadaUpdateView(LoginRequiredMixin, SuccessMessageMixin, TenantQuerySetMixin, UpdateView):
+    model = ListaPersonalizada
+    form_class = ListaPersonalizadaForm
+    template_name = 'painel/listas/form.html'
+    success_url = reverse_lazy('lista_personalizada_list')
+    success_message = "Lista Personalizada atualizada com sucesso!"
+    extra_context = {'titulo': 'Editar Lista Personalizada'}
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        empresa = self.request.user.perfil.empresa
+        # Todos os produtos disponíveis para adicionar à lista
+        context['todos_produtos'] = Produto.objects.filter(empresa=empresa).order_by('descricao')
+        # Itens já presentes na lista, ordenados
+        context['itens_lista'] = self.object.itens.all().select_related('produto').order_by('ordem')
+        return context
+
+class ListaPersonalizadaDeleteView(LoginRequiredMixin, SuccessMessageMixin, TenantQuerySetMixin, DeleteView):
+    model = ListaPersonalizada
+    template_name = 'painel/listas/confirm_delete.html'
+    success_url = reverse_lazy('lista_personalizada_list')
+    success_message = "Lista Personalizada removida!"
+
+@login_required
+@require_POST
+def lista_personalizada_update_items(request: HttpRequest, pk: int) -> JsonResponse:
+    """Endpoint AJAX para salvar a ordenação e os itens de uma lista personalizada."""
+    lista = get_object_or_404(ListaPersonalizada, pk=pk, empresa=request.user.perfil.empresa)
+    
+    try:
+        data = json.loads(request.body)
+        produtos_ids = data.get('produtos', [])
+        
+        # Deletar itens antigos
+        lista.itens.all().delete()
+        
+        # Criar os novos itens com a ordem enviada pelo frontend
+        novos_itens = []
+        for index, prod_id in enumerate(produtos_ids):
+            novos_itens.append(ListaProduto(
+                lista=lista,
+                produto_id=prod_id,
+                ordem=index
+            ))
+            
+        ListaProduto.objects.bulk_create(novos_itens)
+        
+        return JsonResponse({"status": "success"})
+    except Exception as e:
+        return JsonResponse({"status": "error", "message": str(e)}, status=400)
+
+
+# ==============================================================================
 #                        MÓDULO: DISPOSITIVOS (TVs)
 # ==============================================================================
 
 class DispositivoContextMixin:
-    """Injeta listas auxiliares (Famílias e Mídias) no contexto do formulário."""
+    """Injeta listas auxiliares (Famílias, Mídias e Listas Personalizadas) no contexto do formulário."""
     def get_context_data(self, **kwargs) -> Dict[str, Any]:
         context = super().get_context_data(**kwargs)
         empresa = self.request.user.perfil.empresa
         context['todas_familias'] = FamiliaProduto.objects.filter(empresa=empresa).order_by('nome')
         context['todas_midias'] = Midia.objects.filter(empresa=empresa, ativo=True).order_by('nome')
+        context['todas_listas'] = ListaPersonalizada.objects.filter(empresa=empresa).order_by('nome')
         return context
 
 

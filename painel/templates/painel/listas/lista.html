@@ -1,0 +1,87 @@
+{% extends "painel/base_dashboard.html" %}
+
+{% block title %}Listas Personalizadas | DisplayDigital{% endblock %}
+{% block header_title %}Listas Personalizadas{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    
+    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Listas Personalizadas</h1>
+            <p class="text-sm text-slate-500 mt-1">Crie blocos customizados de produtos para agrupar estrategicamente na TV.</p>
+        </div>
+        
+        <a href="{% url 'lista_personalizada_create' %}" 
+           class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-600/30 hover:-translate-y-0.5">
+            <i class="ph-bold ph-plus text-lg"></i>
+            Nova Lista
+        </a>
+    </header>
+
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        
+        {% if listas %}
+        <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50/80">
+                <tr>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Nome do Bloco (Cabeçalho TV)</th>
+                    <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-widest">Qtd. Produtos</th>
+                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+                {% for lista in listas %}
+                <tr class="hover:bg-slate-50 transition-colors group">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center gap-4">
+                            <div class="h-10 w-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100 shadow-sm group-hover:scale-110 transition-transform">
+                                <i class="ph-fill ph-list-dashes text-xl"></i>
+                            </div>
+                            <span class="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                                {{ lista.nome }}
+                            </span>
+                        </div>
+                    </td>
+                    
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-slate-600 font-bold">
+                        {{ lista.itens.count }}
+                    </td>
+                    
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div class="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <a href="{% url 'lista_personalizada_edit' lista.id %}" 
+                               class="text-slate-400 hover:text-indigo-600 p-2 rounded-lg hover:bg-indigo-50 transition-colors" 
+                               title="Editar Produtos">
+                                <i class="ph-fill ph-pencil-simple text-xl"></i>
+                            </a>
+                            <a href="{% url 'lista_personalizada_delete' lista.id %}" 
+                               class="text-slate-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors" 
+                               title="Excluir">
+                                <i class="ph-fill ph-trash text-xl"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% else %}
+        <div class="text-center py-20 px-6">
+            <div class="bg-slate-50 rounded-full h-24 w-24 flex items-center justify-center mx-auto mb-6 border border-slate-100 shadow-inner">
+                <i class="ph-fill ph-list-plus text-4xl text-slate-300"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">Nenhuma lista personalizada</h3>
+            <p class="text-slate-500 mt-2 max-w-sm mx-auto">Agrupe os produtos da forma que preferir criando uma nova lista.</p>
+            <div class="mt-8">
+                <a href="{% url 'lista_personalizada_create' %}" class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-indigo-700 hover:-translate-y-0.5 transition-all">
+                   <i class="ph-bold ph-plus"></i> Criar primeira lista
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

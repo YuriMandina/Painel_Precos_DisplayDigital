@@ -76,6 +76,13 @@ urlpatterns = [
     path('dashboard/familias/<int:pk>/excluir/', views_admin.FamiliaDeleteView.as_view(), name='familia_delete'),
     path('dashboard/familias/<int:pk>/produtos/json/', views_admin.familia_produtos_json, name='familia_produtos_json'),
 
+    # --- MÓDULO: LISTAS PERSONALIZADAS ---
+    path('dashboard/listas/', views_admin.ListaPersonalizadaListView.as_view(), name='lista_personalizada_list'),
+    path('dashboard/listas/nova/', views_admin.ListaPersonalizadaCreateView.as_view(), name='lista_personalizada_create'),
+    path('dashboard/listas/<int:pk>/editar/', views_admin.ListaPersonalizadaUpdateView.as_view(), name='lista_personalizada_edit'),
+    path('dashboard/listas/<int:pk>/excluir/', views_admin.ListaPersonalizadaDeleteView.as_view(), name='lista_personalizada_delete'),
+    path('dashboard/listas/<int:pk>/update-items/', views_admin.lista_personalizada_update_items, name='lista_personalizada_update_items'),
+
     # --- MÓDULO: DISPOSITIVOS (TVs) ---
     path('dashboard/dispositivos/', views_admin.DispositivoListView.as_view(), name='dispositivo_list'),
     path('dashboard/dispositivos/nova/', views_admin.DispositivoCreateView.as_view(), name='dispositivo_create'),

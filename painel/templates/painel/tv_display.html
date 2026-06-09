@@ -20,7 +20,7 @@
             background-color: #000;
             user-select: none;
             cursor: none; 
-            font-family: sans-serif;
+            font-family: 'Outfit', sans-serif;
         }
 
         /* ==========================================================================
@@ -32,69 +32,119 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
+            width: 100vw;
             color: white;
-            background: #1a1a1a;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #000000 100%);
             text-align: center;
             cursor: default; 
+            position: absolute;
+            top: 0; left: 0;
+            z-index: 9999;
+        }
+
+        .setup-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 4rem;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-width: 600px;
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .setup-logo {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.05em;
+            margin-bottom: 2rem;
+        }
+        .setup-logo span {
+            color: #6366f1;
         }
 
         #setup-screen h1 { 
-            margin-bottom: 1rem; 
-            font-size: 2rem; 
+            margin: 0 0 1rem 0; 
+            font-size: 2.5rem; 
+            font-weight: 600;
         }
         
         #setup-screen p { 
-            margin-bottom: 1.5rem; 
-            color: #ccc; 
+            margin: 0 0 2.5rem 0; 
+            color: #94a3b8; 
+            font-size: 1.1rem;
+            line-height: 1.5;
         }
 
         #input-uuid {
-            padding: 15px;
-            font-size: 1.2rem;
-            width: 60%;
-            max-width: 500px;
-            border: 2px solid #333;
-            border-radius: 8px;
-            background: #333;
+            padding: 1rem 2rem;
+            font-size: 2rem;
+            letter-spacing: 0.2em;
+            width: 100%;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            background: rgba(0, 0, 0, 0.3);
             color: #fff;
             text-align: center;
             outline: none;
-            margin-bottom: 20px;
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
         }
         
         #input-uuid:focus { 
-            border-color: #4F46E5; 
+            border-color: #6366f1; 
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+            background: rgba(0, 0, 0, 0.5);
         }
 
         #btn-salvar {
-            padding: 15px 40px;
+            padding: 1rem 2.5rem;
             font-size: 1.2rem;
-            background-color: #4F46E5;
+            font-weight: 600;
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.2s ease;
+            width: 100%;
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4);
         }
 
         #btn-salvar:hover { 
-            background-color: #4338ca; 
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.5);
+        }
+
+        #btn-salvar:active {
+            transform: translateY(0);
         }
     </style>
+    <!-- Add Outfit font for the setup screen -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
 
     <section id="setup-screen">
-        <h1>Configuração da TV</h1>
-        <p>Digite o UUID do dispositivo gerado no Painel Administrativo:</p>
-        
-        <input type="text" 
-               id="input-uuid" 
-               placeholder="ex: 550e8400-e29b..." 
-               autocomplete="off">
-               
-        <button id="btn-salvar">CONECTAR DISPOSITIVO</button>
+        <div class="setup-card">
+            <div class="setup-logo">DISPLAY<span>DIGITAL</span></div>
+            <h1>Conectar Tela</h1>
+            <p>Acesse o painel no seu computador ou celular, vá em Dispositivos e digite o código abaixo.</p>
+            
+            <input type="text" 
+                   id="input-uuid" 
+                   placeholder="CÓDIGO" 
+                   autocomplete="off"
+                   maxlength="6">
+                   
+            <button id="btn-salvar">Conectar Dispositivo</button>
+        </div>
     </section>
 
     <main class="tv-wrapper" id="app-screen" style="display:none;">

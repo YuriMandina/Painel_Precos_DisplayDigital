@@ -5,11 +5,10 @@ import os
 from typing import Any, Dict
 
 from django import forms
-
-from .models import Dispositivo, FamiliaProduto, Midia, Produto
-
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
+
+from .models import Produto, FamiliaProduto, Dispositivo, Midia, ListaPersonalizada
 
 
 # ==============================================================================
@@ -234,3 +233,17 @@ class EmailLoginForm(AuthenticationForm):
             'required': True
         })
     )
+
+class ListaPersonalizadaForm(forms.ModelForm):
+    class Meta:
+        model = ListaPersonalizada
+        fields = ['nome']
+        widgets = {
+            'nome': forms.TextInput(attrs={
+                'class': 'block w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent text-sm transition-colors',
+                'placeholder': 'Ex: Ofertas da Semana, Combos, Bebidas Geladas...'
+            })
+        }
+        labels = {
+            'nome': 'Nome / Cabeçalho na TV'
+        }
