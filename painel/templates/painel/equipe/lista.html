@@ -82,9 +82,13 @@
                             </div>
                         </td>
                         <td class="px-8 py-5 whitespace-nowrap text-right">
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 uppercase tracking-widest shadow-sm">
-                                <i class="ph-fill ph-check-circle"></i> Ativo
-                            </span>
+                            <label class="relative inline-flex items-center cursor-pointer" title="Ativar ou desativar o acesso">
+                                <input type="checkbox" class="sr-only peer toggle-status" data-id="{{ membro.pk }}" {% if membro.usuario.is_active %}checked{% endif %}>
+                                <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-indigo-100 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 shadow-inner"></div>
+                                <span class="ml-3 text-sm font-bold w-12 text-left {% if membro.usuario.is_active %}text-indigo-600{% else %}text-slate-400{% endif %} status-label">
+                                    {% if membro.usuario.is_active %}Ativo{% else %}Inativo{% endif %}
+                                </span>
+                            </label>
                         </td>
                     </tr>
                     {% empty %}
@@ -103,4 +107,57 @@
         </div>
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const toggles = document.querySelectorAll('.toggle-status');
+    
+    toggles.forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const membroId = this.getAttribute('data-id');
+            const label = this.parentElement.querySelector('.status-label');
+            const url = `/dashboard/equipe/${membroId}/toggle/`;
+            
+            // Show loading state
+            this.disabled = true;
+            label.textContent = "...";
+            label.classList.remove('text-indigo-600', 'text-slate-400');
+            label.classList.add('text-slate-400');
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                this.disabled = false;
+                if (data.status === 'success') {
+                    if (data.is_active) {
+                        label.textContent = "Ativo";
+                        label.classList.add('text-indigo-600');
+                        this.checked = true;
+                    } else {
+                        label.textContent = "Inativo";
+                        label.classList.add('text-slate-400');
+                        this.checked = false;
+                    }
+                } else {
+                    // Revert on error
+                    this.checked = !this.checked;
+                    alert(data.message || 'Ocorreu um erro.');
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.disabled = false;
+                this.checked = !this.checked;
+                window.location.reload();
+            });
+        });
+    });
+});
+</script>
 {% endblock %}

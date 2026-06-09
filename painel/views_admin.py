@@ -148,6 +148,28 @@ class EquipeConvidarView(LoginRequiredMixin, FormView):
                 messages.error(self.request, error)
         return redirect(self.success_url)
 
+@login_required
+@require_POST
+def equipe_toggle_status_view(request: HttpRequest, pk: int) -> JsonResponse:
+    """Inverte o status de ativação (is_active) de um membro da equipe via AJAX."""
+    if not request.user.perfil.is_admin:
+        return JsonResponse({"status": "error", "message": "Acesso negado."}, status=403)
+        
+    perfil = get_object_or_404(Perfil, pk=pk, empresa=request.user.perfil.empresa)
+    
+    # Previne que o admin desative a si próprio
+    if perfil.usuario == request.user:
+        return JsonResponse({"status": "error", "message": "Não é possível desativar a si próprio."}, status=400)
+
+    # Inverte o status is_active do User do Django
+    usuario = perfil.usuario
+    usuario.is_active = not usuario.is_active
+    usuario.save(update_fields=['is_active'])
+    
+    return JsonResponse({
+        "status": "success",
+        "is_active": usuario.is_active
+    })
 
 # ==============================================================================
 #                                DASHBOARD

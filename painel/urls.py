@@ -92,6 +92,7 @@ urlpatterns = [
     # --- MÓDULO: ADMINISTRAÇÃO DE EQUIPE ---
     path('dashboard/equipe/', views_admin.EquipeListView.as_view(), name='equipe_list'),
     path('dashboard/equipe/convidar/', views_admin.EquipeConvidarView.as_view(), name='equipe_convidar'),
+    path('dashboard/equipe/<int:pk>/toggle/', views_admin.equipe_toggle_status_view, name='equipe_toggle_status'),
     
     # --- CONVITES (Público) ---
     path('convite/<uuid:token>/', views.aceitar_convite_view, name='aceitar_convite'),
