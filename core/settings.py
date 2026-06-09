@@ -61,6 +61,7 @@ DJANGO_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
+    'anymail',
     'rest_framework',
     'corsheaders',
     'cloudinary',
@@ -143,19 +144,18 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-# Configuração de E-mail
-# Usa SMTP sempre que EMAIL_HOST_USER estiver definido no .env (funciona em DEBUG e produção).
-# Caso contrário, imprime no console (modo seguro de desenvolvimento sem credenciais).
-_email_host_user = config('EMAIL_HOST_USER', default='')
+# Configuração de E-mail — django-anymail + Resend
+# Usa a API do Resend (não SMTP) — compatível com o plano gratuito do Render.
+# Configure RESEND_API_KEY no painel de variáveis de ambiente do Render.
+# Localmente: deixe em branco para usar o console (imprime no terminal).
+_resend_api_key = config('RESEND_API_KEY', default='')
 
-if _email_host_user:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
-    EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-    EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-    EMAIL_HOST_USER = _email_host_user
-    EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-    DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=f'DisplayDigital <{_email_host_user}>')
+if _resend_api_key:
+    EMAIL_BACKEND = 'anymail.backends.resend.EmailBackend'
+    ANYMAIL = {
+        'RESEND_API_KEY': _resend_api_key,
+    }
+    DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='DisplayDigital <onboarding@resend.dev>')
 else:
     # Fallback seguro: imprime e-mails no terminal quando não há credenciais configuradas
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
