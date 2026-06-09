@@ -17,12 +17,21 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
 
+# URL pública canônica do site (sem barra final).
+# Usada para gerar links absolutos nos e-mails (verificação de conta, recuperação de senha).
+# Em produção, configure esta variável no painel de Environment Variables do Render.
+SITE_URL = config('SITE_URL', default='http://localhost:8000').rstrip('/')
+
 # Configurações de Proxy/HTTPS para deploys em serviços de PaaS (ex: Render)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 CSRF_TRUSTED_ORIGINS = [
     'https://*.onrender.com',
     'https://*.cloudinary.com',
 ]
+
+# Garante que SITE_URL também está nas origens confiáveis (CSRF)
+if SITE_URL and SITE_URL.startswith('https://'):
+    CSRF_TRUSTED_ORIGINS.append(SITE_URL)
 
 # Headers de permissão — crítico para autoplay de vídeo funcionar em TVs via Render/Gunicorn.
 # O Gunicorn não envia Permissions-Policy por padrão, mas alguns proxies adicionam
@@ -134,17 +143,23 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-if DEBUG:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-else:
-    # Em produção, você usará SendGrid, Mailgun, SMTP etc.
+# Configuração de E-mail
+# Usa SMTP sempre que EMAIL_HOST_USER estiver definido no .env (funciona em DEBUG e produção).
+# Caso contrário, imprime no console (modo seguro de desenvolvimento sem credenciais).
+_email_host_user = config('EMAIL_HOST_USER', default='')
+
+if _email_host_user:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = config('EMAIL_HOST', default='')
+    EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
     EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
     EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-    EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+    EMAIL_HOST_USER = _email_host_user
     EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-    DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='no-reply@displaydigital.com')
+    DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=f'DisplayDigital <{_email_host_user}>')
+else:
+    # Fallback seguro: imprime e-mails no terminal quando não há credenciais configuradas
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = 'no-reply@displaydigital.com'
 
 
 # ==============================================================================

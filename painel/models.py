@@ -91,6 +91,35 @@ class Convite(models.Model):
         return f"Convite para {self.email} ({self.status})"
 
 
+class TokenVerificacaoEmail(models.Model):
+    """
+    Token de verificação de email gerado no momento do cadastro.
+    O usuário recebe um link com este token por email. Ao clicar,
+    o campo is_active do User é ativado e o token é expirado.
+    """
+    usuario = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='token_verificacao_email'
+    )
+    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    usado = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "Token de Verificação de Email"
+        verbose_name_plural = "Tokens de Verificação de Email"
+
+    def __str__(self) -> str:
+        return f"Token de verificação para {self.usuario.email}"
+
+    def esta_expirado(self) -> bool:
+        """Tokens expiram em 48 horas."""
+        from django.utils import timezone
+        from datetime import timedelta
+        return timezone.now() > self.criado_em + timedelta(hours=48)
+
+
 # ==============================================================================
 #                             CATÁLOGO E PRODUTOS
 # ==============================================================================

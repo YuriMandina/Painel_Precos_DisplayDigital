@@ -16,7 +16,8 @@ from .models import (
     FamiliaProduto, 
     Midia, 
     Perfil, 
-    Produto
+    Produto,
+    TokenVerificacaoEmail
 )
 
 
@@ -213,3 +214,12 @@ class MidiaAdmin(admin.ModelAdmin):
     list_filter = ('empresa', 'tipo', 'ativo')
     search_fields = ('nome', 'empresa__nome')
     readonly_fields = ('tipo',)
+
+
+@admin.register(TokenVerificacaoEmail)
+class TokenVerificacaoEmailAdmin(admin.ModelAdmin):
+    """Monitora tokens de verificação de e-mail gerados no cadastro."""
+    list_display = ('usuario', 'token', 'criado_em', 'usado')
+    list_filter = ('usado',)
+    search_fields = ('usuario__email',)
+    readonly_fields = ('usuario', 'token', 'criado_em')
