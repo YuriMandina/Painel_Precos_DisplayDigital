@@ -590,13 +590,6 @@ class MidiaCreateView(LoginRequiredMixin, SuccessMessageMixin, TenantFormSaveMix
     success_message = "Mídia enviada com sucesso!"
 
 
-class MidiaUpdateView(LoginRequiredMixin, SuccessMessageMixin, TenantQuerySetMixin, UpdateView):
-    model = Midia
-    form_class = MidiaForm
-    template_name = 'painel/midias/form.html'
-    success_url = reverse_lazy('midia_list')
-    success_message = "Mídia atualizada."
-
 
 class MidiaDeleteView(LoginRequiredMixin, SuccessMessageMixin, TenantQuerySetMixin, DeleteView):
     model = Midia

@@ -125,7 +125,6 @@ urlpatterns = [
     # --- MÓDULO: MÍDIAS (Biblioteca) ---
     path('dashboard/midias/', views_admin.MidiaListView.as_view(), name='midia_list'),
     path('dashboard/midias/nova/', views_admin.MidiaCreateView.as_view(), name='midia_create'),
-    path('dashboard/midias/<int:pk>/editar/', views_admin.MidiaUpdateView.as_view(), name='midia_edit'),
     path('dashboard/midias/<int:pk>/excluir/', views_admin.MidiaDeleteView.as_view(), name='midia_delete'),
 
     # --- MÓDULO: CONFIGURAÇÕES ---
