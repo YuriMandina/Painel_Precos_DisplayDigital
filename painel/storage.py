@@ -86,12 +86,23 @@ class MidiaCloudinaryStorage(MediaCloudinaryStorage):
         extensao = os.path.splitext(name)[1].lstrip('.')  # ex: 'mp4', 'jpg'
 
         # Usa o SDK do Cloudinary para gerar a URL correta
-        url, _ = cloudinary.utils.cloudinary_url(
-            public_id,
-            resource_type=resource_type,
-            format=extensao if extensao else None,
-            secure=True,  # Sempre HTTPS
-        )
+        kwargs = {
+            'resource_type': resource_type,
+            'format': extensao if extensao else None,
+            'secure': True,  # Sempre HTTPS
+        }
+
+        # Otimização inteligente (apenas para vídeos)
+        if resource_type == 'video':
+            kwargs.update({
+                'quality': 'auto',      # Compressão algorítmica Cloudinary sem perda perceptível
+                'video_codec': 'h264',  # Força H.264 (alta compatibilidade com a TV Box PROSB3000)
+                'width': 1920,          # Impede vídeos absurdos de 4K ou maiores
+                'height': 1080,
+                'crop': 'limit',        # Só diminui se for maior que 1080p, não faz upscale
+            })
+
+        url, _ = cloudinary.utils.cloudinary_url(public_id, **kwargs)
 
         logger.debug(f"[Storage] URL gerada para '{name}': {url}")
         return url
