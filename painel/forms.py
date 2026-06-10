@@ -8,7 +8,7 @@ from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
 
-from .models import Produto, FamiliaProduto, Dispositivo, Midia, ListaPersonalizada
+from .models import Produto, FamiliaProduto, Dispositivo, Midia, ListaPersonalizada, Empresa
 
 
 # ==============================================================================
@@ -246,4 +246,25 @@ class ListaPersonalizadaForm(forms.ModelForm):
         }
         labels = {
             'nome': 'Nome / Cabeçalho na TV'
+        }
+
+class IntegracoesForm(forms.ModelForm):
+    """Formulário para configurar integrações de terceiros por Empresa (ex: Omie)."""
+    class Meta:
+        model = Empresa
+        fields = ['omie_app_key', 'omie_app_secret']
+        widgets = {
+            'omie_app_key': forms.TextInput(attrs={
+                'class': 'block w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent text-sm transition-colors',
+                'placeholder': 'Cole aqui sua App Key do Omie'
+            }),
+            'omie_app_secret': forms.PasswordInput(attrs={
+                'class': 'block w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent text-sm transition-colors',
+                'placeholder': 'Cole aqui seu App Secret',
+                'render_value': True
+            })
+        }
+        labels = {
+            'omie_app_key': 'Omie App Key',
+            'omie_app_secret': 'Omie App Secret'
         }

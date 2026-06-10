@@ -13,6 +13,12 @@
         </div>
         
         <div class="flex items-center gap-3">
+            <a href="{% url 'omie_sincronizar' %}" 
+               class="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 hover:border-indigo-200 hover:text-indigo-700 text-sm font-bold transition-all shadow-sm">
+                <i class="ph-bold ph-arrows-clockwise text-indigo-600 text-lg"></i>
+                Sync Omie
+            </a>
+            
             <a href="{% url 'produto_importar' %}" 
                class="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 hover:border-emerald-200 hover:text-emerald-700 text-sm font-bold transition-all shadow-sm">
                 <i class="ph-fill ph-microsoft-excel-logo text-emerald-600 text-lg"></i>

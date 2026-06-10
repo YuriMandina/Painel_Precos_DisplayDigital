@@ -85,6 +85,14 @@ urlpatterns = [
     path('dashboard/produtos/<int:pk>/excluir/', views_admin.ProdutoDeleteView.as_view(), name='produto_delete'),
     path('dashboard/produtos/<int:pk>/toggle-visibilidade/', views_admin.produto_toggle_visibilidade, name='produto_toggle_visibilidade'),
 
+    # --- MÓDULO: INTEGRAÇÃO OMIE ---
+    path('dashboard/omie/sincronizar/', views_admin.omie_sincronizar_view, name='omie_sincronizar'),
+    path('dashboard/omie/validacao/<int:sync_id>/', views_admin.omie_validacao_view, name='omie_validacao'),
+    path('dashboard/omie/efetivar/<int:sync_id>/', views_admin.omie_efetivar_view, name='omie_efetivar'),
+    path('dashboard/omie/denylist/', views_admin.DenyListListView.as_view(), name='omie_denylist'),
+    path('dashboard/omie/denylist/<int:pk>/excluir/', views_admin.DenyListDeleteView.as_view(), name='omie_denylist_delete'),
+
+
     # --- MÓDULO: FAMÍLIAS DE PRODUTOS ---
     path('dashboard/familias/', views_admin.FamiliaListView.as_view(), name='familia_list'),
     path('dashboard/familias/nova/', views_admin.FamiliaCreateView.as_view(), name='familia_create'),
@@ -111,6 +119,9 @@ urlpatterns = [
     path('dashboard/midias/nova/', views_admin.MidiaCreateView.as_view(), name='midia_create'),
     path('dashboard/midias/<int:pk>/editar/', views_admin.MidiaUpdateView.as_view(), name='midia_edit'),
     path('dashboard/midias/<int:pk>/excluir/', views_admin.MidiaDeleteView.as_view(), name='midia_delete'),
+
+    # --- MÓDULO: CONFIGURAÇÕES ---
+    path('dashboard/configuracoes/integracoes/', views_admin.ConfiguracaoIntegracoesView.as_view(), name='configuracao_integracoes'),
 
     # --- MÓDULO: ADMINISTRAÇÃO DE EQUIPE ---
     path('dashboard/equipe/', views_admin.EquipeListView.as_view(), name='equipe_list'),

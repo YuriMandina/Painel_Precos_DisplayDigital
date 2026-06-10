@@ -38,15 +38,21 @@ from .models import (
     Perfil, 
     Produto,
     Convite,
+    SincronizacaoOmie,
+    ProdutoIgnoradoOmie,
+    Empresa,
     gerar_codigo_curto
 )
+import json
+from .services.omie_service import OmieService
 from .forms import (
     DispositivoForm, 
     FamiliaForm, 
     ImportarProdutosForm, 
     MidiaForm, 
     ProdutoForm,
-    ConviteEmailForm
+    ConviteEmailForm,
+    IntegracoesForm
 )
 from django.core.mail import send_mail
 from django.conf import settings
@@ -597,3 +603,135 @@ class MidiaDeleteView(LoginRequiredMixin, SuccessMessageMixin, TenantQuerySetMix
     template_name = 'painel/midias/confirm_delete.html'
     success_url = reverse_lazy('midia_list')
     success_message = "Mídia removida."
+
+
+# ==============================================================================
+#                          INTEGRAÇÃO OMIE
+# ==============================================================================
+
+@login_required
+def omie_sincronizar_view(request: HttpRequest) -> HttpResponse:
+    """
+    Renderiza a tela de carregamento ou processa o POST via AJAX para disparar a sincronização.
+    """
+    empresa = request.user.perfil.empresa
+    
+    if request.method == 'POST':
+        try:
+            service = OmieService(empresa)
+            sync_obj = service.processar_sincronizacao_preview()
+            return JsonResponse({'status': 'ok', 'sync_id': sync_obj.id})
+        except ValueError as ve:
+            return JsonResponse({'status': 'error', 'message': str(ve)}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f"Erro de comunicação com o Omie: {str(e)}"}, status=500)
+            
+    return render(request, 'painel/omie/sincronizar.html', {'empresa': empresa})
+
+
+@login_required
+def omie_validacao_view(request: HttpRequest, sync_id: int) -> HttpResponse:
+    """
+    Tela de preview onde o usuário seleciona (checkbox) os produtos novos 
+    e alterados antes de salvar no banco de dados definitivo.
+    """
+    empresa = request.user.perfil.empresa
+    sync_obj = get_object_or_404(SincronizacaoOmie, id=sync_id, empresa=empresa, status=SincronizacaoOmie.Status.PENDENTE)
+    
+    dados = sync_obj.dados
+    novos = dados.get('novos', [])
+    alterados = dados.get('alterados', [])
+    metricas = dados.get('metricas', {})
+    
+    # Agrupar por família para renderizar os acordeões
+    familias_dict = {}
+    
+    for item in novos:
+        item['tipo'] = 'novo'
+        fam = item.get('familia', 'Sem Categoria')
+        if fam not in familias_dict:
+            familias_dict[fam] = []
+        familias_dict[fam].append(item)
+        
+    for item in alterados:
+        item['tipo'] = 'alterado'
+        fam = item.get('familia', 'Sem Categoria')
+        if fam not in familias_dict:
+            familias_dict[fam] = []
+        familias_dict[fam].append(item)
+
+    context = {
+        'sync_obj': sync_obj,
+        'familias_dict': familias_dict,
+        'metricas': metricas
+    }
+    return render(request, 'painel/omie/validacao.html', context)
+
+
+@login_required
+@require_POST
+def omie_efetivar_view(request: HttpRequest, sync_id: int) -> HttpResponse:
+    """
+    Recebe os checkboxes da tela de validação, efetiva as mudanças no BD 
+    e registra itens na deny list, se necessário.
+    """
+    empresa = request.user.perfil.empresa
+    
+    aprovados = request.POST.getlist('aprovados')
+    denylist = request.POST.getlist('denylist')
+    
+    try:
+        service = OmieService(empresa)
+        criados, atualizados = service.efetivar_sincronizacao(sync_id, aprovados, denylist)
+        messages.success(request, f"Sincronização concluída! {criados} novos produtos criados, {atualizados} preços atualizados.")
+        return redirect('produtos_list')
+    except Exception as e:
+        messages.error(request, f"Erro ao efetivar sincronização: {str(e)}")
+        return redirect('omie_validacao', sync_id=sync_id)
+
+
+class DenyListListView(LoginRequiredMixin, TenantQuerySetMixin, ListView):
+    """
+    Lista todos os produtos ignorados (Deny List) da empresa.
+    """
+    model = ProdutoIgnoradoOmie
+    template_name = 'painel/omie/denylist.html'
+    context_object_name = 'ignorados'
+    paginate_by = 30
+    
+    def get_queryset(self):
+        qs = super().get_queryset()
+        q = self.request.GET.get('q')
+        if q:
+            qs = qs.filter(Q(codigo__icontains=q) | Q(descricao__icontains=q))
+        return qs.order_by('-created_at')
+
+class DenyListDeleteView(LoginRequiredMixin, SuccessMessageMixin, TenantQuerySetMixin, DeleteView):
+    """
+    Remove um produto da Deny List, permitindo que ele volte a aparecer nas próximas sincronizações.
+    """
+    model = ProdutoIgnoradoOmie
+    success_url = reverse_lazy('omie_denylist')
+    success_message = "Produto removido da Deny List. Ele aparecerá na próxima sincronização."
+    
+    def get(self, request, *args, **kwargs):
+        # Permitir deletar via POST apenas, redirecionar se for GET ou implementar soft delete
+        return self.post(request, *args, **kwargs)
+
+
+# ==============================================================================
+#                          CONFIGURAÇÕES E INTEGRAÇÕES
+# ==============================================================================
+
+class ConfiguracaoIntegracoesView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+    """
+    View para gerenciar as credenciais de integrações de terceiros (ex: Omie ERP) da Empresa.
+    """
+    model = Empresa
+    form_class = IntegracoesForm
+    template_name = 'painel/configuracoes/integracoes.html'
+    success_url = reverse_lazy('configuracao_integracoes')
+    success_message = "Configurações de integração atualizadas com sucesso!"
+
+    def get_object(self, queryset=None):
+        return self.request.user.perfil.empresa
