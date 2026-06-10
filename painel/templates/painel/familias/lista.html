@@ -71,11 +71,11 @@
                                title="Editar">
                                 <i class="ph-fill ph-pencil-simple text-xl"></i>
                             </a>
-                            <a href="{% url 'familia_delete' familia.id %}" 
+                            <button type="button" onclick="openGlobalDeleteModal('{% url 'familia_delete' familia.id %}', '{{ familia.nome|escapejs }}')" 
                                class="text-slate-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors" 
                                title="Excluir">
                                 <i class="ph-fill ph-trash text-xl"></i>
-                            </a>
+                            </button>
                         </div>
                     </td>
                 </tr>

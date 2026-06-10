@@ -141,11 +141,11 @@
                                     <i class="ph-fill ph-pencil-simple text-xl"></i>
                                 </a>
                                 
-                                <a href="{% url 'produto_delete' produto.id %}" 
+                                <button type="button" onclick="openGlobalDeleteModal('{% url 'produto_delete' produto.id %}', '{{ produto.descricao|escapejs }}')" 
                                    class="text-slate-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors" 
                                    title="Excluir Produto">
                                     <i class="ph-fill ph-trash text-xl"></i>
-                                </a>
+                                </button>
                             </div>
                         </td>
                     </tr>
