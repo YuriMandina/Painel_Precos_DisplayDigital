@@ -222,6 +222,10 @@ if not DEBUG:
         },
     }
     
+    # Desabilita o erro estrito do Whitenoise para evitar problemas no collectstatic 
+    # com os decorators do Tailwind v4 (ex: @import "tailwindcss";)
+    WHITENOISE_MANIFEST_STRICT = False
+    
     # 1. Configuração para a biblioteca django-cloudinary-storage (Uploads)
     CLOUDINARY_STORAGE = {
         'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default=''),
