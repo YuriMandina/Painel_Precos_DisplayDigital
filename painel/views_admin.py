@@ -206,7 +206,6 @@ def dashboard_index(request: HttpRequest) -> HttpResponse:
 class ProdutoListView(LoginRequiredMixin, TenantQuerySetMixin, ListView):
     model = Produto
     template_name = 'painel/produtos/lista.html'
-    context_object_name = 'page_obj'
     paginate_by = 20
 
     def get_queryset(self) -> QuerySet:
