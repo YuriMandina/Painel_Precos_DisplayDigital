@@ -212,7 +212,15 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 MB
 if not DEBUG:
     import cloudinary # Importação necessária para configurar o SDK Global
 
-    DEFAULT_FILE_STORAGE = 'painel.storage.MidiaCloudinaryStorage'
+    # Configuração de Storages obrigatória para Django >= 4.2 (incluindo 5.x e 6.x)
+    STORAGES = {
+        "default": {
+            "BACKEND": "painel.storage.MidiaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
     
     # 1. Configuração para a biblioteca django-cloudinary-storage (Uploads)
     CLOUDINARY_STORAGE = {
