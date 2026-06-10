@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reenviar Verificação | DisplayDigital</title>
-    {% load tailwind_cli %}
+    {% load tailwind_cli static %}
     {% tailwind_css %}
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -79,5 +79,6 @@
 
         </div>
     </div>
+    <script src="{% static 'painel/js/prevent_double_submit.js' %}"></script>
 </body>
 </html>
