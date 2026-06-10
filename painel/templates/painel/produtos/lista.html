@@ -166,14 +166,16 @@
                     </a>
                 {% endif %}
                 
-                <div class="hidden md:flex gap-1">
+                <div class="flex flex-wrap gap-1">
+                    {% with lower_limit=page_obj.number|add:"-3" upper_limit=page_obj.number|add:"3" %}
                     {% for num in page_obj.paginator.page_range %}
                         {% if page_obj.number == num %}
                             <span class="px-4 py-2 bg-indigo-600 border border-indigo-600 rounded-lg text-sm font-bold text-white shadow-sm">{{ num }}</span>
-                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                            <a href="?page={{ num }}&q={{ query }}&familia={{ familia_id }}" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors shadow-sm">{{ num }}</a>
+                        {% elif num > lower_limit and num < upper_limit %}
+                            <a href="?page={{ num }}&q={{ query|default_if_none:'' }}&familia={{ familia_id|default_if_none:'' }}" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors shadow-sm">{{ num }}</a>
                         {% endif %}
                     {% endfor %}
+                    {% endwith %}
                 </div>
                 
                 {% if page_obj.has_next %}
