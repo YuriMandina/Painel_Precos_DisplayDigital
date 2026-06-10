@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DisplayDigital{% endblock %}</title>
+    {% load tailwind_cli %}
+    {% tailwind_css %}
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>body { font-family: 'Outfit', sans-serif; }</style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
+    {% if not request.user.is_authenticated %}
+    <div class="p-4 sm:p-6">
+        <a href="javascript:history.back()" class="inline-flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors font-medium">
+            <i class="ph-bold ph-arrow-left"></i> Voltar
+        </a>
+    </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+</body>
+</html>

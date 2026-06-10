@@ -40,3 +40,5 @@ tzdata==2025.3
 urllib3==2.6.2
 whitenoise==6.11.0
 wrapt==2.2.1
+
+django-tailwind-cli==4.6.2

@@ -1,9 +1,9 @@
-{% extends "painel/base_dashboard.html" %}
+{% extends base_template %}
 
 {% block title %}Termos de Uso | DisplayDigital{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+<div class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8 w-full">
     <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
         
         <div class="bg-indigo-600 px-8 py-12 text-center relative overflow-hidden">
@@ -14,30 +14,8 @@
             <div class="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')]"></div>
         </div>
 
-        <div class="p-8 sm:p-12 prose prose-slate max-w-none prose-headings:text-slate-900 prose-a:text-indigo-600 hover:prose-a:text-indigo-500">
-            <p>Bem-vindo aos Termos de Uso do <strong>DisplayDigital</strong>. Ao acessar e utilizar o nosso painel, você concorda em cumprir e estar vinculado aos seguintes termos e condições de uso.</p>
-            
-            <h2>1. Aceitação dos Termos</h2>
-            <p>Ao utilizar nossos serviços, você concorda com estes termos. Se você não concorda com qualquer parte destes termos, você não poderá acessar o serviço.</p>
-            
-            <h2>2. Uso da Plataforma</h2>
-            <p>O DisplayDigital é fornecido "no estado em que se encontra", destinado exclusivamente ao gerenciamento de mídias e preços para exibição em painéis digitais da sua empresa.</p>
-            <ul>
-                <li>Você é responsável por manter a confidencialidade de sua conta e senha.</li>
-                <li>Você concorda em não usar o serviço para qualquer finalidade ilegal ou não autorizada.</li>
-            </ul>
-            
-            <h2>3. Modificações no Serviço e Preços</h2>
-            <p>Reservamo-nos o direito de modificar ou descontinuar, temporária ou permanentemente, o Serviço (ou qualquer parte dele) com ou sem aviso prévio.</p>
-            
-            <h2>4. Propriedade Intelectual</h2>
-            <p>Todo o código-fonte, design, logotipos e conteúdos criados pelo DisplayDigital são de propriedade exclusiva da empresa. O conteúdo enviado por você (vídeos, imagens) permanece sendo de sua propriedade.</p>
-            
-            <hr class="my-8 border-slate-200">
-            
-            <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 text-sm text-slate-500">
-                <strong>Nota:</strong> Este é um documento gerado para fins ilustrativos. Por favor, consulte o seu departamento jurídico para criar os Termos de Uso oficiais aplicáveis ao seu negócio.
-            </div>
+        <div class="p-8 sm:p-12">
+            {% include 'painel/legal/termos_conteudo.html' %}
         </div>
     </div>
 </div>

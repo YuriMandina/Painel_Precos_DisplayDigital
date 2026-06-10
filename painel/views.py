@@ -366,8 +366,24 @@ def logout_customizado_view(request: HttpRequest) -> HttpResponse:
 class TermosView(TemplateView):
     template_name = 'painel/legal/termos.html'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.is_authenticated:
+            context['base_template'] = 'painel/base_dashboard.html'
+        else:
+            context['base_template'] = 'painel/base_standalone.html'
+        return context
+
 class PrivacidadeView(TemplateView):
     template_name = 'painel/legal/privacidade.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.is_authenticated:
+            context['base_template'] = 'painel/base_dashboard.html'
+        else:
+            context['base_template'] = 'painel/base_standalone.html'
+        return context
 
 # ==============================================================================
 #                          SEGURANÇA (AXES)

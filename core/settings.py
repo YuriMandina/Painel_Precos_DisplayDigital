@@ -70,7 +70,8 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
-    'painel',
+    'painel.apps.PainelConfig',
+    'django_tailwind_cli',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -159,6 +160,11 @@ AXES_RESET_ON_SUCCESS = True
 # View para onde o usuário é redirecionado ao ser bloqueado:
 AXES_LOCKOUT_URL = '/auth/bloqueado/'
 
+# Configurações do Tailwind CLI
+TAILWIND_CLI_SRC_CSS = "painel/static/painel/css/input.css"
+TAILWIND_CLI_DIST_CSS = "css/tailwind.css"
+TAILWIND_CLI_PATH = ".tailwind"
+
 # Configuração de E-mail — django-anymail + Brevo
 # Usa a API do Brevo (não SMTP) — ideal para contornar bloqueios e não exige domínio de imediato.
 # Configure BREVO_API_KEY no painel de variáveis de ambiente do Render.
@@ -190,8 +196,9 @@ USE_TZ = True
 #                              ARQUIVOS E MÍDIA
 # ==============================================================================
 # Estáticos (CSS, JS, Imagens de layout)
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
 # Mídia (Uploads de usuários e arquivos dinâmicos)
 MEDIA_URL = '/media/'

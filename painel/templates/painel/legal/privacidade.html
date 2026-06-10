@@ -1,9 +1,9 @@
-{% extends "painel/base_dashboard.html" %}
+{% extends base_template %}
 
 {% block title %}Política de Privacidade | DisplayDigital{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+<div class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8 w-full">
     <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
         
         <div class="bg-indigo-600 px-8 py-12 text-center relative overflow-hidden">
@@ -14,36 +14,8 @@
             <div class="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')]"></div>
         </div>
 
-        <div class="p-8 sm:p-12 prose prose-slate max-w-none prose-headings:text-slate-900 prose-a:text-indigo-600 hover:prose-a:text-indigo-500">
-            <p>O <strong>DisplayDigital</strong> valoriza a sua privacidade e está empenhado em proteger os seus dados pessoais em conformidade com a <strong>LGPD (Lei Geral de Proteção de Dados)</strong>.</p>
-            
-            <h2>1. Dados que Coletamos</h2>
-            <p>Coletamos os seguintes dados quando você utiliza o painel:</p>
-            <ul>
-                <li><strong>Dados de Identificação:</strong> Nome, E-mail.</li>
-                <li><strong>Dados Técnicos:</strong> Endereço IP (usado para prevenir acessos não autorizados e ataques de força bruta), tipo de navegador e cookies essenciais.</li>
-                <li><strong>Dados de Conteúdo:</strong> Imagens, vídeos e informações de produtos que você mesmo cadastra na plataforma.</li>
-            </ul>
-            
-            <h2>2. Como Usamos os Dados</h2>
-            <p>Os dados coletados são utilizados exclusivamente para:</p>
-            <ul>
-                <li>Fornecer e manter o serviço funcionando corretamente.</li>
-                <li>Garantir a segurança da sua conta e prevenir fraudes.</li>
-                <li>Notificar sobre atualizações ou alertas de segurança do sistema.</li>
-            </ul>
-            
-            <h2>3. Uso de Cookies</h2>
-            <p>Utilizamos apenas os chamados <em>Cookies Estritamente Necessários</em>. Eles são indispensáveis para manter a sua sessão de login ativa e proteger o sistema contra ataques (CSRF). <strong>Não utilizamos cookies de terceiros para rastreamento publicitário.</strong></p>
-            
-            <h2>4. Compartilhamento de Dados</h2>
-            <p>Seus dados não são vendidos ou comercializados. Eles podem ser hospedados em serviços de nuvem de terceiros (como bancos de dados ou servidores de imagem estritamente necessários para operar a plataforma) que também estão sujeitos a rigorosos padrões de segurança.</p>
-            
-            <hr class="my-8 border-slate-200">
-            
-            <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 text-sm text-slate-500">
-                <strong>Nota:</strong> Este é um documento gerado para fins ilustrativos. Por favor, consulte o seu departamento jurídico para criar a Política de Privacidade oficial e alinhada à LGPD aplicável ao seu negócio.
-            </div>
+        <div class="p-8 sm:p-12">
+            {% include 'painel/legal/privacidade_conteudo.html' %}
         </div>
     </div>
 </div>
