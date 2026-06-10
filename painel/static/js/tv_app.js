@@ -285,9 +285,6 @@ class GridRenderer {
     }
 
     async render(itemPlaylist, allProducts, onComplete) {
-        this.app.getVideoContainer().style.display = 'none';
-        this.app.getVideoContainer().innerHTML = '';
-
         const titulo = itemPlaylist.descricao ? itemPlaylist.descricao.replace('Tabela: ', '').toUpperCase() : '';
         const container = this.app.getContainer();
 
@@ -328,6 +325,7 @@ class GridRenderer {
         if (productsToShow.length === 0) {
             container.innerHTML = "<h2 style='text-align:center; color:#666; width:100%; margin-top:20vh;'>Nenhum produto indexado para exibição.</h2>";
             container.style.opacity = '1';
+            this._hideVideoOverlay();
             setTimeout(onComplete, 3000);
             return;
         }
@@ -355,6 +353,24 @@ class GridRenderer {
         onComplete();
     }
 
+    _hideVideoOverlay() {
+        const videoContainer = this.app.getVideoContainer();
+        if (videoContainer.style.display !== 'none' && videoContainer.style.opacity !== '0') {
+            videoContainer.style.opacity = '0';
+            setTimeout(() => {
+                Array.from(videoContainer.children).forEach(child => {
+                    if (child.tagName === 'VIDEO') {
+                        child.pause();
+                        child.removeAttribute('src');
+                        child.load();
+                    }
+                });
+                videoContainer.innerHTML = '';
+                videoContainer.style.display = 'none';
+            }, 400);
+        }
+    }
+
     async _drawPage(products, itemsPerPage) {
         const container = this.app.getContainer();
 
@@ -371,6 +387,7 @@ class GridRenderer {
         }
 
         container.style.opacity = '1';
+        this._hideVideoOverlay();
         await new Promise(r => setTimeout(r, 400));
     }
 
@@ -433,8 +450,6 @@ class VideoPlayer {
         }
 
         const container = this.app.getVideoContainer();
-        container.innerHTML = '';
-        container.style.opacity = '0';
         container.style.display = 'block';
 
         const durationMs = (item.duracao || 15) * 1000;
@@ -453,41 +468,43 @@ class VideoPlayer {
             if (loadTimeout) clearTimeout(loadTimeout);
 
             console.log(`[VideoPlayer] Finalizando: "${item.descricao}" (motivo: ${reason})`);
-
-            container.style.opacity = '0';
-            await new Promise(r => setTimeout(r, 400));
-
-            // Para e destroi o elemento de vídeo antes de limpar o DOM
-            const vid = container.querySelector('video');
-            if (vid) {
-                vid.pause();
-                vid.removeAttribute('src');
-                vid.load();
-            }
-
-            container.style.display = 'none';
-            container.innerHTML = '';
+            
+            // Passa para o próximo sem destruir agora (transição suave dupla)
             onComplete();
         };
 
-        // Fade-in suave
-        setTimeout(() => {
-            if (!isFinished) container.style.opacity = '1';
-        }, 100);
+        const finalizeTransition = (newElement) => {
+            if (isFinished) return;
+            Array.from(container.children).forEach(child => {
+                if (child !== newElement) {
+                    if (child.tagName === 'VIDEO') {
+                        child.pause();
+                        child.removeAttribute('src');
+                        child.load();
+                    }
+                    child.remove();
+                }
+            });
+            container.style.opacity = '1';
+        };
 
         if (item.tipo_midia === 'IMAGEM') {
             // --- PLAYER DE IMAGEM ---
             const img = document.createElement('img');
             img.id = 'video-bg';
+            img.style.cssText = 'position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;';
             img.src = item.url;
+            img.onload = () => finalizeTransition(img);
             img.onerror = () => finish('image-error');
             safetyTimeout = setTimeout(() => finish('image-duration'), durationMs);
             container.appendChild(img);
+            setTimeout(() => finalizeTransition(img), 1000);
 
         } else {
             // --- PLAYER DE VÍDEO ---
             const video = document.createElement('video');
             video.id = 'video-bg';
+            video.style.cssText = 'position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;';
 
             // Atributos mandatórios para autoplay em engines de TV restritivas (Tizen/WebOS)
             video.setAttribute('muted', 'true');
@@ -520,13 +537,16 @@ class VideoPlayer {
             }, 8000);
 
             // Quando começar a reproduzir: cancela o loadTimeout e arma o safetyTimeout
-            video.oncanplay = () => {
+            const handlePlaying = () => {
+                finalizeTransition(video);
                 if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
                 // Safety timeout: garante avanço mesmo se onended não disparar
                 if (!safetyTimeout) {
                     safetyTimeout = setTimeout(() => finish('safety-duration'), durationMs + 3000);
                 }
             };
+            video.oncanplay = handlePlaying;
+            video.onplaying = handlePlaying;
 
             // Detecta buffer travado (stalled) — comum em TVs Android e WebOS
             const handleStall = () => {
