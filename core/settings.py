@@ -161,7 +161,7 @@ AXES_RESET_ON_SUCCESS = True
 AXES_LOCKOUT_URL = '/auth/bloqueado/'
 
 # Configurações do Tailwind CLI
-TAILWIND_CLI_SRC_CSS = "painel/static/painel/css/input.css"
+TAILWIND_CLI_SRC_CSS = "painel/assets/css/input.css"
 TAILWIND_CLI_DIST_CSS = "css/tailwind.css"
 TAILWIND_CLI_PATH = ".tailwind"
 
