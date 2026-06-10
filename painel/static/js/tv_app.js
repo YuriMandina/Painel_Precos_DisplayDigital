@@ -494,6 +494,10 @@ class VideoPlayer {
             video.setAttribute('autoplay', 'true');
             video.setAttribute('playsinline', 'true');
             video.setAttribute('preload', 'auto');
+            
+            // Poster transparente para evitar ícone de 'play' nativo do Android WebView
+            video.setAttribute('poster', 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
+            
             video.muted = true;
             video.autoplay = true;
 
