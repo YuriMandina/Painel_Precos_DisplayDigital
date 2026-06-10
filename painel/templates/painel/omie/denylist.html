@@ -1,0 +1,129 @@
+{% extends "painel/base_dashboard.html" %}
+
+{% block title %}Deny List | DisplayDigital{% endblock %}
+{% block header_title %}Deny List de Produtos (Omie){% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    
+    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Deny List de Produtos</h1>
+            <p class="text-sm text-slate-500 mt-1">Produtos marcados para serem ignorados em sincronizações com o Omie ERP.</p>
+        </div>
+    </header>
+
+    <section class="bg-white p-2.5 rounded-2xl shadow-sm border border-slate-200 mb-8">
+        <form method="GET" action="{% url 'omie_denylist' %}" class="flex flex-col md:flex-row gap-3">
+            
+            <div class="relative flex-1 group">
+                <i class="ph-bold ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg group-focus-within:text-indigo-600 transition-colors"></i>
+                <input type="text" name="q" value="{{ request.GET.q }}" 
+                       placeholder="Buscar por código..." 
+                       class="w-full pl-11 pr-4 py-3 border-none rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-600 transition-all text-sm text-slate-900">
+            </div>
+            
+            <button type="submit" class="px-6 py-3 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all shadow-md hover:-translate-y-0.5 whitespace-nowrap">
+                Buscar
+            </button>
+            
+            {% if request.GET.q %}
+            <a href="{% url 'omie_denylist' %}" class="px-4 py-3 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors flex items-center justify-center border border-transparent hover:border-red-100" title="Limpar Filtros">
+                <i class="ph-bold ph-x text-lg"></i>
+            </a>
+            {% endif %}
+        </form>
+    </section>
+
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        
+        {% if ignorados %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50/80">
+                    <tr>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Produto</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Família</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Data de Inserção</th>
+                        <th scope="col" class="relative px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    {% for item in ignorados %}
+                    <tr class="hover:bg-slate-50 transition-colors group">
+                        
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex flex-col">
+                                <span class="font-bold text-slate-900">{{ item.descricao|default:"(Sem descrição salva)" }}</span>
+                                <span class="inline-flex items-center gap-1.5 font-mono text-xs font-semibold text-slate-500 mt-1">
+                                    <i class="ph-fill ph-tag text-slate-400"></i> {{ item.codigo }}
+                                </span>
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if item.familia %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                    {{ item.familia }}
+                                </span>
+                            {% else %}
+                                <span class="text-xs text-slate-400 italic">—</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                            {{ item.created_at|date:"d/m/Y H:i" }}
+                        </td>
+
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                <form method="post" action="{% url 'omie_denylist_delete' item.id %}" onsubmit="return confirm('Tem certeza que deseja remover este produto da Deny List? Ele aparecerá na próxima sincronização.')">
+                                    {% csrf_token %}
+                                    <button type="submit" 
+                                       class="flex items-center gap-2 text-slate-400 hover:text-emerald-600 p-2 rounded-lg hover:bg-emerald-50 transition-colors" 
+                                       title="Permitir Sincronização">
+                                        <i class="ph-bold ph-arrow-counter-clockwise text-xl"></i>
+                                        <span class="text-xs font-bold">Restaurar</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="bg-slate-50/80 border-t border-slate-200 px-6 py-4 flex items-center justify-between">
+            <div class="text-xs font-medium text-slate-500">
+                Mostrando <span class="font-bold text-slate-900">{{ page_obj.start_index }}</span> a <span class="font-bold text-slate-900">{{ page_obj.end_index }}</span> de <span class="font-bold text-slate-900">{{ page_obj.paginator.count }}</span> resultados
+            </div>
+            
+            <div class="flex gap-2">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}&q={{ request.GET.q }}" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors shadow-sm">
+                        Anterior
+                    </a>
+                {% endif %}
+                
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}&q={{ request.GET.q }}" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors shadow-sm">
+                        Próxima
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% else %}
+        <div class="text-center py-20 px-6">
+            <div class="bg-slate-50 rounded-full h-24 w-24 flex items-center justify-center mx-auto mb-6 border border-slate-100 shadow-inner">
+                <i class="ph-bold ph-shield-check text-4xl text-slate-300"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">Sua Deny List está vazia</h3>
+            <p class="text-slate-500 mt-2 max-w-sm mx-auto">Nenhum produto foi marcado para ser ignorado nas sincronizações com o Omie.</p>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

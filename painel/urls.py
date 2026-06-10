@@ -4,11 +4,16 @@
 from django.urls import path
 from django.views.generic import RedirectView
 from django.contrib.auth import views as auth_views
+from django.conf import settings
+from urllib.parse import urlparse
 
 from . import views, views_api, views_admin
-
-
 from .forms import EmailLoginForm
+
+# Extrai protocolo e domínio do SITE_URL para injetar nos e-mails
+_site = urlparse(settings.SITE_URL)
+_site_protocol = _site.scheme          # 'http' ou 'https'
+_site_domain = _site.netloc            # 'displaydigital.onrender.com' ou 'localhost:8000'
 
 # ==============================================================================
 #                                 URL PATTERNS
@@ -30,9 +35,16 @@ urlpatterns = [
     # --- RECUPERAÇÃO DE SENHA ---
     path('recuperar-senha/', auth_views.PasswordResetView.as_view(
         template_name='painel/password_reset_form.html',
-        email_template_name='painel/password_reset_email.html',
+        email_template_name='painel/emails/password_reset_email.txt',
+        html_email_template_name='painel/password_reset_email.html',
         subject_template_name='painel/password_reset_subject.txt',
-        success_url='/recuperar-senha/enviado/'
+        success_url='/recuperar-senha/enviado/',
+        # Sobrescreve domain e protocol com os valores do SITE_URL
+        # para que o link no e-mail aponte para o domínio correto em produção.
+        extra_email_context={
+            'protocol': _site_protocol,
+            'domain': _site_domain,
+        },
     ), name='password_reset'),
     
     path('recuperar-senha/enviado/', auth_views.PasswordResetDoneView.as_view(
@@ -49,7 +61,18 @@ urlpatterns = [
     ), name='password_reset_complete'),
 
     # --- AUTENTICAÇÃO ---
+    # Segurança (django-axes)
+    path('auth/bloqueado/', views.bloqueado_view, name='bloqueado'),
+    path('auth/desbloquear-ip/<str:token>/', views.unlock_ip_view, name='unlock_ip'),
+
+    # LGPD / Legal
+    path('termos-de-uso/', views.TermosView.as_view(), name='termos'),
+    path('politica-de-privacidade/', views.PrivacidadeView.as_view(), name='privacidade'),
+
     path('registro/', views.registro_view, name='registro'),
+    path('verificar-email/<uuid:token>/', views.verificar_email_view, name='verificar_email'),
+    path('aguardando-verificacao/', views.aguardando_verificacao_view, name='aguardando_verificacao'),
+    path('reenviar-verificacao/', views.reenviar_verificacao_view, name='reenviar_verificacao'),
 
     # --- API ENDPOINTS (Client-side / TV) ---
     path('api/painel/parear/', views_api.parear_dispositivo, name='api_parear'),
@@ -69,6 +92,14 @@ urlpatterns = [
     path('dashboard/produtos/<int:pk>/editar/', views_admin.ProdutoUpdateView.as_view(), name='produto_edit'),
     path('dashboard/produtos/<int:pk>/excluir/', views_admin.ProdutoDeleteView.as_view(), name='produto_delete'),
     path('dashboard/produtos/<int:pk>/toggle-visibilidade/', views_admin.produto_toggle_visibilidade, name='produto_toggle_visibilidade'),
+
+    # --- MÓDULO: INTEGRAÇÃO OMIE ---
+    path('dashboard/omie/sincronizar/', views_admin.omie_sincronizar_view, name='omie_sincronizar'),
+    path('dashboard/omie/validacao/<int:sync_id>/', views_admin.omie_validacao_view, name='omie_validacao'),
+    path('dashboard/omie/efetivar/<int:sync_id>/', views_admin.omie_efetivar_view, name='omie_efetivar'),
+    path('dashboard/omie/denylist/', views_admin.DenyListListView.as_view(), name='omie_denylist'),
+    path('dashboard/omie/denylist/<int:pk>/excluir/', views_admin.DenyListDeleteView.as_view(), name='omie_denylist_delete'),
+
 
     # --- MÓDULO: FAMÍLIAS DE PRODUTOS ---
     path('dashboard/familias/', views_admin.FamiliaListView.as_view(), name='familia_list'),
@@ -94,8 +125,10 @@ urlpatterns = [
     # --- MÓDULO: MÍDIAS (Biblioteca) ---
     path('dashboard/midias/', views_admin.MidiaListView.as_view(), name='midia_list'),
     path('dashboard/midias/nova/', views_admin.MidiaCreateView.as_view(), name='midia_create'),
-    path('dashboard/midias/<int:pk>/editar/', views_admin.MidiaUpdateView.as_view(), name='midia_edit'),
     path('dashboard/midias/<int:pk>/excluir/', views_admin.MidiaDeleteView.as_view(), name='midia_delete'),
+
+    # --- MÓDULO: CONFIGURAÇÕES ---
+    path('dashboard/configuracoes/integracoes/', views_admin.ConfiguracaoIntegracoesView.as_view(), name='configuracao_integracoes'),
 
     # --- MÓDULO: ADMINISTRAÇÃO DE EQUIPE ---
     path('dashboard/equipe/', views_admin.EquipeListView.as_view(), name='equipe_list'),

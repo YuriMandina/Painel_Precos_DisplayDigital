@@ -1,0 +1,85 @@
+<!-- Modal Global de Confirmação de Exclusão -->
+<div id="globalDeleteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <!-- Overlay Escuro -->
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity opacity-0" 
+         id="globalDeleteOverlay" 
+         onclick="closeGlobalDeleteModal()"></div>
+
+    <!-- Conteúdo do Modal -->
+    <div class="bg-white border border-slate-200 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden text-center p-10 relative z-10 scale-95 opacity-0 transition-all duration-300 transform" 
+         id="globalDeleteContent">
+        
+        <div class="absolute top-0 left-0 w-full h-2 bg-red-500"></div>
+
+        <button onclick="closeGlobalDeleteModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-slate-100 rounded-full">
+            <i class="ph-bold ph-x text-xl"></i>
+        </button>
+
+        <div class="w-20 h-20 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner ring-8 ring-red-50/50">
+            <i class="ph-fill ph-trash text-4xl"></i>
+        </div>
+        
+        <h2 class="text-2xl font-bold text-slate-900 mb-3 tracking-tight">Confirmar Exclusão</h2>
+        
+        <p class="text-slate-500 mb-8 leading-relaxed text-sm">
+            Você está prestes a remover permanentemente: <br>
+            <span id="globalDeleteName" class="inline-block mt-2 font-bold text-slate-800 bg-slate-100 px-3 py-1 rounded-lg break-all"></span>
+            <br><span class="block mt-4 text-red-500 font-bold flex items-center justify-center gap-1.5"><i class="ph-fill ph-warning-circle"></i> Esta ação não poderá ser desfeita.</span>
+        </p>
+
+        <form method="post" id="globalDeleteForm" class="flex flex-col sm:flex-row gap-3 justify-center">
+            {% csrf_token %}
+            
+            <button type="button" onclick="closeGlobalDeleteModal()" 
+               class="flex-1 px-6 py-3.5 text-sm font-bold text-slate-600 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
+                Cancelar
+            </button>
+            
+            <button type="submit" 
+                    class="flex-1 px-6 py-3.5 text-sm font-bold text-white bg-red-600 rounded-xl hover:bg-red-700 shadow-lg shadow-red-600/30 hover:-translate-y-0.5 transition-all">
+                Sim, Excluir
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openGlobalDeleteModal(actionUrl, itemName) {
+        const modal = document.getElementById('globalDeleteModal');
+        const overlay = document.getElementById('globalDeleteOverlay');
+        const content = document.getElementById('globalDeleteContent');
+        const form = document.getElementById('globalDeleteForm');
+        const nameSpan = document.getElementById('globalDeleteName');
+
+        // Configura dados
+        form.action = actionUrl;
+        nameSpan.textContent = itemName;
+
+        // Exibe o modal (remove hidden)
+        modal.classList.remove('hidden');
+
+        // Um pequeno delay para permitir que o navegador processe a remoção do 'hidden'
+        // antes de aplicar as classes de transição (opacidade e escala)
+        setTimeout(() => {
+            overlay.classList.remove('opacity-0');
+            content.classList.remove('opacity-0', 'scale-95');
+            content.classList.add('opacity-100', 'scale-100');
+        }, 10);
+    }
+
+    function closeGlobalDeleteModal() {
+        const overlay = document.getElementById('globalDeleteOverlay');
+        const content = document.getElementById('globalDeleteContent');
+        const modal = document.getElementById('globalDeleteModal');
+
+        // Inicia a transição de fechamento
+        overlay.classList.add('opacity-0');
+        content.classList.remove('opacity-100', 'scale-100');
+        content.classList.add('opacity-0', 'scale-95');
+
+        // Aguarda a animação terminar para aplicar 'hidden'
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+</script>

@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Painel Administrativo | DisplayDigital{% endblock %}</title>
     
-    <script src="https://cdn.tailwindcss.com"></script>
+    {% load tailwind_cli static %}
+    {% tailwind_css %}
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
@@ -104,7 +105,32 @@
                     <i class="{% if 'equipe' in request.resolver_match.url_name %}ph-fill{% else %}ph{% endif %} ph-users text-xl"></i>
                     <span>Equipe & Acessos</span>
                 </a>
+                
+                <a href="{% url 'configuracao_integracoes' %}" 
+                class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'integracoes' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-600/20{% else %}text-slate-400 hover:bg-slate-800/50 hover:text-white{% endif %}">
+                    <i class="{% if 'integracoes' in request.resolver_match.url_name %}ph-fill{% else %}ph{% endif %} ph-plug text-xl"></i>
+                    <span>Integrações (Omie)</span>
+                </a>
+                
+                <a href="{% url 'omie_denylist' %}" 
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'denylist' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-600/20{% else %}text-slate-400 hover:bg-slate-800/50 hover:text-white{% endif %}">
+                    <i class="{% if 'denylist' in request.resolver_match.url_name %}ph-fill{% else %}ph{% endif %} ph-shield-slash text-xl"></i>
+                    <span>Deny List de Produtos</span>
+                </a>
             {% endif %}
+
+            <p class="px-3 mt-8 mb-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Legal & LGPD</p>
+            <a href="{% url 'termos' %}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if request.resolver_match.url_name == 'termos' %}bg-indigo-600 text-white shadow-lg shadow-indigo-600/20{% else %}text-slate-400 hover:bg-slate-800/50 hover:text-white{% endif %}">
+                <i class="{% if request.resolver_match.url_name == 'termos' %}ph-fill{% else %}ph{% endif %} ph-file-text text-xl"></i>
+                <span>Termos de Uso</span>
+            </a>
+            
+            <a href="{% url 'privacidade' %}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if request.resolver_match.url_name == 'privacidade' %}bg-indigo-600 text-white shadow-lg shadow-indigo-600/20{% else %}text-slate-400 hover:bg-slate-800/50 hover:text-white{% endif %}">
+                <i class="{% if request.resolver_match.url_name == 'privacidade' %}ph-fill{% else %}ph{% endif %} ph-shield-check text-xl"></i>
+                <span>Política de Privacidade</span>
+            </a>
 
         </nav>
 
@@ -193,5 +219,49 @@
         closeBtn.addEventListener('click', toggleSidebar);
         overlay.addEventListener('click', toggleSidebar);
     </script>
+
+    <!-- Cookie Consent Banner -->
+    <div id="cookie-banner" class="fixed bottom-0 left-0 w-full bg-slate-900 text-slate-300 p-4 shadow-2xl z-50 transform translate-y-full transition-transform duration-500 hidden">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="text-sm">
+                <p>
+                    <strong>Aviso de Cookies:</strong> Nós utilizamos cookies essenciais para garantir o funcionamento do nosso painel e manter a sua segurança. 
+                    Ao continuar navegando, você concorda com a nossa <a href="{% url 'privacidade' %}" class="text-indigo-400 hover:text-indigo-300 underline">Política de Privacidade</a> e com os nossos <a href="{% url 'termos' %}" class="text-indigo-400 hover:text-indigo-300 underline">Termos de Uso</a>.
+                </p>
+            </div>
+            <div class="flex-shrink-0 w-full sm:w-auto">
+                <button id="btn-aceitar-cookies" class="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition-colors">
+                    Aceitar Todos
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {% include 'painel/includes/delete_modal.html' %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const cookieBanner = document.getElementById('cookie-banner');
+            const btnAceitar = document.getElementById('btn-aceitar-cookies');
+
+            // Verifica no localStorage se já aceitou
+            if (!localStorage.getItem('cookies_accepted')) {
+                // Mostra o banner
+                cookieBanner.classList.remove('hidden');
+                setTimeout(() => {
+                    cookieBanner.classList.remove('translate-y-full');
+                }, 100);
+            }
+
+            btnAceitar.addEventListener('click', function() {
+                localStorage.setItem('cookies_accepted', 'true');
+                cookieBanner.classList.add('translate-y-full');
+                setTimeout(() => {
+                    cookieBanner.classList.add('hidden');
+                }, 500);
+            });
+        });
+    </script>
+    <script src="{% static 'painel/js/prevent_double_submit.js' %}"></script>
 </body>
 </html>

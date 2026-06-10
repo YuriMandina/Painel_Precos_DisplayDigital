@@ -17,12 +17,21 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
 
+# URL pública canônica do site (sem barra final).
+# Usada para gerar links absolutos nos e-mails (verificação de conta, recuperação de senha).
+# Em produção, configure esta variável no painel de Environment Variables do Render.
+SITE_URL = config('SITE_URL', default='http://localhost:8000').rstrip('/')
+
 # Configurações de Proxy/HTTPS para deploys em serviços de PaaS (ex: Render)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 CSRF_TRUSTED_ORIGINS = [
     'https://*.onrender.com',
     'https://*.cloudinary.com',
 ]
+
+# Garante que SITE_URL também está nas origens confiáveis (CSRF)
+if SITE_URL and SITE_URL.startswith('https://'):
+    CSRF_TRUSTED_ORIGINS.append(SITE_URL)
 
 # Headers de permissão — crítico para autoplay de vídeo funcionar em TVs via Render/Gunicorn.
 # O Gunicorn não envia Permissions-Policy por padrão, mas alguns proxies adicionam
@@ -49,9 +58,11 @@ DJANGO_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'axes',
 ]
 
 THIRD_PARTY_APPS = [
+    'anymail',
     'rest_framework',
     'corsheaders',
     'cloudinary',
@@ -59,7 +70,8 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
-    'painel',
+    'painel.apps.PainelConfig',
+    'django_tailwind_cli',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -80,6 +92,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'painel.middleware.TenantMiddleware',
+    'axes.middleware.AxesMiddleware',
 ]
 
 
@@ -130,21 +143,44 @@ LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
 AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
     'painel.backends.EmailBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-if DEBUG:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Configurações de Sessão e Timeout
+SESSION_COOKIE_AGE = 7200  # 2 horas
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# Configurações do Django Axes (Proteção contra Força Bruta)
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1  # 1 hora de bloqueio
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
+AXES_RESET_ON_SUCCESS = True
+# View para onde o usuário é redirecionado ao ser bloqueado:
+AXES_LOCKOUT_URL = '/auth/bloqueado/'
+
+# Configurações do Tailwind CLI
+TAILWIND_CLI_SRC_CSS = "painel/assets/css/input.css"
+TAILWIND_CLI_DIST_CSS = "css/tailwind.css"
+TAILWIND_CLI_PATH = ".tailwind"
+
+# Configuração de E-mail — django-anymail + Brevo
+# Usa a API do Brevo (não SMTP) — ideal para contornar bloqueios e não exige domínio de imediato.
+# Configure BREVO_API_KEY no painel de variáveis de ambiente do Render.
+# Localmente: deixe em branco para usar o console (imprime no terminal).
+_brevo_api_key = config('BREVO_API_KEY', default='')
+
+if _brevo_api_key:
+    EMAIL_BACKEND = 'anymail.backends.brevo.EmailBackend'
+    ANYMAIL = {
+        'BREVO_API_KEY': _brevo_api_key,
+    }
+    DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='DisplayDigital <seu_email_brevo@gmail.com>')
 else:
-    # Em produção, você usará SendGrid, Mailgun, SMTP etc.
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = config('EMAIL_HOST', default='')
-    EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-    EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-    EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-    EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-    DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='no-reply@displaydigital.com')
+    # Fallback seguro: imprime e-mails no terminal quando não há credenciais configuradas
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = 'no-reply@displaydigital.com'
 
 
 # ==============================================================================
@@ -160,8 +196,9 @@ USE_TZ = True
 #                              ARQUIVOS E MÍDIA
 # ==============================================================================
 # Estáticos (CSS, JS, Imagens de layout)
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
 # Mídia (Uploads de usuários e arquivos dinâmicos)
 MEDIA_URL = '/media/'
@@ -175,7 +212,19 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 MB
 if not DEBUG:
     import cloudinary # Importação necessária para configurar o SDK Global
 
-    DEFAULT_FILE_STORAGE = 'painel.storage.MidiaCloudinaryStorage'
+    # Configuração de Storages obrigatória para Django >= 4.2 (incluindo 5.x e 6.x)
+    STORAGES = {
+        "default": {
+            "BACKEND": "painel.storage.MidiaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+    
+    # Desabilita o erro estrito do Whitenoise para evitar problemas no collectstatic 
+    # com os decorators do Tailwind v4 (ex: @import "tailwindcss";)
+    WHITENOISE_MANIFEST_STRICT = False
     
     # 1. Configuração para a biblioteca django-cloudinary-storage (Uploads)
     CLOUDINARY_STORAGE = {

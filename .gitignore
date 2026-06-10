@@ -56,3 +56,5 @@ static_root/
 .idea/
 .DS_Store
 Thumbs.db
+# Tailwind CLI
+.tailwind/

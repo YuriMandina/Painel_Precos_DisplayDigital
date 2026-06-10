@@ -1,0 +1,199 @@
+{% extends "painel/base_dashboard.html" %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-slate-900 mb-2">Revisão de Sincronização</h1>
+        <p class="text-slate-500">Selecione os produtos que deseja importar ou atualizar no DisplayDigital.</p>
+    </div>
+
+    <!-- Métricas -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+            <p class="text-sm font-semibold text-slate-500 mb-1">Total no Omie</p>
+            <p class="text-2xl font-bold text-slate-900">{{ metricas.total_omie }}</p>
+        </div>
+        <div class="bg-indigo-50 rounded-xl border border-indigo-100 p-5 shadow-sm">
+            <p class="text-sm font-semibold text-indigo-600 mb-1">Novos ou Alterados</p>
+            <p class="text-2xl font-bold text-indigo-900">{{ sync_obj.dados.novos|length|add:sync_obj.dados.alterados|length }}</p>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+            <p class="text-sm font-semibold text-slate-500 mb-1">Ignorados (Sem mudança)</p>
+            <p class="text-2xl font-bold text-slate-900">{{ metricas.inalterados_count }}</p>
+        </div>
+        <div class="bg-slate-50 rounded-xl border border-slate-200 p-5 shadow-sm">
+            <p class="text-sm font-semibold text-slate-500 mb-1">Deny List (Ocultados)</p>
+            <p class="text-2xl font-bold text-slate-900">{{ metricas.ignorados_count }}</p>
+        </div>
+    </div>
+
+    <form method="post" action="{% url 'omie_efetivar' sync_obj.id %}">
+        {% csrf_token %}
+        
+        {% if familias_dict %}
+            <div class="space-y-4 mb-8">
+                {% for familia, produtos in familias_dict.items %}
+                <details class="group bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden" open>
+                    <summary class="flex items-center justify-between p-5 cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <i class="ph-bold ph-caret-right transition-transform group-open:rotate-90 text-slate-400"></i>
+                            <h3 class="font-bold text-slate-900">{{ familia }}</h3>
+                            <span class="inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold bg-white text-slate-500 border border-slate-200">
+                                {{ produtos|length }} itens
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-4 text-sm font-medium text-slate-500">
+                            <label class="flex items-center gap-2 hover:text-slate-900 cursor-pointer">
+                                <input type="checkbox" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-600 checkbox-familia" checked>
+                                Aprovar Todos
+                            </label>
+                        </div>
+                    </summary>
+                    <div class="p-0 border-t border-slate-200">
+                        <table class="w-full text-left text-sm text-slate-600">
+                            <thead class="bg-white border-b border-slate-100 text-xs uppercase text-slate-400">
+                                <tr>
+                                    <th class="px-5 py-3 w-10">Aprovar</th>
+                                    <th class="px-5 py-3">Código</th>
+                                    <th class="px-5 py-3">Descrição</th>
+                                    <th class="px-5 py-3">Preço</th>
+                                    <th class="px-5 py-3">Status</th>
+                                    <th class="px-5 py-3 text-right">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for prod in produtos %}
+                                <tr class="hover:bg-slate-50 transition-colors row-produto">
+                                    <td class="px-5 py-4">
+                                        <input type="checkbox" name="aprovados" value="{{ prod.codigo }}" 
+                                               class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-600 checkbox-aprovado" checked>
+                                    </td>
+                                    <td class="px-5 py-4 font-mono text-slate-500">{{ prod.codigo }}</td>
+                                    <td class="px-5 py-4 font-medium text-slate-900">
+                                        {% if prod.nome_antigo %}
+                                            <div class="flex flex-col">
+                                                <span class="text-slate-400 line-through text-xs">{{ prod.nome_antigo }}</span>
+                                                <span class="text-indigo-700">{{ prod.descricao }}</span>
+                                            </div>
+                                        {% else %}
+                                            {{ prod.descricao }}
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        {% if prod.tipo == 'novo' %}
+                                            <span class="font-bold text-slate-900">R$ {{ prod.preco|floatformat:2 }}</span>
+                                        {% else %}
+                                            <div class="flex items-center gap-2">
+                                                {% if prod.mudou_preco %}
+                                                    <span class="text-slate-400 line-through">R$ {{ prod.preco_antigo|floatformat:2 }}</span>
+                                                    <i class="ph-bold ph-arrow-right text-indigo-400"></i>
+                                                    <span class="font-bold text-indigo-600">R$ {{ prod.preco|floatformat:2 }}</span>
+                                                {% else %}
+                                                    <span class="font-bold text-slate-900">R$ {{ prod.preco|floatformat:2 }}</span>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        {% if prod.tipo == 'novo' %}
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-green-50 text-green-700 border border-green-200">
+                                                <i class="ph-fill ph-sparkle"></i> Produto Novo
+                                            </span>
+                                        {% elif prod.mudou_preco and prod.mudou_dados %}
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                                <i class="ph-bold ph-arrows-down-up"></i> Preço e Dados
+                                            </span>
+                                        {% elif prod.mudou_preco %}
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                                <i class="ph-bold ph-arrows-down-up"></i> Preço Alterado
+                                            </span>
+                                        {% else %}
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                                <i class="ph-bold ph-text-aa"></i> Dados Alterados
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-5 py-4 text-right">
+                                        <label class="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-red-600 cursor-pointer transition-colors group-denylist">
+                                            <input type="checkbox" name="denylist" value="{{ prod.codigo }}" class="rounded border-slate-300 text-red-600 focus:ring-red-600 checkbox-denylist">
+                                            Ignorar para sempre
+                                        </label>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+                {% endfor %}
+            </div>
+
+            <!-- Sticky Footer for Action -->
+            <div class="sticky bottom-4 bg-white/80 backdrop-blur-md border border-slate-200 p-4 rounded-2xl shadow-xl flex items-center justify-between">
+                <p class="text-sm text-slate-500">Revise os itens antes de prosseguir. Itens na Deny List não serão importados e sumirão nas próximas sincronizações.</p>
+                <div class="flex gap-3">
+                    <a href="{% url 'produtos_list' %}" class="px-6 py-3 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
+                        <i class="ph-bold ph-check"></i> Efetivar Sincronização
+                    </button>
+                </div>
+            </div>
+
+        {% else %}
+            <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-50 text-green-600 mb-4">
+                    <i class="ph-fill ph-check-circle text-4xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900 mb-2">Tudo atualizado!</h3>
+                <p class="text-slate-500 max-w-md mx-auto mb-6">Nenhum produto novo ou alterado foi encontrado no Omie em relação ao nosso painel.</p>
+                <a href="{% url 'produtos_list' %}" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
+                    Voltar aos Produtos
+                </a>
+            </div>
+        {% endif %}
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Lógica de Select All por família (agora usando o elemento pai 'details' em vez do nome)
+        document.querySelectorAll('.checkbox-familia').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                const details = e.target.closest('details');
+                if (details) {
+                    details.querySelectorAll('.checkbox-aprovado').forEach(child => {
+                        child.checked = isChecked;
+                        // Dispara evento para garantir que as outras lógicas (desmarcar denylist) rodem
+                        child.dispatchEvent(new Event('change'));
+                    });
+                }
+            });
+        });
+
+        // Lógica: se marcar denylist, desmarca aprovado automaticamente
+        document.querySelectorAll('.checkbox-denylist').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    const row = e.target.closest('tr');
+                    const apCb = row.querySelector('.checkbox-aprovado');
+                    if (apCb) apCb.checked = false;
+                }
+            });
+        });
+        
+        // Lógica: se marcar aprovado, desmarca denylist
+        document.querySelectorAll('.checkbox-aprovado').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    const row = e.target.closest('tr');
+                    const dlCb = row.querySelector('.checkbox-denylist');
+                    if (dlCb) dlCb.checked = false;
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

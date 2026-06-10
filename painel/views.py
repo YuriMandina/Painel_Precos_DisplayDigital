@@ -12,6 +12,7 @@ from django.http import HttpRequest, HttpResponse, StreamingHttpResponse, Http40
 from django.contrib.auth import logout
 from django.shortcuts import redirect
 from django.views.decorators.http import require_GET
+from django.views.generic import TemplateView
 
 from .forms import RegistroForm
 from .models import Empresa, Perfil
@@ -142,43 +143,173 @@ def media_stream_view(request: HttpRequest, file_path: str) -> HttpResponse:
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.contrib.auth import login
+from django.core.mail import send_mail, EmailMultiAlternatives
+from django.template.loader import render_to_string
 from .forms import RegistroForm, AceiteConviteForm
-from .models import Empresa, Perfil, Convite
+from .models import Empresa, Perfil, Convite, TokenVerificacaoEmail
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def _enviar_email_verificacao(request, user, token_obj):
+    """
+    Dispara o e-mail de verificação de conta para o usuário recém-cadastrado.
+    Usa settings.SITE_URL para garantir que o link aponte para o domínio correto
+    (produção ou desenvolvimento), independente do host da requisição.
+    """
+    path = reverse('verificar_email', kwargs={'token': str(token_obj.token)})
+    link = f"{settings.SITE_URL}{path}"
+
+    assunto = 'Confirme seu e-mail — DisplayDigital'
+    contexto = {
+        'nome': user.first_name or user.email,
+        'link': link,
+    }
+
+    # Corpo em texto puro (fallback)
+    texto = (
+        f"Olá, {contexto['nome']}!\n\n"
+        "Obrigado por criar sua conta no DisplayDigital.\n\n"
+        "Para ativar sua conta, acesse o link abaixo:\n"
+        f"{link}\n\n"
+        "Este link expira em 48 horas.\n\n"
+        "Se você não criou esta conta, ignore este e-mail.\n\n"
+        "Atenciosamente,\nEquipe DisplayDigital"
+    )
+
+    # Corpo HTML
+    html = render_to_string('painel/emails/verificacao_conta.html', contexto, request=request)
+
+    mensagem = EmailMultiAlternatives(
+        subject=assunto,
+        body=texto,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[user.email],
+    )
+    mensagem.attach_alternative(html, 'text/html')
+    mensagem.send(fail_silently=False)
+
 
 def registro_view(request: HttpRequest) -> HttpResponse:
     if request.method == 'POST':
         form = RegistroForm(request.POST)
         if form.is_valid():
             import uuid
-            # Gera um username único usando UUID para satisfazer o modelo User do Django
             username = uuid.uuid4().hex[:30]
             email = form.cleaned_data['email']
             senha = form.cleaned_data['senha']
             nome = form.cleaned_data['nome']
             nome_empresa = form.cleaned_data['nome_empresa']
 
-            # Cria a conta respeitando a arquitetura do Django
+            # Cria usuário INATIVO até confirmar o e-mail
             user = User.objects.create_user(
-                username=username, 
-                email=email, 
-                password=senha, 
-                first_name=nome
+                username=username,
+                email=email,
+                password=senha,
+                first_name=nome,
+                is_active=False,  # Bloqueado até verificar o e-mail
             )
 
-            # Nova empresa. Usuário vira o Master/Admin.
-            empresa_nome = nome_empresa.strip()
-            nova_empresa = Empresa.objects.create(nome=empresa_nome)
+            nova_empresa = Empresa.objects.create(nome=nome_empresa.strip())
             Perfil.objects.create(
-                usuario=user, empresa=nova_empresa, 
+                usuario=user, empresa=nova_empresa,
                 is_admin=True, status=Perfil.Status.APROVADO
             )
-            messages.success(request, 'Conta e Empresa criadas com sucesso! Você é o administrador.')
 
-            return redirect('login')
+            # Gera o token de verificação
+            token_obj = TokenVerificacaoEmail.objects.create(usuario=user)
+
+            # Tenta enviar e-mail
+            try:
+                _enviar_email_verificacao(request, user, token_obj)
+                messages.success(
+                    request,
+                    f'Conta criada! Enviamos um e-mail de confirmação para <strong>{email}</strong>. '
+                    'Acesse-o para ativar sua conta.'
+                )
+            except Exception as e:
+                logger.error(f"Falha ao enviar e-mail de verificação para {email}: {e}")
+                # Ativa o usuário mesmo assim se o email falhar, para não bloquear o cadastro por problema de SMTP
+                user.is_active = True
+                user.save(update_fields=['is_active'])
+                messages.warning(
+                    request,
+                    'Conta criada! Houve um problema ao enviar o e-mail de confirmação. '
+                    'Sua conta foi ativada automaticamente. Faça login.'
+                )
+                return redirect('login')
+
+            return redirect('aguardando_verificacao')
     else:
         form = RegistroForm()
-        
+
     return render(request, 'painel/registro.html', {'form': form})
+
+
+def aguardando_verificacao_view(request: HttpRequest) -> HttpResponse:
+    """Tela informativa exibida após o cadastro, orientando o usuário a checar o e-mail."""
+    return render(request, 'painel/aguardando_verificacao.html')
+
+
+def verificar_email_view(request: HttpRequest, token: str) -> HttpResponse:
+    """
+    Processa o clique no link de verificação de e-mail.
+    Ativa o usuário e invalida o token.
+    """
+    token_obj = get_object_or_404(TokenVerificacaoEmail, token=token)
+
+    if token_obj.usado:
+        messages.info(request, 'Este link de verificação já foi utilizado. Faça login normalmente.')
+        return redirect('login')
+
+    if token_obj.esta_expirado():
+        messages.error(
+            request,
+            'Este link de verificação expirou (válido por 48h). '
+            '<a href="/reenviar-verificacao/">Clique aqui para reenviar o e-mail</a>.'
+        )
+        return redirect('login')
+
+    # Ativa o usuário e marca o token como usado
+    user = token_obj.usuario
+    user.is_active = True
+    user.save(update_fields=['is_active'])
+
+    token_obj.usado = True
+    token_obj.save(update_fields=['usado'])
+
+    messages.success(request, f'E-mail confirmado com sucesso! Bem-vindo(a), {user.first_name or user.email}!')
+    return redirect('login')
+
+
+def reenviar_verificacao_view(request: HttpRequest) -> HttpResponse:
+    """
+    Permite ao usuário solicitar o reenvio do e-mail de verificação.
+    Útil quando o link expirou ou o e-mail sumiu.
+    """
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        try:
+            user = User.objects.get(email=email, is_active=False)
+        except User.DoesNotExist:
+            messages.error(request, 'Nenhuma conta pendente de verificação encontrada para este e-mail.')
+            return render(request, 'painel/reenviar_verificacao.html')
+
+        # Deleta token antigo e cria um novo
+        TokenVerificacaoEmail.objects.filter(usuario=user).delete()
+        token_obj = TokenVerificacaoEmail.objects.create(usuario=user)
+
+        try:
+            _enviar_email_verificacao(request, user, token_obj)
+            messages.success(request, f'E-mail de verificação reenviado para {email}!')
+        except Exception as e:
+            logger.error(f"Falha ao reenviar verificação para {email}: {e}")
+            messages.error(request, 'Falha ao enviar o e-mail. Tente novamente mais tarde.')
+
+    return render(request, 'painel/reenviar_verificacao.html')
+
+
 
 def aceitar_convite_view(request: HttpRequest, token: str) -> HttpResponse:
     convite = get_object_or_404(Convite, token=token)
@@ -225,4 +356,70 @@ def logout_customizado_view(request: HttpRequest) -> HttpResponse:
     deslogue usuários via redirecionamento (GET) sem gerar erro 405.
     """
     logout(request)
+    return redirect('login')
+
+
+# ==============================================================================
+#                          LGPD E TERMOS
+# ==============================================================================
+
+class TermosView(TemplateView):
+    template_name = 'painel/legal/termos.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.is_authenticated:
+            context['base_template'] = 'painel/base_dashboard.html'
+        else:
+            context['base_template'] = 'painel/base_standalone.html'
+        return context
+
+class PrivacidadeView(TemplateView):
+    template_name = 'painel/legal/privacidade.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.is_authenticated:
+            context['base_template'] = 'painel/base_dashboard.html'
+        else:
+            context['base_template'] = 'painel/base_standalone.html'
+        return context
+
+# ==============================================================================
+#                          SEGURANÇA (AXES)
+# ==============================================================================
+
+def bloqueado_view(request):
+    """
+    View para onde o django-axes redireciona quando o limite é excedido.
+    """
+    return render(request, 'painel/auth/bloqueado.html')
+
+def unlock_ip_view(request, token):
+    from django.core import signing
+    from axes.utils import reset
+    
+    try:
+        # Válido por 1 hora
+        data = signing.loads(token, max_age=3600)
+        username = data['username']
+        ip_address = data['ip_address']
+    except signing.SignatureExpired:
+        messages.error(request, "O link de desbloqueio expirou. Aguarde o tempo de bloqueio automático.")
+        return redirect('login')
+    except signing.BadSignature:
+        messages.error(request, "Link de desbloqueio inválido.")
+        return redirect('login')
+
+    action = request.GET.get('action')
+    
+    if action == 'reset':
+        # Se NÃO foi ele, NÃO desbloqueia o IP do atacante e redireciona para redefinir a senha
+        messages.warning(request, "Por segurança, o IP suspeito continuará bloqueado. Redefina sua senha abaixo para proteger a sua conta.")
+        return redirect('password_reset')
+
+    # Se foi o usuário (action != 'reset'), desbloqueia o IP dele no axes
+    reset(username=username, ip=ip_address)
+    messages.success(request, "Seu IP foi liberado com sucesso. Você pode tentar fazer login novamente.")
+        
     return redirect('login')

@@ -35,6 +35,10 @@ class Empresa(models.Model):
     cnpj = models.CharField(max_length=20, blank=True, null=True)
     ativo = models.BooleanField(default=True)
     
+    # Integração Omie
+    omie_app_key = models.CharField(max_length=255, blank=True, null=True, help_text="App Key gerada no painel do Omie")
+    omie_app_secret = models.CharField(max_length=255, blank=True, null=True, help_text="App Secret gerado no painel do Omie")
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -91,9 +95,85 @@ class Convite(models.Model):
         return f"Convite para {self.email} ({self.status})"
 
 
+class TokenVerificacaoEmail(models.Model):
+    """
+    Token de verificação de email gerado no momento do cadastro.
+    O usuário recebe um link com este token por email. Ao clicar,
+    o campo is_active do User é ativado e o token é expirado.
+    """
+    usuario = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='token_verificacao_email'
+    )
+    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    usado = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "Token de Verificação de Email"
+        verbose_name_plural = "Tokens de Verificação de Email"
+
+    def __str__(self) -> str:
+        return f"Token de verificação para {self.usuario.email}"
+
+    def esta_expirado(self) -> bool:
+        """Tokens expiram em 48 horas."""
+        from django.utils import timezone
+        from datetime import timedelta
+        return timezone.now() > self.criado_em + timedelta(hours=48)
+
+
 # ==============================================================================
 #                             CATÁLOGO E PRODUTOS
 # ==============================================================================
+
+class SincronizacaoOmie(models.Model):
+    """
+    Armazena o payload temporário da API do Omie para o fluxo de validação
+    em duas etapas (Preview -> Efetivação).
+    """
+    class Status(models.TextChoices):
+        PENDENTE = 'PENDENTE', 'Pendente de Aprovação'
+        CONCLUIDA = 'CONCLUIDA', 'Concluída'
+        ERRO = 'ERRO', 'Erro na Sincronização'
+
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='sincronizacoes_omie')
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDENTE)
+    dados = models.JSONField(
+        default=dict, 
+        help_text="Payload JSON processado contendo os novos produtos, alterações de preço, etc."
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Sincronização Omie"
+        verbose_name_plural = "Sincronizações Omie"
+        ordering = ['-created_at']
+
+    def __str__(self) -> str:
+        return f"Sync Omie {self.id} - {self.empresa.nome} ({self.get_status_display()})"
+
+
+class ProdutoIgnoradoOmie(models.Model):
+    """
+    Deny List de produtos: Itens que vieram do Omie, mas o usuário marcou para 
+    ignorar permanentemente para não poluírem a lista de validação.
+    """
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='produtos_ignorados_omie')
+    codigo = models.CharField(max_length=50, db_index=True, help_text="Código do produto no ERP")
+    descricao = models.CharField(max_length=255, blank=True, null=True, help_text="Nome do produto no momento em que foi ignorado")
+    familia = models.CharField(max_length=150, blank=True, null=True, help_text="Família do produto no momento em que foi ignorado")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Produto Ignorado Omie"
+        verbose_name_plural = "Produtos Ignorados Omie"
+        unique_together = ('empresa', 'codigo')
+
+    def __str__(self) -> str:
+        return f"{self.codigo} (Ignorado em {self.empresa.nome})"
 
 class FamiliaProduto(models.Model):
     """

@@ -45,12 +45,10 @@
                     </h3>
                     
                     <div class="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                        <a href="{% url 'midia_edit' item.id %}" class="text-slate-400 hover:text-indigo-600 transition-colors p-1 bg-slate-50 hover:bg-indigo-50 rounded-md">
-                            <i class="ph-fill ph-pencil-simple text-base"></i>
-                        </a>
-                        <a href="{% url 'midia_delete' item.id %}" class="text-slate-400 hover:text-red-600 transition-colors p-1 bg-slate-50 hover:bg-red-50 rounded-md">
+
+                        <button type="button" onclick="openGlobalDeleteModal('{% url 'midia_delete' item.id %}', '{{ item.nome|escapejs }}')" class="text-slate-400 hover:text-red-600 transition-colors p-1 bg-slate-50 hover:bg-red-50 rounded-md">
                             <i class="ph-fill ph-trash text-base"></i>
-                        </a>
+                        </button>
                     </div>
                 </div>
 
