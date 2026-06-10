@@ -61,6 +61,14 @@ urlpatterns = [
     ), name='password_reset_complete'),
 
     # --- AUTENTICAÇÃO ---
+    # Segurança (django-axes)
+    path('auth/bloqueado/', views.bloqueado_view, name='bloqueado'),
+    path('auth/desbloquear-ip/<str:token>/', views.unlock_ip_view, name='unlock_ip'),
+
+    # LGPD / Legal
+    path('termos-de-uso/', views.TermosView.as_view(), name='termos'),
+    path('politica-de-privacidade/', views.PrivacidadeView.as_view(), name='privacidade'),
+
     path('registro/', views.registro_view, name='registro'),
     path('verificar-email/<uuid:token>/', views.verificar_email_view, name='verificar_email'),
     path('aguardando-verificacao/', views.aguardando_verificacao_view, name='aguardando_verificacao'),

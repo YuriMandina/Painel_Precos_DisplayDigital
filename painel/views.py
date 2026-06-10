@@ -12,6 +12,7 @@ from django.http import HttpRequest, HttpResponse, StreamingHttpResponse, Http40
 from django.contrib.auth import logout
 from django.shortcuts import redirect
 from django.views.decorators.http import require_GET
+from django.views.generic import TemplateView
 
 from .forms import RegistroForm
 from .models import Empresa, Perfil
@@ -355,4 +356,54 @@ def logout_customizado_view(request: HttpRequest) -> HttpResponse:
     deslogue usuários via redirecionamento (GET) sem gerar erro 405.
     """
     logout(request)
+    return redirect('login')
+
+
+# ==============================================================================
+#                          LGPD E TERMOS
+# ==============================================================================
+
+class TermosView(TemplateView):
+    template_name = 'painel/legal/termos.html'
+
+class PrivacidadeView(TemplateView):
+    template_name = 'painel/legal/privacidade.html'
+
+# ==============================================================================
+#                          SEGURANÇA (AXES)
+# ==============================================================================
+
+def bloqueado_view(request):
+    """
+    View para onde o django-axes redireciona quando o limite é excedido.
+    """
+    return render(request, 'painel/auth/bloqueado.html')
+
+def unlock_ip_view(request, token):
+    from django.core import signing
+    from axes.utils import reset
+    
+    try:
+        # Válido por 1 hora
+        data = signing.loads(token, max_age=3600)
+        username = data['username']
+        ip_address = data['ip_address']
+    except signing.SignatureExpired:
+        messages.error(request, "O link de desbloqueio expirou. Aguarde o tempo de bloqueio automático.")
+        return redirect('login')
+    except signing.BadSignature:
+        messages.error(request, "Link de desbloqueio inválido.")
+        return redirect('login')
+
+    action = request.GET.get('action')
+    
+    if action == 'reset':
+        # Se NÃO foi ele, NÃO desbloqueia o IP do atacante e redireciona para redefinir a senha
+        messages.warning(request, "Por segurança, o IP suspeito continuará bloqueado. Redefina sua senha abaixo para proteger a sua conta.")
+        return redirect('password_reset')
+
+    # Se foi o usuário (action != 'reset'), desbloqueia o IP dele no axes
+    reset(username=username, ip=ip_address)
+    messages.success(request, "Seu IP foi liberado com sucesso. Você pode tentar fazer login novamente.")
+        
     return redirect('login')

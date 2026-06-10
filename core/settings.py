@@ -58,6 +58,7 @@ DJANGO_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'axes',
 ]
 
 THIRD_PARTY_APPS = [
@@ -90,6 +91,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'painel.middleware.TenantMiddleware',
+    'axes.middleware.AxesMiddleware',
 ]
 
 
@@ -140,9 +142,22 @@ LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
 AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
     'painel.backends.EmailBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
+
+# Configurações de Sessão e Timeout
+SESSION_COOKIE_AGE = 7200  # 2 horas
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# Configurações do Django Axes (Proteção contra Força Bruta)
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1  # 1 hora de bloqueio
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
+AXES_RESET_ON_SUCCESS = True
+# View para onde o usuário é redirecionado ao ser bloqueado:
+AXES_LOCKOUT_URL = '/auth/bloqueado/'
 
 # Configuração de E-mail — django-anymail + Brevo
 # Usa a API do Brevo (não SMTP) — ideal para contornar bloqueios e não exige domínio de imediato.
