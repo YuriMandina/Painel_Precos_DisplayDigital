@@ -455,7 +455,7 @@ class ListaPersonalizadaUpdateView(LoginRequiredMixin, SuccessMessageMixin, Tena
         context = super().get_context_data(**kwargs)
         empresa = self.request.user.perfil.empresa
         # Todos os produtos disponíveis para adicionar à lista
-        context['todos_produtos'] = Produto.objects.filter(empresa=empresa).order_by('descricao')
+        context['todos_produtos'] = Produto.objects.filter(empresa=empresa).order_by('familia__nome', 'descricao')
         # Itens já presentes na lista, ordenados
         context['itens_lista'] = self.object.itens.all().select_related('produto').order_by('ordem')
         return context
