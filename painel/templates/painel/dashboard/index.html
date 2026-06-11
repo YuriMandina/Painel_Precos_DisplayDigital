@@ -7,14 +7,15 @@
 {% block content %}
 <main class="max-w-7xl mx-auto">
     
-    <header class="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Painel de Controle</h1>
-            <p class="text-slate-500 mt-1 text-sm">Bem-vindo, <strong class="text-slate-700">{{ user.first_name|default:user.email }}</strong>. Aqui está o resumo da sua operação hoje.</p>
+    <header class="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-3xl p-8 mb-10 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50">
+        <div class="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')]"></div>
+        <div class="relative z-10">
+            <h1 class="text-3xl font-bold text-white tracking-tight">Painel de Controle</h1>
+            <p class="text-indigo-200 mt-1 text-sm">Bem-vindo, <strong class="text-white">{{ user.first_name|default:user.email }}</strong>. Aqui está o resumo da sua operação hoje.</p>
         </div>
-        <div>
+        <div class="relative z-10">
             <a href="/tv/" target="_blank" rel="noopener noreferrer"
-               class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-600/30 hover:-translate-y-0.5 transition-all font-bold text-sm">
+               class="flex items-center gap-2 bg-white dark:bg-slate-900/10 hover:bg-white dark:bg-slate-900/20 text-white border border-white/20 px-5 py-2.5 rounded-xl shadow-lg hover:-translate-y-0.5 transition-all font-bold text-sm backdrop-blur-sm">
                 <i class="ph-bold ph-monitor-play text-lg"></i> 
                 Pré-visualizar Display
             </a>
@@ -24,7 +25,7 @@
     <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 mb-10">
         
         <!-- Dispositivos Card -->
-        <article class="relative bg-white rounded-2xl shadow-sm border border-slate-100 p-6 hover:shadow-xl hover:shadow-indigo-500/10 transition-all group overflow-hidden">
+        <article class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 hover:shadow-xl hover:shadow-indigo-500/10 transition-all group overflow-hidden">
             <a href="{% url 'dispositivo_list' %}" class="absolute inset-0 z-10" aria-label="Ver Dispositivos"></a>
             
             <div class="absolute -right-6 -top-6 opacity-[0.02] group-hover:opacity-5 transition-opacity transform group-hover:scale-110 duration-500">
@@ -32,25 +33,25 @@
             </div>
             
             <div class="relative z-20">
-                <div class="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 mb-4 border border-indigo-100 shadow-inner group-hover:scale-110 transition-transform">
+                <div class="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-600 mb-4 border border-indigo-100 dark:border-indigo-800/50 shadow-inner group-hover:scale-110 transition-transform">
                     <i class="ph-fill ph-television text-2xl"></i>
                 </div>
                 
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Dispositivos</h3>
                 
                 <div class="flex items-baseline gap-2 mt-1">
-                    <span class="text-4xl font-bold text-slate-900">{{ kpis.dispositivos_total }}</span>
-                    <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100 flex items-center gap-1 shadow-sm">
+                    <span class="text-4xl font-bold text-slate-900 dark:text-white">{{ kpis.dispositivos_total }}</span>
+                    <span class="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-md border border-emerald-100 dark:border-emerald-800/50 flex items-center gap-1 shadow-sm">
                         <i class="ph-bold ph-check"></i> Ativos
                     </span>
                 </div>
                 
-                <p class="text-sm text-slate-500 mt-3 line-clamp-2">Gerencie as TVs conectadas e seus layouts.</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-3 line-clamp-2">Gerencie as TVs conectadas e seus layouts.</p>
             </div>
         </article>
 
         <!-- Produtos Card -->
-        <article class="relative bg-white rounded-2xl shadow-sm border border-slate-100 p-6 hover:shadow-xl hover:shadow-emerald-500/10 transition-all group overflow-hidden">
+        <article class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 hover:shadow-xl hover:shadow-emerald-500/10 transition-all group overflow-hidden">
             <a href="{% url 'produtos_list' %}" class="absolute inset-0 z-10" aria-label="Ver Produtos"></a>
             
             <div class="absolute -right-6 -top-6 opacity-[0.02] group-hover:opacity-5 transition-opacity transform group-hover:scale-110 duration-500">
@@ -58,27 +59,27 @@
             </div>
             
             <div class="relative z-20">
-                <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-4 border border-emerald-100 shadow-inner group-hover:scale-110 transition-transform">
+                <div class="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center text-emerald-600 mb-4 border border-emerald-100 dark:border-emerald-800/50 shadow-inner group-hover:scale-110 transition-transform">
                     <i class="ph-fill ph-tag text-2xl"></i>
                 </div>
                 
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Produtos</h3>
                 
                 <div class="flex items-baseline gap-2 mt-1">
-                    <span class="text-4xl font-bold text-slate-900">{{ kpis.produtos_total }}</span>
+                    <span class="text-4xl font-bold text-slate-900 dark:text-white">{{ kpis.produtos_total }}</span>
                     {% if kpis.produtos_oferta > 0 %}
-                        <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100 flex items-center gap-1 shadow-sm">
+                        <span class="text-xs font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-md border border-amber-100 dark:border-amber-800/50 flex items-center gap-1 shadow-sm">
                             <i class="ph-fill ph-lightning"></i> {{ kpis.produtos_oferta }} Ofertas
                         </span>
                     {% endif %}
                 </div>
                 
-                <p class="text-sm text-slate-500 mt-3 line-clamp-2">Catálogo de preços e importação Excel.</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-3 line-clamp-2">Catálogo de preços e importação Excel.</p>
             </div>
         </article>
 
         <!-- Famílias Card -->
-        <article class="relative bg-white rounded-2xl shadow-sm border border-slate-100 p-6 hover:shadow-xl hover:shadow-sky-500/10 transition-all group overflow-hidden">
+        <article class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 hover:shadow-xl hover:shadow-sky-500/10 transition-all group overflow-hidden">
             <a href="{% url 'familia_list' %}" class="absolute inset-0 z-10" aria-label="Ver Famílias"></a>
             
             <div class="absolute -right-6 -top-6 opacity-[0.02] group-hover:opacity-5 transition-opacity transform group-hover:scale-110 duration-500">
@@ -86,74 +87,74 @@
             </div>
             
             <div class="relative z-20">
-                <div class="w-12 h-12 bg-sky-50 rounded-xl flex items-center justify-center text-sky-600 mb-4 border border-sky-100 shadow-inner group-hover:scale-110 transition-transform">
+                <div class="w-12 h-12 bg-sky-50 dark:bg-sky-900/20 rounded-xl flex items-center justify-center text-sky-600 mb-4 border border-sky-100 dark:border-sky-800/50 shadow-inner group-hover:scale-110 transition-transform">
                     <i class="ph-fill ph-folders text-2xl"></i>
                 </div>
                 
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Famílias</h3>
                 
                 <div class="flex items-baseline gap-2 mt-1">
-                    <span class="text-4xl font-bold text-slate-900">{{ kpis.familias_total }}</span>
-                    <span class="text-xs text-slate-400 font-bold bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 shadow-sm">Categorias</span>
+                    <span class="text-4xl font-bold text-slate-900 dark:text-white">{{ kpis.familias_total }}</span>
+                    <span class="text-xs text-slate-400 font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm">Categorias</span>
                 </div>
                 
-                <p class="text-sm text-slate-500 mt-3 line-clamp-2">Organização setorial dos produtos.</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-3 line-clamp-2">Organização setorial dos produtos.</p>
             </div>
         </article>
 
     </section>
 
     <!-- Acesso Rápido -->
-    <section class="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
+    <section class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 shadow-sm">
         <div class="flex items-center gap-3 mb-6">
-            <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600">
                 <i class="ph-fill ph-rocket-launch text-xl"></i>
             </div>
-            <h3 class="text-lg font-bold text-slate-800">Acesso Rápido</h3>
+            <h3 class="text-lg font-bold text-slate-800 dark:text-slate-200">Acesso Rápido</h3>
         </div>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <a href="{% url 'omie_sincronizar' %}" 
-               class="flex items-center gap-4 p-4 bg-slate-50 hover:bg-violet-50 border border-slate-200 hover:border-violet-200 rounded-xl transition-all shadow-sm hover:shadow-md group">
-                <div class="bg-white w-12 h-12 flex items-center justify-center rounded-lg shadow-sm border border-slate-100 group-hover:border-violet-200 group-hover:scale-105 transition-transform">
+               class="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-900/50 hover:bg-violet-50 border border-slate-200 dark:border-slate-700 hover:border-violet-200 rounded-xl transition-all shadow-sm hover:shadow-md group">
+                <div class="bg-white dark:bg-slate-900 w-12 h-12 flex items-center justify-center rounded-lg shadow-sm border border-slate-100 dark:border-slate-800 group-hover:border-violet-200 group-hover:scale-105 transition-transform">
                     <i class="ph-bold ph-arrows-clockwise text-violet-600 text-2xl"></i>
                 </div>
                 <div>
-                    <h4 class="font-bold text-slate-700 group-hover:text-violet-700">Sync Omie</h4>
-                    <p class="text-xs text-slate-500 group-hover:text-violet-600/80 mt-0.5">Sincronizar com ERP</p>
+                    <h4 class="font-bold text-slate-700 dark:text-slate-300 group-hover:text-violet-700">Sync Omie</h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 group-hover:text-violet-600/80 mt-0.5">Sincronizar com ERP</p>
                 </div>
             </a>
 
             <a href="{% url 'produto_importar' %}" 
-               class="flex items-center gap-4 p-4 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 rounded-xl transition-all shadow-sm hover:shadow-md group">
-                <div class="bg-white w-12 h-12 flex items-center justify-center rounded-lg shadow-sm border border-slate-100 group-hover:border-emerald-200 group-hover:scale-105 transition-transform">
+               class="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-900/50 hover:bg-emerald-50 dark:bg-emerald-900/20 border border-slate-200 dark:border-slate-700 hover:border-emerald-200 rounded-xl transition-all shadow-sm hover:shadow-md group">
+                <div class="bg-white dark:bg-slate-900 w-12 h-12 flex items-center justify-center rounded-lg shadow-sm border border-slate-100 dark:border-slate-800 group-hover:border-emerald-200 group-hover:scale-105 transition-transform">
                     <i class="ph-fill ph-microsoft-excel-logo text-emerald-600 text-2xl"></i>
                 </div>
                 <div>
-                    <h4 class="font-bold text-slate-700 group-hover:text-emerald-700">Importar Excel</h4>
-                    <p class="text-xs text-slate-500 group-hover:text-emerald-600/80 mt-0.5">Atualização em lote</p>
+                    <h4 class="font-bold text-slate-700 dark:text-slate-300 group-hover:text-emerald-700">Importar Excel</h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 group-hover:text-emerald-600/80 mt-0.5">Atualização em lote</p>
                 </div>
             </a>
 
             <a href="{% url 'produto_create' %}" 
-               class="flex items-center gap-4 p-4 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-xl transition-all shadow-sm hover:shadow-md group">
-                <div class="bg-white w-12 h-12 flex items-center justify-center rounded-lg shadow-sm border border-slate-100 group-hover:border-blue-200 group-hover:scale-105 transition-transform">
+               class="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-900/50 hover:bg-blue-50 border border-slate-200 dark:border-slate-700 hover:border-blue-200 rounded-xl transition-all shadow-sm hover:shadow-md group">
+                <div class="bg-white dark:bg-slate-900 w-12 h-12 flex items-center justify-center rounded-lg shadow-sm border border-slate-100 dark:border-slate-800 group-hover:border-blue-200 group-hover:scale-105 transition-transform">
                     <i class="ph-bold ph-plus text-blue-600 text-2xl"></i>
                 </div>
                 <div>
-                    <h4 class="font-bold text-slate-700 group-hover:text-blue-700">Novo Produto</h4>
-                    <p class="text-xs text-slate-500 group-hover:text-blue-600/80 mt-0.5">Cadastrar manualmente</p>
+                    <h4 class="font-bold text-slate-700 dark:text-slate-300 group-hover:text-blue-700">Novo Produto</h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 group-hover:text-blue-600/80 mt-0.5">Cadastrar manualmente</p>
                 </div>
             </a>
 
             <a href="{% url 'dispositivo_create' %}" 
-               class="flex items-center gap-4 p-4 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-xl transition-all shadow-sm hover:shadow-md group">
-                <div class="bg-white w-12 h-12 flex items-center justify-center rounded-lg shadow-sm border border-slate-100 group-hover:border-indigo-200 group-hover:scale-105 transition-transform">
+               class="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-900/50 hover:bg-indigo-50 dark:bg-indigo-900/20 border border-slate-200 dark:border-slate-700 hover:border-indigo-200 rounded-xl transition-all shadow-sm hover:shadow-md group">
+                <div class="bg-white dark:bg-slate-900 w-12 h-12 flex items-center justify-center rounded-lg shadow-sm border border-slate-100 dark:border-slate-800 group-hover:border-indigo-200 group-hover:scale-105 transition-transform">
                     <i class="ph-bold ph-monitor-play text-indigo-600 text-2xl"></i>
                 </div>
                 <div>
-                    <h4 class="font-bold text-slate-700 group-hover:text-indigo-700">Adicionar TV</h4>
-                    <p class="text-xs text-slate-500 group-hover:text-indigo-600/80 mt-0.5">Parear novo display</p>
+                    <h4 class="font-bold text-slate-700 dark:text-slate-300 group-hover:text-indigo-700">Adicionar TV</h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 group-hover:text-indigo-600/80 mt-0.5">Parear novo display</p>
                 </div>
             </a>
         </div>

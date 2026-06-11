@@ -8,22 +8,22 @@
     
     <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">{{ titulo }}</h1>
-            <p class="text-sm text-slate-500 mt-1">Gerencie as informações detalhadas deste item do catálogo.</p>
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{{ titulo }}</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Gerencie as informações detalhadas deste item do catálogo.</p>
         </div>
-        <a href="{% url 'produtos_list' %}" class="group bg-white border border-slate-200 px-4 py-2 rounded-xl text-slate-600 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 shadow-sm font-bold text-sm flex items-center gap-2 transition-all">
+        <a href="{% url 'produtos_list' %}" class="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 dark:bg-indigo-900/20 shadow-sm font-bold text-sm flex items-center gap-2 transition-all">
             <i class="ph-bold ph-arrow-left group-hover:-translate-x-1 transition-transform"></i> Voltar
         </a>
     </header>
 
-    <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+    <section class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden">
         <form method="post" enctype="multipart/form-data" class="p-6 md:p-8 space-y-8">
             {% csrf_token %}
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
                 <div>
-                    <label for="{{ form.codigo.id_for_label }}" class="block text-sm font-bold text-slate-700 mb-2">
+                    <label for="{{ form.codigo.id_for_label }}" class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
                         Código (EAN/Interno) <span class="text-red-500">*</span>
                     </label>
                     {{ form.codigo }}
@@ -35,7 +35,7 @@
                 </div>
 
                 <div>
-                    <label for="{{ form.descricao.id_for_label }}" class="block text-sm font-bold text-slate-700 mb-2">
+                    <label for="{{ form.descricao.id_for_label }}" class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
                         Nome do Produto <span class="text-red-500">*</span>
                     </label>
                     {{ form.descricao }}
@@ -47,7 +47,7 @@
                 </div>
 
                 <div>
-                    <label for="{{ form.preco.id_for_label }}" class="block text-sm font-bold text-slate-700 mb-2">
+                    <label for="{{ form.preco.id_for_label }}" class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
                         Preço de Venda <span class="text-red-500">*</span>
                     </label>
                     <div class="relative group">
@@ -64,21 +64,21 @@
                 </div>
 
                 <div>
-                    <label for="{{ form.familia.id_for_label }}" class="block text-sm font-bold text-slate-700 mb-2">
+                    <label for="{{ form.familia.id_for_label }}" class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
                         Categoria / Família
                     </label>
                     {{ form.familia }}
                 </div>
             </div>
 
-            <hr class="border-slate-100">
+            <hr class="border-slate-100 dark:border-slate-800">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-3">Imagem do Produto</label>
-                    <div class="flex items-start gap-4 p-5 bg-slate-50/80 rounded-xl border border-slate-200">
-                        <div class="h-28 w-28 bg-white border border-slate-200 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center relative shadow-sm group">
+                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">Imagem do Produto</label>
+                    <div class="flex items-start gap-4 p-5 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div class="h-28 w-28 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center relative shadow-sm group">
                             <img id="img-preview" 
                                  src="{% if produto.imagem %}{{ produto.imagem.url }}{% endif %}" 
                                  class="w-full h-full object-cover transition-opacity {% if not produto.imagem %}opacity-0 absolute{% endif %}">
@@ -88,7 +88,7 @@
                         
                         <div class="flex-1 min-w-0">
                             {{ form.imagem }}
-                            <p class="text-xs text-slate-500 mt-3 leading-relaxed">
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">
                                 Formatos: JPG, PNG ou WEBP.<br>
                                 <span class="font-bold text-indigo-600">Dica: Use fundo transparente.</span>
                             </p>
@@ -97,30 +97,30 @@
                 </div>
 
                 <div class="space-y-4">
-                    <label class="block text-sm font-bold text-slate-700 mb-2">Configurações</label>
+                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Configurações</label>
                     
                     <label class="flex items-center justify-between p-4 rounded-xl border transition-colors cursor-pointer group hover:shadow-md
-                                {% if form.em_oferta.value %}bg-amber-50 border-amber-200 shadow-sm{% else %}bg-white border-slate-200 hover:border-amber-200 hover:bg-amber-50/50{% endif %}">
+                                {% if form.em_oferta.value %}bg-amber-50 dark:bg-amber-900/20 border-amber-200 shadow-sm{% else %}bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-amber-200 hover:bg-amber-50 dark:bg-amber-900/20/50{% endif %}">
                         <div class="flex items-center gap-3">
-                            <div class="p-2.5 rounded-lg text-lg transition-colors {% if form.em_oferta.value %}bg-amber-200 text-amber-700{% else %}bg-slate-100 text-slate-500 group-hover:bg-amber-100 group-hover:text-amber-600{% endif %}">
+                            <div class="p-2.5 rounded-lg text-lg transition-colors {% if form.em_oferta.value %}bg-amber-200 text-amber-700{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-amber-100 group-hover:text-amber-600{% endif %}">
                                 <i class="ph-fill ph-lightning"></i>
                             </div>
                             <div>
-                                <p class="text-sm font-bold text-slate-900">Produto em Oferta</p>
-                                <p class="text-xs text-slate-500">Aplica selo de promoção na TV.</p>
+                                <p class="text-sm font-bold text-slate-900 dark:text-white">Produto em Oferta</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Aplica selo de promoção na TV.</p>
                             </div>
                         </div>
                         {{ form.em_oferta }}
                     </label>
 
-                    <label class="flex items-center justify-between p-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors cursor-pointer group hover:shadow-md">
+                    <label class="flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:bg-slate-900/50 transition-colors cursor-pointer group hover:shadow-md">
                         <div class="flex items-center gap-3">
-                            <div class="p-2.5 rounded-lg text-lg bg-slate-100 text-slate-600 group-hover:bg-slate-200 transition-colors">
+                            <div class="p-2.5 rounded-lg text-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 group-hover:bg-slate-200 dark:bg-slate-700 transition-colors">
                                 <i class="ph-fill ph-power"></i>
                             </div>
                             <div>
-                                <p class="text-sm font-bold text-slate-900">Ativo / Visível</p>
-                                <p class="text-xs text-slate-500">Exibe o produto nas listas ativas.</p>
+                                <p class="text-sm font-bold text-slate-900 dark:text-white">Ativo / Visível</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Exibe o produto nas listas ativas.</p>
                             </div>
                         </div>
                         {{ form.exibir_no_painel }}
@@ -128,7 +128,7 @@
                 </div>
             </div>
 
-            <div class="pt-8 border-t border-slate-100 flex flex-col-reverse sm:flex-row items-center justify-end gap-3">
+            <div class="pt-8 border-t border-slate-100 dark:border-slate-800 flex flex-col-reverse sm:flex-row items-center justify-end gap-3">
                 {% if produto %}
                     <button type="button" onclick="openGlobalDeleteModal('{% url 'produto_delete' produto.id %}', '{{ produto.descricao|escapejs }}')" 
                        class="sm:mr-auto text-red-600 hover:text-red-700 text-sm font-bold px-5 py-3 hover:bg-red-50 rounded-xl transition-colors flex items-center gap-2">
@@ -137,7 +137,7 @@
                     </button>
                 {% endif %}
 
-                <a href="{% url 'produtos_list' %}" class="w-full sm:w-auto text-center px-5 py-3 text-sm font-bold text-slate-600 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 shadow-sm hover:text-slate-900 transition-colors">
+                <a href="{% url 'produtos_list' %}" class="w-full sm:w-auto text-center px-5 py-3 text-sm font-bold text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:bg-slate-900/50 shadow-sm hover:text-slate-900 dark:text-white transition-colors">
                     Cancelar
                 </a>
                 

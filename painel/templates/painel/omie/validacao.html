@@ -3,27 +3,27 @@
 {% block content %}
 <div class="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
     <div class="mb-8">
-        <h1 class="text-3xl font-bold text-slate-900 mb-2">Revisão de Sincronização</h1>
-        <p class="text-slate-500">Selecione os produtos que deseja importar ou atualizar no DisplayDigital.</p>
+        <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">Revisão de Sincronização</h1>
+        <p class="text-slate-500 dark:text-slate-400">Selecione os produtos que deseja importar ou atualizar no DisplayDigital.</p>
     </div>
 
     <!-- Métricas -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-            <p class="text-sm font-semibold text-slate-500 mb-1">Total no Omie</p>
-            <p class="text-2xl font-bold text-slate-900">{{ metricas.total_omie }}</p>
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+            <p class="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1">Total no Omie</p>
+            <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ metricas.total_omie }}</p>
         </div>
-        <div class="bg-indigo-50 rounded-xl border border-indigo-100 p-5 shadow-sm">
+        <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/50 p-5 shadow-sm">
             <p class="text-sm font-semibold text-indigo-600 mb-1">Novos ou Alterados</p>
             <p class="text-2xl font-bold text-indigo-900">{{ sync_obj.dados.novos|length|add:sync_obj.dados.alterados|length }}</p>
         </div>
-        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-            <p class="text-sm font-semibold text-slate-500 mb-1">Ignorados (Sem mudança)</p>
-            <p class="text-2xl font-bold text-slate-900">{{ metricas.inalterados_count }}</p>
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+            <p class="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1">Ignorados (Sem mudança)</p>
+            <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ metricas.inalterados_count }}</p>
         </div>
-        <div class="bg-slate-50 rounded-xl border border-slate-200 p-5 shadow-sm">
-            <p class="text-sm font-semibold text-slate-500 mb-1">Deny List (Ocultados)</p>
-            <p class="text-2xl font-bold text-slate-900">{{ metricas.ignorados_count }}</p>
+        <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+            <p class="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1">Deny List (Ocultados)</p>
+            <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ metricas.ignorados_count }}</p>
         </div>
     </div>
 
@@ -33,25 +33,25 @@
         {% if familias_dict %}
             <div class="space-y-4 mb-8">
                 {% for familia, produtos in familias_dict.items %}
-                <details class="group bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden" open>
-                    <summary class="flex items-center justify-between p-5 cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
+                <details class="group bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden" open>
+                    <summary class="flex items-center justify-between p-5 cursor-pointer bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:bg-slate-800 transition-colors">
                         <div class="flex items-center gap-3">
                             <i class="ph-bold ph-caret-right transition-transform group-open:rotate-90 text-slate-400"></i>
-                            <h3 class="font-bold text-slate-900">{{ familia }}</h3>
-                            <span class="inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold bg-white text-slate-500 border border-slate-200">
+                            <h3 class="font-bold text-slate-900 dark:text-white">{{ familia }}</h3>
+                            <span class="inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                                 {{ produtos|length }} itens
                             </span>
                         </div>
-                        <div class="flex items-center gap-4 text-sm font-medium text-slate-500">
-                            <label class="flex items-center gap-2 hover:text-slate-900 cursor-pointer">
-                                <input type="checkbox" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-600 checkbox-familia" checked>
+                        <div class="flex items-center gap-4 text-sm font-medium text-slate-500 dark:text-slate-400">
+                            <label class="flex items-center gap-2 hover:text-slate-900 dark:text-white cursor-pointer">
+                                <input type="checkbox" class="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-600 checkbox-familia" checked>
                                 Aprovar Todos
                             </label>
                         </div>
                     </summary>
-                    <div class="p-0 border-t border-slate-200">
-                        <table class="w-full text-left text-sm text-slate-600">
-                            <thead class="bg-white border-b border-slate-100 text-xs uppercase text-slate-400">
+                    <div class="p-0 border-t border-slate-200 dark:border-slate-700">
+                        <table class="w-full text-left text-sm text-slate-600 dark:text-slate-400">
+                            <thead class="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 text-xs uppercase text-slate-400">
                                 <tr>
                                     <th class="px-5 py-3 w-10">Aprovar</th>
                                     <th class="px-5 py-3">Código</th>
@@ -61,15 +61,15 @@
                                     <th class="px-5 py-3 text-right">Ação</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-100">
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/50">
                                 {% for prod in produtos %}
-                                <tr class="hover:bg-slate-50 transition-colors row-produto">
+                                <tr class="hover:bg-slate-50 dark:bg-slate-900/50 transition-colors row-produto">
                                     <td class="px-5 py-4">
                                         <input type="checkbox" name="aprovados" value="{{ prod.codigo }}" 
-                                               class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-600 checkbox-aprovado" checked>
+                                               class="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-600 checkbox-aprovado" checked>
                                     </td>
-                                    <td class="px-5 py-4 font-mono text-slate-500">{{ prod.codigo }}</td>
-                                    <td class="px-5 py-4 font-medium text-slate-900">
+                                    <td class="px-5 py-4 font-mono text-slate-500 dark:text-slate-400">{{ prod.codigo }}</td>
+                                    <td class="px-5 py-4 font-medium text-slate-900 dark:text-white">
                                         {% if prod.nome_antigo %}
                                             <div class="flex flex-col">
                                                 <span class="text-slate-400 line-through text-xs">{{ prod.nome_antigo }}</span>
@@ -81,7 +81,7 @@
                                     </td>
                                     <td class="px-5 py-4">
                                         {% if prod.tipo == 'novo' %}
-                                            <span class="font-bold text-slate-900">R$ {{ prod.preco|floatformat:2 }}</span>
+                                            <span class="font-bold text-slate-900 dark:text-white">R$ {{ prod.preco|floatformat:2 }}</span>
                                         {% else %}
                                             <div class="flex items-center gap-2">
                                                 {% if prod.mudou_preco %}
@@ -89,7 +89,7 @@
                                                     <i class="ph-bold ph-arrow-right text-indigo-400"></i>
                                                     <span class="font-bold text-indigo-600">R$ {{ prod.preco|floatformat:2 }}</span>
                                                 {% else %}
-                                                    <span class="font-bold text-slate-900">R$ {{ prod.preco|floatformat:2 }}</span>
+                                                    <span class="font-bold text-slate-900 dark:text-white">R$ {{ prod.preco|floatformat:2 }}</span>
                                                 {% endif %}
                                             </div>
                                         {% endif %}
@@ -100,11 +100,11 @@
                                                 <i class="ph-fill ph-sparkle"></i> Produto Novo
                                             </span>
                                         {% elif prod.mudou_preco and prod.mudou_dados %}
-                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 dark:bg-amber-900/20 text-amber-700 border border-amber-200">
                                                 <i class="ph-bold ph-arrows-down-up"></i> Preço e Dados
                                             </span>
                                         {% elif prod.mudou_preco %}
-                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 dark:bg-amber-900/20 text-amber-700 border border-amber-200">
                                                 <i class="ph-bold ph-arrows-down-up"></i> Preço Alterado
                                             </span>
                                         {% else %}
@@ -115,7 +115,7 @@
                                     </td>
                                     <td class="px-5 py-4 text-right">
                                         <label class="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-red-600 cursor-pointer transition-colors group-denylist">
-                                            <input type="checkbox" name="denylist" value="{{ prod.codigo }}" class="rounded border-slate-300 text-red-600 focus:ring-red-600 checkbox-denylist">
+                                            <input type="checkbox" name="denylist" value="{{ prod.codigo }}" class="rounded border-slate-300 dark:border-slate-600 text-red-600 focus:ring-red-600 checkbox-denylist">
                                             Ignorar para sempre
                                         </label>
                                     </td>
@@ -129,26 +129,26 @@
             </div>
 
             <!-- Sticky Footer for Action -->
-            <div class="sticky bottom-4 bg-white/80 backdrop-blur-md border border-slate-200 p-4 rounded-2xl shadow-xl flex items-center justify-between">
-                <p class="text-sm text-slate-500">Revise os itens antes de prosseguir. Itens na Deny List não serão importados e sumirão nas próximas sincronizações.</p>
+            <div class="sticky bottom-4 bg-white dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-slate-700 p-4 rounded-2xl shadow-xl flex items-center justify-between">
+                <p class="text-sm text-slate-500 dark:text-slate-400">Revise os itens antes de prosseguir. Itens na Deny List não serão importados e sumirão nas próximas sincronizações.</p>
                 <div class="flex gap-3">
-                    <a href="{% url 'produtos_list' %}" class="px-6 py-3 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
+                    <a href="{% url 'produtos_list' %}" class="px-6 py-3 rounded-xl font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 transition-colors">
                         Cancelar
                     </a>
-                    <button type="submit" class="inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
+                    <button type="submit" class="inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50">
                         <i class="ph-bold ph-check"></i> Efetivar Sincronização
                     </button>
                 </div>
             </div>
 
         {% else %}
-            <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-12 text-center shadow-sm">
                 <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-50 text-green-600 mb-4">
                     <i class="ph-fill ph-check-circle text-4xl"></i>
                 </div>
-                <h3 class="text-2xl font-bold text-slate-900 mb-2">Tudo atualizado!</h3>
-                <p class="text-slate-500 max-w-md mx-auto mb-6">Nenhum produto novo ou alterado foi encontrado no Omie em relação ao nosso painel.</p>
-                <a href="{% url 'produtos_list' %}" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
+                <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Tudo atualizado!</h3>
+                <p class="text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">Nenhum produto novo ou alterado foi encontrado no Omie em relação ao nosso painel.</p>
+                <a href="{% url 'produtos_list' %}" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50">
                     Voltar aos Produtos
                 </a>
             </div>

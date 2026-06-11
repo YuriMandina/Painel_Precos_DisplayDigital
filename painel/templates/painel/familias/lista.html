@@ -6,26 +6,29 @@
 {% block content %}
 <div class="max-w-5xl mx-auto">
     
-    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Famílias de Produtos</h1>
-            <p class="text-sm text-slate-500 mt-1">Categorias utilizadas para organizar a playlist nas TVs.</p>
+    <header class="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-3xl p-8 mb-8 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50">
+        <div class="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')]"></div>
+        <div class="relative z-10">
+            <h1 class="text-3xl font-bold text-white tracking-tight">Famílias de Produtos</h1>
+            <p class="text-sm text-indigo-200 mt-1">Categorias utilizadas para organizar a playlist nas TVs.</p>
         </div>
         
-        <a href="{% url 'familia_create' %}" 
-           class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-600/30 hover:-translate-y-0.5">
-            <i class="ph-bold ph-plus text-lg"></i>
-            Nova Família
-        </a>
+        <div class="relative z-10">
+            <a href="{% url 'familia_create' %}" 
+               class="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-900 text-indigo-700 hover:bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm font-bold transition-all shadow-lg hover:-translate-y-0.5">
+                <i class="ph-bold ph-plus text-lg"></i>
+                Nova Família
+            </a>
+        </div>
     </header>
 
-    <section class="bg-white p-2.5 rounded-2xl shadow-sm border border-slate-200 mb-8">
+    <section class="bg-white dark:bg-slate-900 p-2.5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 mb-8">
         <form method="GET" class="flex flex-col sm:flex-row gap-3">
             <div class="relative flex-1 group">
                 <i class="ph-bold ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg group-focus-within:text-indigo-600 transition-colors"></i>
                 <input type="text" name="q" value="{{ query }}" 
                        placeholder="Buscar por nome da categoria..." 
-                       class="w-full pl-11 pr-4 py-3 border-none rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-600 transition-all text-sm text-slate-900">
+                       class="w-full pl-11 pr-4 py-3 border-none rounded-xl bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-950 dark:bg-slate-900 focus:ring-2 focus:ring-indigo-600 transition-all text-sm text-slate-900 dark:text-white">
             </div>
             
             <button type="submit" class="px-6 py-3 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all shadow-md hover:-translate-y-0.5">
@@ -33,32 +36,32 @@
             </button>
             
             {% if query %}
-            <a href="{% url 'familia_list' %}" class="px-4 py-3 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors flex items-center justify-center border border-transparent hover:border-red-100" title="Limpar Filtros">
+            <a href="{% url 'familia_list' %}" class="px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors flex items-center justify-center border border-transparent hover:border-red-100" title="Limpar Filtros">
                 <i class="ph-bold ph-x text-lg"></i>
             </a>
             {% endif %}
         </form>
     </section>
 
-    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden">
         
         {% if familias %}
-        <table class="min-w-full divide-y divide-slate-200">
-            <thead class="bg-slate-50/80">
+        <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+            <thead class="bg-slate-50 dark:bg-slate-800">
                 <tr>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Nome da Categoria</th>
-                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">Ações</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Nome da Categoria</th>
+                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Ações</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100 bg-white">
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/50 bg-white dark:bg-slate-900">
                 {% for familia in familias %}
-                <tr class="hover:bg-slate-50 transition-colors group">
+                <tr class="hover:bg-slate-50 dark:bg-slate-900/50 transition-colors group">
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex items-center gap-4">
-                            <div class="h-10 w-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center border border-sky-100 shadow-sm group-hover:scale-110 transition-transform">
+                            <div class="h-10 w-10 rounded-xl bg-sky-50 dark:bg-sky-900/20 text-sky-600 flex items-center justify-center border border-sky-100 dark:border-sky-800/50 shadow-sm group-hover:scale-110 transition-transform">
                                 <i class="ph-fill ph-folder text-xl"></i>
                             </div>
-                            <span class="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                            <span class="text-sm font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 transition-colors">
                                 {{ familia.nome }}
                             </span>
                         </div>
@@ -67,7 +70,7 @@
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div class="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                             <a href="{% url 'familia_edit' familia.id %}" 
-                               class="text-slate-400 hover:text-indigo-600 p-2 rounded-lg hover:bg-indigo-50 transition-colors" 
+                               class="text-slate-400 hover:text-indigo-600 p-2 rounded-lg hover:bg-indigo-50 dark:bg-indigo-900/20 transition-colors" 
                                title="Editar">
                                 <i class="ph-fill ph-pencil-simple text-xl"></i>
                             </a>
@@ -84,16 +87,16 @@
         </table>
 
         {% if is_paginated %}
-        <div class="bg-slate-50/80 border-t border-slate-200 px-6 py-4 flex items-center justify-between">
-            <div class="text-xs font-medium text-slate-500">
-                Página <span class="font-bold text-slate-900">{{ page_obj.number }}</span> de <span class="font-bold text-slate-900">{{ page_obj.paginator.num_pages }}</span>
+        <div class="bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
+            <div class="text-xs font-medium text-slate-500 dark:text-slate-400">
+                Página <span class="font-bold text-slate-900 dark:text-white">{{ page_obj.number }}</span> de <span class="font-bold text-slate-900 dark:text-white">{{ page_obj.paginator.num_pages }}</span>
             </div>
             <div class="flex gap-2">
                 {% if page_obj.has_previous %}
-                    <a href="?page={{ page_obj.previous_page_number }}&q={{ query }}" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors shadow-sm">Anterior</a>
+                    <a href="?page={{ page_obj.previous_page_number }}&q={{ query }}" class="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-800 transition-colors shadow-sm">Anterior</a>
                 {% endif %}
                 {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}&q={{ query }}" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors shadow-sm">Próxima</a>
+                    <a href="?page={{ page_obj.next_page_number }}&q={{ query }}" class="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-800 transition-colors shadow-sm">Próxima</a>
                 {% endif %}
             </div>
         </div>
@@ -101,11 +104,11 @@
 
         {% else %}
         <div class="text-center py-20 px-6">
-            <div class="bg-slate-50 rounded-full h-24 w-24 flex items-center justify-center mx-auto mb-6 border border-slate-100 shadow-inner">
+            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-full h-24 w-24 flex items-center justify-center mx-auto mb-6 border border-slate-100 dark:border-slate-800 shadow-inner">
                 <i class="ph-fill ph-folders text-4xl text-slate-300"></i>
             </div>
-            <h3 class="text-xl font-bold text-slate-900">Nenhuma família encontrada</h3>
-            <p class="text-slate-500 mt-2 max-w-sm mx-auto">Comece criando categorias para organizar seus produtos.</p>
+            <h3 class="text-xl font-bold text-slate-900 dark:text-white">Nenhuma família encontrada</h3>
+            <p class="text-slate-500 dark:text-slate-400 mt-2 max-w-sm mx-auto">Comece criando categorias para organizar seus produtos.</p>
             <div class="mt-8">
                 <a href="{% url 'familia_create' %}" class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-indigo-700 hover:-translate-y-0.5 transition-all">
                    <i class="ph-bold ph-plus"></i> Criar primeira família

@@ -6,25 +6,28 @@
 {% block content %}
 <section class="max-w-7xl mx-auto">
     
-    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Biblioteca de Mídia</h1>
-            <p class="text-sm text-slate-500 mt-1">Gerencie vídeos e imagens para usar em suas playlists.</p>
+    <header class="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-3xl p-8 mb-8 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50">
+        <div class="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')]"></div>
+        <div class="relative z-10">
+            <h1 class="text-3xl font-bold text-white tracking-tight">Biblioteca de Mídia</h1>
+            <p class="text-sm text-indigo-200 mt-1">Gerencie vídeos e imagens para usar em suas playlists.</p>
         </div>
         
-        <a href="{% url 'midia_create' %}" 
-           class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-600/30 hover:-translate-y-0.5 transition-all">
-            <i class="ph-bold ph-upload-simple text-lg"></i>
-            <span>Nova Mídia</span>
-        </a>
+        <div class="relative z-10">
+            <a href="{% url 'midia_create' %}" 
+               class="inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-900 text-indigo-700 hover:bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm font-bold shadow-lg hover:-translate-y-0.5 transition-all">
+                <i class="ph-bold ph-upload-simple text-lg"></i>
+                <span>Nova Mídia</span>
+            </a>
+        </div>
     </header>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         
         {% for item in midias %}
-        <article class="bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group flex flex-col h-full hover:-translate-y-1">
+        <article class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group flex flex-col h-full hover:-translate-y-1">
             
-            <div class="relative h-44 bg-slate-100 flex items-center justify-center overflow-hidden border-b border-slate-100">
+            <div class="relative h-44 bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden border-b border-slate-100 dark:border-slate-800">
                 {% if item.tipo == 'VIDEO' %}
                     <video src="{{ item.arquivo.url }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" muted></video>
                     <div class="absolute top-3 right-3 bg-slate-900/70 text-white text-[10px] font-bold tracking-widest px-2.5 py-1 rounded-md backdrop-blur-md shadow-sm">
@@ -38,34 +41,34 @@
                 {% endif %}
             </div>
 
-            <div class="p-5 flex-1 flex flex-col bg-white relative z-10">
+            <div class="p-5 flex-1 flex flex-col bg-white dark:bg-slate-900 relative z-10">
                 <div class="flex justify-between items-start mb-3">
-                    <h3 class="font-bold text-slate-800 text-sm truncate flex-1 pr-3" title="{{ item.nome }}">
+                    <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm truncate flex-1 pr-3" title="{{ item.nome }}">
                         {{ item.nome }}
                     </h3>
                     
                     <div class="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
 
-                        <button type="button" onclick="openGlobalDeleteModal('{% url 'midia_delete' item.id %}', '{{ item.nome|escapejs }}')" class="text-slate-400 hover:text-red-600 transition-colors p-1 bg-slate-50 hover:bg-red-50 rounded-md">
+                        <button type="button" onclick="openGlobalDeleteModal('{% url 'midia_delete' item.id %}', '{{ item.nome|escapejs }}')" class="text-slate-400 hover:text-red-600 transition-colors p-1 bg-slate-50 dark:bg-slate-900/50 hover:bg-red-50 rounded-md">
                             <i class="ph-fill ph-trash text-base"></i>
                         </button>
                     </div>
                 </div>
 
-                <div class="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-medium text-slate-400">
+                <div class="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] font-medium text-slate-400">
                     <span class="flex items-center gap-1"><i class="ph-bold ph-calendar-blank"></i> {{ item.created_at|date:"d/m/Y" }}</span>
-                    <span class="bg-slate-100 px-2 py-1 rounded-md text-slate-600 font-bold border border-slate-200">{{ item.duracao }}s</span>
+                    <span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md text-slate-600 dark:text-slate-400 font-bold border border-slate-200 dark:border-slate-700">{{ item.duracao }}s</span>
                 </div>
             </div>
         </article>
 
         {% empty %}
-        <div class="col-span-full py-20 px-6 text-center bg-white rounded-3xl border-2 border-dashed border-slate-300">
-            <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300 border border-slate-100 shadow-inner">
+        <div class="col-span-full py-20 px-6 text-center bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-600">
+            <div class="w-20 h-20 bg-slate-50 dark:bg-slate-900/50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300 border border-slate-100 dark:border-slate-800 shadow-inner">
                 <i class="ph-fill ph-film-strip text-4xl"></i>
             </div>
-            <h3 class="text-xl font-bold text-slate-900">Nenhuma mídia encontrada</h3>
-            <p class="text-slate-500 text-sm mt-2 max-w-sm mx-auto">Faça upload de vídeos ou imagens para usá-las em suas playlists.</p>
+            <h3 class="text-xl font-bold text-slate-900 dark:text-white">Nenhuma mídia encontrada</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mt-2 max-w-sm mx-auto">Faça upload de vídeos ou imagens para usá-las em suas playlists.</p>
             
             <div class="mt-8">
                 <a href="{% url 'midia_create' %}" class="inline-flex items-center gap-2 px-6 py-3.5 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-indigo-700 hover:-translate-y-0.5 transition-all">

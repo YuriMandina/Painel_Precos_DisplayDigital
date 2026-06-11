@@ -11,12 +11,12 @@
             <a href="{% url 'lista_personalizada_list' %}" class="text-slate-400 hover:text-indigo-600 transition-colors">
                 <i class="ph-bold ph-arrow-left text-xl"></i>
             </a>
-            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">{{ titulo }}</h1>
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{{ titulo }}</h1>
         </div>
-        <p class="text-sm text-slate-500 ml-8">Configure o agrupamento de produtos e sua exibição na TV.</p>
+        <p class="text-sm text-slate-500 dark:text-slate-400 ml-8">Configure o agrupamento de produtos e sua exibição na TV.</p>
     </header>
 
-    <form method="post" class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+    <form method="post" class="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
         {% csrf_token %}
         <div class="p-8">
             <div class="max-w-2xl">
@@ -29,7 +29,7 @@
                 <button type="submit" class="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md">
                     <i class="ph-bold ph-floppy-disk mr-2"></i> Salvar Nome
                 </button>
-                <a href="{% url 'lista_personalizada_list' %}" class="px-6 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">
+                <a href="{% url 'lista_personalizada_list' %}" class="px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:bg-slate-700 transition-colors">
                     Voltar
                 </a>
             </div>
@@ -37,39 +37,39 @@
     </form>
 
     {% if object %}
-    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mt-8">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden mt-8">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
             <div>
-                <h2 class="text-xl font-bold text-slate-900">Gerenciar Produtos</h2>
-                <p class="text-sm text-slate-500 mt-1">Arraste produtos do catálogo para a sua lista e defina a ordem de exibição.</p>
+                <h2 class="text-xl font-bold text-slate-900 dark:text-white">Gerenciar Produtos</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Arraste produtos do catálogo para a sua lista e defina a ordem de exibição.</p>
             </div>
             <button id="btn-salvar-itens" class="px-5 py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-md hidden flex items-center gap-2">
                 <i class="ph-bold ph-check"></i> Salvar Ordem
             </button>
         </div>
 
-        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50/50">
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50 dark:bg-slate-900/50/50">
             <!-- Catálogo (Todos os Produtos) -->
             <div class="flex flex-col">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-bold text-slate-700 uppercase tracking-widest"><i class="ph-bold ph-books mr-1"></i> Seu Catálogo</h3>
-                    <input type="text" id="busca-catalogo" placeholder="Buscar produto..." class="px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                    <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest"><i class="ph-bold ph-books mr-1"></i> Seu Catálogo</h3>
+                    <input type="text" id="busca-catalogo" placeholder="Buscar produto..." class="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                 </div>
                 
-                <div class="bg-white border border-slate-200 rounded-2xl shadow-inner h-[600px] overflow-y-auto custom-scrollbar p-2" id="lista-catalogo">
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-inner h-[600px] overflow-y-auto custom-scrollbar p-2" id="lista-catalogo">
                     {% regroup todos_produtos by familia as familias_list %}
                     {% for familia in familias_list %}
-                    <details class="mb-2 bg-white border border-slate-200 rounded-xl overflow-hidden group familia-accordion">
-                        <summary class="p-4 bg-slate-50 font-bold cursor-pointer flex justify-between items-center group-open:border-b border-slate-200 hover:bg-slate-100 transition-colors">
-                            <span class="text-slate-800 text-sm"><i class="ph-bold ph-folder mr-2 text-indigo-500"></i> {{ familia.grouper.nome }}</span>
+                    <details class="mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden group familia-accordion">
+                        <summary class="p-4 bg-slate-50 dark:bg-slate-900/50 font-bold cursor-pointer flex justify-between items-center group-open:border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-800 transition-colors">
+                            <span class="text-slate-800 dark:text-slate-200 text-sm"><i class="ph-bold ph-folder mr-2 text-indigo-500"></i> {{ familia.grouper.nome }}</span>
                             <i class="ph-bold ph-caret-down group-open:rotate-180 transition-transform text-slate-400"></i>
                         </summary>
                         <div class="p-2 space-y-2 sortable-source min-h-[20px]">
                             {% for p in familia.list %}
-                            <div class="produto-item bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center cursor-grab hover:border-indigo-300 hover:shadow-md transition-all group/item" data-id="{{ p.id }}" data-nome="{{ p.descricao|lower }}">
+                            <div class="produto-item bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 flex justify-between items-center cursor-grab hover:border-indigo-300 hover:shadow-md transition-all group/item" data-id="{{ p.id }}" data-nome="{{ p.descricao|lower }}">
                                 <div class="flex flex-col">
-                                    <span class="text-sm font-bold text-slate-800">{{ p.descricao }}</span>
-                                    <span class="text-xs text-slate-500">{{ p.familia.nome }} &bull; R$ {{ p.preco }}</span>
+                                    <span class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ p.descricao }}</span>
+                                    <span class="text-xs text-slate-500 dark:text-slate-400">{{ p.familia.nome }} &bull; R$ {{ p.preco }}</span>
                                 </div>
                                 <i class="ph-bold ph-dots-six-vertical text-slate-400 group-hover/item:text-indigo-400"></i>
                             </div>
@@ -87,7 +87,7 @@
                     <span class="text-xs font-bold bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full" id="contador-lista">{{ itens_lista.count }} itens</span>
                 </div>
                 
-                <div class="bg-indigo-50/30 border-2 border-indigo-100 border-dashed rounded-2xl h-[600px] overflow-y-auto custom-scrollbar p-2 relative sortable-target" id="lista-ativa">
+                <div class="bg-indigo-50 dark:bg-indigo-900/20/30 border-2 border-indigo-100 dark:border-indigo-800/50 border-dashed rounded-2xl h-[600px] overflow-y-auto custom-scrollbar p-2 relative sortable-target" id="lista-ativa">
                     {% if not itens_lista %}
                     <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 pointer-events-none empty-state">
                         <i class="ph-fill ph-hand-grabbing text-4xl mb-2 text-indigo-200"></i>
@@ -96,13 +96,13 @@
                     {% endif %}
                     
                     {% for item in itens_lista %}
-                    <div class="produto-item bg-white border border-slate-200 rounded-xl p-3 mb-2 flex justify-between items-center cursor-grab hover:border-indigo-300 hover:shadow-md transition-all group/item" data-id="{{ item.produto.id }}">
+                    <div class="produto-item bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 mb-2 flex justify-between items-center cursor-grab hover:border-indigo-300 hover:shadow-md transition-all group/item" data-id="{{ item.produto.id }}">
                         <div class="flex flex-col">
-                            <span class="text-sm font-bold text-slate-800">{{ item.produto.descricao }}</span>
-                            <span class="text-xs text-slate-500">{{ item.produto.familia.nome }} &bull; R$ {{ item.produto.preco }}</span>
+                            <span class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ item.produto.descricao }}</span>
+                            <span class="text-xs text-slate-500 dark:text-slate-400">{{ item.produto.familia.nome }} &bull; R$ {{ item.produto.preco }}</span>
                         </div>
                         <div class="flex items-center gap-2 actions-container">
-                            <button type="button" class="btn-remover text-slate-400 hover:text-red-500 p-1 bg-slate-50 rounded-md hover:bg-red-50">
+                            <button type="button" class="btn-remover text-slate-400 hover:text-red-500 p-1 bg-slate-50 dark:bg-slate-900/50 rounded-md hover:bg-red-50">
                                 <i class="ph-bold ph-x"></i>
                             </button>
                             <i class="ph-bold ph-dots-six-vertical text-slate-400 group-hover/item:text-indigo-400 cursor-grab"></i>
@@ -169,7 +169,7 @@
                         const div = document.createElement('div');
                         div.className = 'flex items-center gap-2 actions-container';
                         div.innerHTML = `
-                            <button type="button" class="btn-remover text-slate-400 hover:text-red-500 p-1 bg-slate-50 rounded-md hover:bg-red-50">
+                            <button type="button" class="btn-remover text-slate-400 hover:text-red-500 p-1 bg-slate-50 dark:bg-slate-900/50 rounded-md hover:bg-red-50">
                                 <i class="ph-bold ph-x"></i>
                             </button>
                             <i class="ph-bold ph-dots-six-vertical text-slate-400 group-hover/item:text-indigo-400 cursor-grab"></i>

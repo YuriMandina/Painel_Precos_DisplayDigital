@@ -10,10 +10,10 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>body { font-family: 'Outfit', sans-serif; }</style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
+<body class="bg-slate-50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 antialiased min-h-screen">
     {% if not request.user.is_authenticated %}
     <div class="p-4 sm:p-6">
-        <a href="javascript:history.back()" class="inline-flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors font-medium">
+        <a href="javascript:history.back()" class="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 transition-colors font-medium">
             <i class="ph-bold ph-arrow-left"></i> Voltar
         </a>
     </div>
