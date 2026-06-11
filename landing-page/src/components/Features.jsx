@@ -1,20 +1,25 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { Observer } from 'gsap/Observer';
+import { useGSAP } from '@gsap/react';
 import { Database, MonitorPlay, Tv, Play } from 'lucide-react';
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger, Observer, useGSAP);
 
 const Features = () => {
   const integrationRef = useRef(null);
   const screenPriceRef = useRef(null);
   const dbPriceRef = useRef(null);
   const tiltRef = useRef(null);
+  const tableRef = useRef(null);
+  
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
+  useGSAP(() => {
     const q = gsap.utils.selector(integrationRef);
 
-    // Scroll-Scrubbing e Pinning para a Seção de Integração
+    // 1. Scroll-Scrubbing e Pinning para a Seção de Integração
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: integrationRef.current,
@@ -22,18 +27,20 @@ const Features = () => {
         end: "+=120%", // Trava na tela por 120% do viewport
         pin: true,
         scrub: 1, // Animação amarrada ao scroll (Scroll-Scrubbing)
+        onEnter: () => startAutoRefresh(),
+        onLeave: () => stopAutoRefresh(),
+        onEnterBack: () => startAutoRefresh(),
+        onLeaveBack: () => stopAutoRefresh()
       }
     });
 
-    // 1. Anima a luz percorrendo o cabo SVG
     tl.fromTo(q('.data-cable'), 
       { strokeDashoffset: 130 }, 
       { strokeDashoffset: -30, duration: 1, ease: "none" }
     );
 
-    // 2. Quando a luz atinge a tela (em 85% do progresso)
     tl.to(screenPriceRef.current, {
-      color: "#C48B57", // Muda para a cor de destaque (accent)
+      color: "#C48B57",
       scale: 1.15,
       duration: 0.1,
       onStart: () => {
@@ -44,10 +51,7 @@ const Features = () => {
       }
     }, 0.85);
 
-    tl.to(screenPriceRef.current, {
-      scale: 1,
-      duration: 0.1
-    }, 0.95);
+    tl.to(screenPriceRef.current, { scale: 1, duration: 0.1 }, 0.95);
 
     // Fade normal para os outros features
     gsap.utils.toArray('.fade-up').forEach(elem => {
@@ -63,25 +67,79 @@ const Features = () => {
       );
     });
 
-    // Loop contínuo simulando o banco de dados atualizando loucamente
+    // 2. Loop contínuo simulando o banco de dados
     const interval = setInterval(() => {
       if(dbPriceRef.current) {
         dbPriceRef.current.innerText = (Math.random() * (99.99 - 50.00) + 50.00).toFixed(2);
       }
     }, 80);
 
-    return () => clearInterval(interval);
-  }, []);
+    // 3. Desintegração Automática (enquanto a seção está focada)
+    let autoRefreshTimer;
+    const startAutoRefresh = () => {
+      if(!autoRefreshTimer) {
+        // Dispara a primeira animação rápido e depois segue em loop
+        setTimeout(() => triggerDisintegration(1), 500);
+        autoRefreshTimer = setInterval(() => triggerDisintegration(1), 3000);
+      }
+    };
+    const stopAutoRefresh = () => {
+      if(autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+      }
+    };
 
-  // Handlers para o Parallax 3D (Tilt) na seção Mídia Dinâmica
+    let isAnimating = false;
+    const triggerDisintegration = (dir) => {
+      if (isAnimating) return;
+      isAnimating = true;
+      setIsRefreshing(true);
+
+      const items = q('.menu-item');
+      
+      // Desintegra
+      gsap.to(items, {
+        y: dir * -20,
+        opacity: 0,
+        stagger: 0.05,
+        duration: 0.3,
+        ease: "power2.in",
+        onComplete: () => {
+          // Reconstrói (monta a próxima em milissegundos)
+          gsap.fromTo(items, 
+            { y: dir * 20, opacity: 0 },
+            { 
+              y: 0, 
+              opacity: 1, 
+              stagger: 0.05, 
+              duration: 0.4, 
+              ease: "back.out(1.5)",
+              onComplete: () => {
+                isAnimating = false;
+                setIsRefreshing(false);
+              }
+            }
+          );
+        }
+      });
+    };
+
+    return () => {
+      clearInterval(interval);
+      stopAutoRefresh();
+    };
+  }, { scope: integrationRef }); // useGSAP gerencia o cleanup
+
+  // Handlers para o Parallax 3D (Tilt)
   const handleMouseMove = (e) => {
     if (!tiltRef.current) return;
     const { left, top, width, height } = tiltRef.current.getBoundingClientRect();
-    const x = (e.clientX - left) / width - 0.5; // -0.5 a 0.5
+    const x = (e.clientX - left) / width - 0.5;
     const y = (e.clientY - top) / height - 0.5;
 
     gsap.to(tiltRef.current, {
-      rotationY: x * 30, // max 15 graus de inclinação
+      rotationY: x * 30,
       rotationX: -y * 30,
       ease: "power2.out",
       duration: 0.6
@@ -113,9 +171,9 @@ const Features = () => {
       <div ref={integrationRef} className="min-h-[80vh] w-full flex flex-col justify-center relative bg-background z-10 py-10">
         
         <div className="text-center mb-12 px-4">
-          <h3 className="text-3xl font-heading font-bold text-primary mb-2">O Fluxo de Dados</h3>
+          <h3 className="text-3xl font-heading font-bold text-primary mb-2">Controle total das suas telas, em tempo real.</h3>
           <p className="text-lg text-textMain/60 font-body max-w-xl mx-auto">
-            Role a tela para baixo. Veja como o preço sai do banco de dados e atualiza a sua tela em tempo real.
+            Mudou no sistema, atualizou no painel de preços. Elimine o retrabalho e garanta que o preço do balcão seja sempre o preço do caixa.
           </p>
         </div>
 
@@ -142,42 +200,52 @@ const Features = () => {
           </div>
 
           {/* Centro: Cabo de Dados (SVG) */}
-          <div className="w-full h-24 lg:w-48 lg:h-8 flex items-center justify-center">
+          <div className="w-full h-24 lg:w-48 lg:h-8 flex items-center justify-center pointer-events-none">
             <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-               {/* Fundo do Cabo - Desktop */}
                <line x1="0" y1="50" x2="100" y2="50" stroke="#2C1A12" strokeWidth="2" strokeOpacity="0.1" className="hidden lg:block" />
-               {/* Fundo do Cabo - Mobile */}
                <line x1="50" y1="0" x2="50" y2="100" stroke="#2C1A12" strokeWidth="2" strokeOpacity="0.1" className="block lg:hidden" />
                
-               {/* Feixe de Luz - Desktop */}
                <line className="data-cable hidden lg:block" x1="0" y1="50" x2="100" y2="50" stroke="#C48B57" strokeWidth="6" strokeDasharray="30 100" strokeDashoffset="130" style={{ filter: 'drop-shadow(0px 0px 8px #C48B57)' }} />
-               {/* Feixe de Luz - Mobile */}
                <line className="data-cable block lg:hidden" x1="50" y1="0" x2="50" y2="100" stroke="#C48B57" strokeWidth="6" strokeDasharray="30 100" strokeDashoffset="130" style={{ filter: 'drop-shadow(0px 0px 8px #C48B57)' }} />
             </svg>
           </div>
 
-          {/* Direita: A Tela do Comércio */}
-          <div className="flex-1 w-full lg:max-w-md bg-[#F9F6F0] border-[12px] border-primary rounded-2xl shadow-2xl relative overflow-hidden">
-            <div className="bg-primary px-6 py-4 flex items-center gap-3">
-              <MonitorPlay className="w-6 h-6 text-accent" />
-              <span className="font-heading font-bold text-[#F9F6F0] tracking-wide">DisplayDigital</span>
+          {/* Direita: A Tela do Comércio (Com Observer Plugin) */}
+          <div 
+            ref={tableRef}
+            className="flex-1 w-full lg:max-w-md bg-[#F9F6F0] border-[12px] border-primary rounded-2xl shadow-2xl relative overflow-hidden cursor-ns-resize"
+          >
+            <div className="bg-primary px-6 py-4 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <MonitorPlay className="w-6 h-6 text-accent" />
+                <span className="font-heading font-bold text-[#F9F6F0] tracking-wide">DisplayDigital</span>
+              </div>
+              {isRefreshing && (
+                <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
+              )}
             </div>
+            
             <div className="p-8">
-              <div className="flex justify-between items-center border-b-2 border-primary/10 pb-4 mb-4">
+              <div className="menu-item flex justify-between items-center border-b-2 border-primary/10 pb-4 mb-4">
                 <span className="font-heading text-xl text-primary font-bold">Picanha Premium</span>
                 <span ref={screenPriceRef} className="font-body text-3xl font-black text-textMain/40 transition-colors duration-200">
                   R$ 89,90
                 </span>
               </div>
-              <div className="flex justify-between items-center border-b-2 border-primary/10 pb-4 mb-4">
+              <div className="menu-item flex justify-between items-center border-b-2 border-primary/10 pb-4 mb-4">
                 <span className="font-heading text-lg text-primary font-bold opacity-70">Fraldinha Grill</span>
                 <span className="font-body text-xl font-bold text-primary opacity-70">R$ 54,90</span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="menu-item flex justify-between items-center border-b-2 border-primary/10 pb-4 mb-4">
                 <span className="font-heading text-lg text-primary font-bold opacity-70">Costela Bovina</span>
                 <span className="font-body text-xl font-bold text-primary opacity-70">R$ 38,00</span>
               </div>
+              <div className="menu-item flex justify-between items-center">
+                <span className="font-heading text-lg text-primary font-bold opacity-70">Linguiça Toscana</span>
+                <span className="font-body text-xl font-bold text-primary opacity-70">R$ 24,50</span>
+              </div>
             </div>
+            
           </div>
 
         </div>
@@ -198,21 +266,17 @@ const Features = () => {
             </p>
           </div>
           
-          {/* Container com perspectiva 3D */}
           <div 
             className="flex-1 relative cursor-pointer" 
             style={{ perspective: "1000px" }}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
           >
-            {/* O "Cartão" 3D que gira com o mouse */}
             <div 
               ref={tiltRef} 
               className="aspect-video relative rounded-xl"
               style={{ transformStyle: "preserve-3d" }}
             >
-              
-              {/* CAMADA DE TRÁS (Background) - Profundidade Negativa */}
               <div 
                 className="absolute inset-0 rounded-xl overflow-hidden shadow-2xl" 
                 style={{ transform: "translateZ(-50px) scale(1.1)" }}
@@ -223,13 +287,11 @@ const Features = () => {
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-primary/40 mix-blend-multiply"></div>
-                {/* Fake Play Button */}
                 <div className="absolute top-4 right-4 bg-background/20 backdrop-blur rounded-full p-3">
                   <Play className="w-5 h-5 text-background" fill="currentColor" />
                 </div>
               </div>
 
-              {/* CAMADA DA FRENTE (Foreground / Tabela Glassmorphism) - Profundidade Positiva */}
               <div 
                 className="absolute inset-0 flex items-center justify-center pointer-events-none"
                 style={{ transform: "translateZ(80px)" }}
@@ -250,14 +312,12 @@ const Features = () => {
                  </div>
               </div>
               
-              {/* Elementos flutuantes extras (Profundidade Extrema) */}
               <div 
                 className="absolute -bottom-6 -left-6 bg-accent text-background px-6 py-3 rounded-lg shadow-xl font-bold font-heading pointer-events-none"
                 style={{ transform: "translateZ(120px)" }}
               >
                 Promoção Ativa
               </div>
-
             </div>
           </div>
         </div>

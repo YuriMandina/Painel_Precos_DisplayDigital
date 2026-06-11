@@ -1,12 +1,19 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
+import { Flip } from 'gsap/Flip';
+import { Observer } from 'gsap/Observer';
+
+gsap.registerPlugin(useGSAP, Flip, Observer);
 
 const Hero = () => {
   const containerRef = useRef(null);
   const ambientRef = useRef(null);
-  const imgRef = useRef(null);
+  const imgWrapperRef = useRef(null);
+  const imgContainerRef = useRef(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  useEffect(() => {
+  useGSAP(() => {
     const q = gsap.utils.selector(containerRef);
 
     // Máscaras de Tipografia (Clip-Path Reveals) para o título
@@ -28,8 +35,8 @@ const Hero = () => {
       { y: 0, opacity: 1, duration: 1, stagger: 0.15, ease: "power3.out", delay: 0.8 }
     );
 
-    // Fade and float para a imagem
-    gsap.fromTo(imgRef.current,
+    // Fade and float para a imagem (apenas na carga inicial)
+    gsap.fromTo(imgContainerRef.current,
       { y: 30, opacity: 0 },
       { y: 0, opacity: 1, duration: 1.2, ease: "power3.out", delay: 0.6 }
     );
@@ -43,20 +50,48 @@ const Hero = () => {
       yoyo: true,
       ease: "sine.inOut"
     });
-  }, []);
+
+  }, { scope: containerRef });
+
+  // Efeito FLIP - Simulando a expansão da TV para tela cheia
+  const toggleExpand = () => {
+    // 1. Captura o estado atual
+    const state = Flip.getState(imgWrapperRef.current);
+    
+    // 2. Altera o React State
+    setIsExpanded(!isExpanded);
+  };
+
+  useGSAP(() => {
+    // 3. Quando o React State muda e o DOM atualiza, o FLIP faz a transição
+    if (!imgWrapperRef.current) return;
+    const state = Flip.getState(imgWrapperRef.current);
+    
+    Flip.from(state, {
+      duration: 0.8,
+      ease: "power4.inOut",
+      absolute: true, // Importante para transições fixed
+      onComplete: () => {
+        // Blur text effect requirement
+        if (isExpanded) {
+          gsap.to('.hero-text-block', { filter: 'blur(10px)', opacity: 0.3, duration: 0.5 });
+        } else {
+          gsap.to('.hero-text-block', { filter: 'blur(0px)', opacity: 1, duration: 0.5 });
+        }
+      }
+    });
+  }, { dependencies: [isExpanded], scope: containerRef });
 
   return (
-    <section ref={containerRef} className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-background">
+    <section ref={containerRef} className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-background min-h-screen">
       
       {/* Movimento Ambiente - SVG com Turbulence + Gradiente Animado */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        {/* Malha de gradiente que se move suavemente */}
         <div 
           ref={ambientRef} 
           className="absolute -inset-[50%] w-[200%] h-[200%] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-accent/10 via-background to-background"
         ></div>
         
-        {/* SVG de Turbulência para textura premium */}
         <svg className="absolute inset-0 w-full h-full opacity-[0.15] mix-blend-overlay">
           <filter id="noiseFilter">
             <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch" />
@@ -69,9 +104,8 @@ const Hero = () => {
         <div className="lg:grid lg:grid-cols-2 lg:gap-16 items-center">
           
           {/* Texto à esquerda */}
-          <div className="max-w-2xl">
+          <div className="max-w-2xl hero-text-block transition-all duration-500">
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-heading text-primary leading-tight">
-              {/* Wrappers para garantir que o clip-path corte o texto perfeitamente */}
               <div className="overflow-hidden pb-2">
                 <span className="block text-textMain/80 text-3xl sm:text-4xl mb-2 font-body font-normal title-line">Seu cardápio, sempre</span>
               </div>
@@ -87,7 +121,6 @@ const Hero = () => {
             </p>
             <div className="mt-10 flex gap-4 hero-fade relative group">
               <button className="bg-accent text-primary px-8 py-4 rounded-full font-bold text-lg transition-all hover:scale-105 hover:bg-[#b07d4e] shadow-xl relative overflow-hidden">
-                {/* Pseudo-elemento para o efeito de varredura hover (diretriz de botões) */}
                 <span className="absolute inset-0 w-full h-full bg-primary -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-out z-0"></span>
                 <span className="relative z-10 group-hover:text-background transition-colors duration-300">Testar Grátis</span>
               </button>
@@ -109,20 +142,36 @@ const Hero = () => {
             </div>
           </div>
 
-          {/* Imagem à direita */}
-          <div className="mt-16 lg:mt-0 relative" ref={imgRef}>
-            <div className="relative rounded-xl overflow-hidden shadow-2xl border-8 border-primary/90 bg-primary transform rotate-1 hover:rotate-0 transition-transform duration-500">
+          {/* Imagem à direita - Com Efeito FLIP */}
+          <div className="mt-16 lg:mt-0 relative w-full h-[400px] lg:h-[500px]" ref={imgContainerRef}>
+            {/* O wrapper que sofre a mutação do FLIP */}
+            <div 
+              ref={imgWrapperRef} 
+              onClick={toggleExpand}
+              className={`bg-primary overflow-hidden shadow-2xl cursor-pointer ${
+                isExpanded 
+                ? 'fixed inset-0 z-50 w-full h-full rounded-none border-0' 
+                : 'relative w-full h-full rounded-xl border-8 border-primary/90 transform rotate-1 hover:rotate-0'
+              }`}
+            >
               <img 
                 src="https://images.unsplash.com/photo-1550989460-0adf9ea622e2?q=80&w=1000&auto=format&fit=crop" 
                 alt="Smart TV exibindo preços de cortes de carne"
-                className="w-full h-auto object-cover opacity-90"
+                className="w-full h-full object-cover opacity-90"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent"></div>
-              <div className="absolute bottom-4 left-6 right-6 flex justify-between items-end">
+              <div className="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent pointer-events-none"></div>
+              
+              <div className={`absolute left-6 right-6 flex justify-between items-end transition-all duration-500 ${isExpanded ? 'bottom-12' : 'bottom-4'}`}>
                 <div className="bg-background/95 backdrop-blur rounded-lg p-3 shadow-lg">
-                  <p className="font-heading font-bold text-primary text-sm">Picanha Premium</p>
-                  <p className="font-body text-accent font-bold">R$ 89,90 /kg</p>
+                  <p className={`font-heading font-bold text-primary transition-all ${isExpanded ? 'text-xl' : 'text-sm'}`}>Picanha Premium</p>
+                  <p className={`font-body text-accent font-bold transition-all ${isExpanded ? 'text-2xl' : 'text-base'}`}>R$ 89,90 /kg</p>
                 </div>
+                
+                {isExpanded && (
+                  <div className="bg-background/90 backdrop-blur rounded-full px-6 py-3 shadow-lg flex items-center gap-2 animate-bounce">
+                    <span className="font-bold text-primary text-sm">Clique para fechar</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
