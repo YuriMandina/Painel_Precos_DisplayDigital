@@ -6,11 +6,11 @@
 {% block content %}
 <div class="max-w-7xl mx-auto">
     
-    <header class="bg-gradient-to-r from-red-600 to-red-800 rounded-3xl p-8 mb-8 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg shadow-red-200 dark:shadow-red-900/50">
+    <header class="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-3xl p-8 mb-8 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50">
         <div class="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')]"></div>
         <div class="relative z-10">
             <h1 class="text-3xl font-bold text-white tracking-tight">Famílias Ignoradas</h1>
-            <p class="text-sm text-red-200 mt-1">Categorias e Famílias bloqueadas para importação no DisplayDigital.</p>
+            <p class="text-sm text-indigo-200 mt-1">Categorias e Famílias bloqueadas para importação no DisplayDigital.</p>
         </div>
     </header>
 
@@ -18,10 +18,10 @@
         <form method="GET" action="{% url 'omie_familias_ignoradas' %}" class="flex flex-col md:flex-row gap-3">
             
             <div class="relative flex-1 group">
-                <i class="ph-bold ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg group-focus-within:text-red-600 transition-colors"></i>
+                <i class="ph-bold ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg group-focus-within:text-indigo-600 transition-colors"></i>
                 <input type="text" name="q" value="{{ request.GET.q }}" 
                        placeholder="Buscar por nome da família..." 
-                       class="w-full pl-11 pr-4 py-3 border-none rounded-xl bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-950 dark:bg-slate-900 focus:ring-2 focus:ring-red-600 transition-all text-sm text-slate-900 dark:text-white">
+                       class="w-full pl-11 pr-4 py-3 border-none rounded-xl bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-950 dark:bg-slate-900 focus:ring-2 focus:ring-indigo-600 transition-all text-sm text-slate-900 dark:text-white">
             </div>
             
             <button type="submit" class="px-6 py-3 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all shadow-md hover:-translate-y-0.5 whitespace-nowrap">
@@ -50,7 +50,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800/50 bg-white dark:bg-slate-900">
                     {% for item in ignoradas %}
-                    <tr class="hover:bg-slate-50 dark:bg-slate-900/50 transition-colors group">
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
                         
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex flex-col">

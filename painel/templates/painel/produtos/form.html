@@ -100,7 +100,7 @@
                     <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Configurações</label>
                     
                     <label class="flex items-center justify-between p-4 rounded-xl border transition-colors cursor-pointer group hover:shadow-md
-                                {% if form.em_oferta.value %}bg-amber-50 dark:bg-amber-900/20 border-amber-200 shadow-sm{% else %}bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-amber-200 hover:bg-amber-50 dark:bg-amber-900/20/50{% endif %}">
+                                {% if form.em_oferta.value %}bg-amber-50 dark:bg-amber-900/20 border-amber-200 shadow-sm{% else %}bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-amber-200 hover:bg-amber-50 dark:hover:bg-amber-900/40{% endif %}">
                         <div class="flex items-center gap-3">
                             <div class="p-2.5 rounded-lg text-lg transition-colors {% if form.em_oferta.value %}bg-amber-200 text-amber-700{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-amber-100 group-hover:text-amber-600{% endif %}">
                                 <i class="ph-fill ph-lightning"></i>
@@ -113,7 +113,7 @@
                         {{ form.em_oferta }}
                     </label>
 
-                    <label class="flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:bg-slate-900/50 transition-colors cursor-pointer group hover:shadow-md">
+                    <label class="flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group hover:shadow-md">
                         <div class="flex items-center gap-3">
                             <div class="p-2.5 rounded-lg text-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 group-hover:bg-slate-200 dark:bg-slate-700 transition-colors">
                                 <i class="ph-fill ph-power"></i>
@@ -137,7 +137,7 @@
                     </button>
                 {% endif %}
 
-                <a href="{% url 'produtos_list' %}" class="w-full sm:w-auto text-center px-5 py-3 text-sm font-bold text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:bg-slate-900/50 shadow-sm hover:text-slate-900 dark:text-white transition-colors">
+                <a href="{% url 'produtos_list' %}" class="w-full sm:w-auto text-center px-5 py-3 text-sm font-bold text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm hover:text-slate-900 dark:text-white transition-colors">
                     Cancelar
                 </a>
                 

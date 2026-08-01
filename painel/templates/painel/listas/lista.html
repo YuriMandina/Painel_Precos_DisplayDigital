@@ -15,7 +15,7 @@
         
         <div class="relative z-10">
             <a href="{% url 'lista_personalizada_create' %}" 
-               class="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-900 text-indigo-700 hover:bg-slate-50 dark:bg-slate-900/50 rounded-xl text-sm font-bold transition-all shadow-lg hover:-translate-y-0.5">
+               class="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-900 text-indigo-700 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-sm font-bold transition-all shadow-lg hover:-translate-y-0.5">
                 <i class="ph-bold ph-plus text-lg"></i>
                 Nova Lista
             </a>
@@ -35,7 +35,7 @@
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800/50 bg-white dark:bg-slate-900">
                 {% for lista in listas %}
-                <tr class="hover:bg-slate-50 dark:bg-slate-900/50 transition-colors group">
+                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex items-center gap-4">
                             <div class="h-10 w-10 rounded-xl bg-purple-50 dark:bg-purple-900/20 text-purple-600 flex items-center justify-center border border-purple-100 shadow-sm group-hover:scale-110 transition-transform">
