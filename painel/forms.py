@@ -16,7 +16,8 @@ from .models import Produto, FamiliaProduto, Dispositivo, Midia, ListaPersonaliz
 # ==============================================================================
 
 CSS_INPUT = (
-    'w-full rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 '
+    'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 '
+    'dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:ring-2 '
     'focus:ring-indigo-600 focus:border-transparent shadow-sm text-sm transition-all px-4 py-3'
 )
 
@@ -118,7 +119,7 @@ class MidiaForm(forms.ModelForm):
 
 
 class RegistroForm(forms.Form):
-    premium_input_css = 'block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent sm:text-sm transition-colors'
+    premium_input_css = 'block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent sm:text-sm transition-colors'
     
     nome = forms.CharField(widget=forms.TextInput(attrs={'class': premium_input_css, 'placeholder': 'Seu nome completo'}))
     
@@ -177,7 +178,7 @@ class AceiteConviteForm(forms.Form):
     """
     Formulário para o Convidado preencher seus dados (Nome e Senha) ao aceitar o convite.
     """
-    premium_input_css = 'block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent sm:text-sm transition-colors'
+    premium_input_css = 'block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent sm:text-sm transition-colors'
     
     nome = forms.CharField(widget=forms.TextInput(attrs={'class': premium_input_css, 'placeholder': 'Seu nome completo'}))
     
@@ -205,7 +206,7 @@ class EmailLoginForm(AuthenticationForm):
     username = forms.EmailField(
         label="E-mail",
         widget=forms.EmailInput(attrs={
-            'class': 'block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent sm:text-sm transition-colors',
+            'class': 'block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent sm:text-sm transition-colors',
             'placeholder': 'seu@email.com',
             'id': 'id_username',
             'required': True
@@ -214,7 +215,7 @@ class EmailLoginForm(AuthenticationForm):
     password = forms.CharField(
         label="Senha",
         widget=forms.PasswordInput(attrs={
-            'class': 'block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent sm:text-sm transition-colors',
+            'class': 'block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent sm:text-sm transition-colors',
             'placeholder': '••••••••',
             'id': 'id_password',
             'required': True
@@ -227,7 +228,7 @@ class ListaPersonalizadaForm(forms.ModelForm):
         fields = ['nome']
         widgets = {
             'nome': forms.TextInput(attrs={
-                'class': 'block w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent text-sm transition-colors',
+                'class': 'block w-full px-4 py-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent text-sm transition-colors',
                 'placeholder': 'Ex: Ofertas da Semana, Combos, Bebidas Geladas...'
             })
         }
@@ -242,11 +243,11 @@ class IntegracoesForm(forms.ModelForm):
         fields = ['omie_app_key', 'omie_app_secret']
         widgets = {
             'omie_app_key': forms.TextInput(attrs={
-                'class': 'block w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent text-sm transition-colors',
+                'class': 'block w-full px-4 py-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent text-sm transition-colors',
                 'placeholder': 'Cole aqui sua App Key do Omie'
             }),
             'omie_app_secret': forms.PasswordInput(attrs={
-                'class': 'block w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent text-sm transition-colors',
+                'class': 'block w-full px-4 py-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent text-sm transition-colors',
                 'placeholder': 'Cole aqui seu App Secret',
                 'render_value': True
             })
