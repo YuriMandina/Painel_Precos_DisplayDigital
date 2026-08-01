@@ -175,6 +175,23 @@ class ProdutoIgnoradoOmie(models.Model):
     def __str__(self) -> str:
         return f"{self.codigo} (Ignorado em {self.empresa.nome})"
 
+class FamiliaIgnoradaOmie(models.Model):
+    """
+    Deny List de famílias: Famílias inteiras que vieram do Omie, mas o usuário marcou para 
+    ignorar permanentemente para não poluírem a lista de validação.
+    """
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='familias_ignoradas_omie')
+    nome = models.CharField(max_length=150, db_index=True, help_text="Nome exato da família no Omie")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Família Ignorada Omie"
+        verbose_name_plural = "Famílias Ignoradas Omie"
+        unique_together = ('empresa', 'nome')
+
+    def __str__(self) -> str:
+        return f"{self.nome} (Ignorada em {self.empresa.nome})"
+
 class FamiliaProduto(models.Model):
     """
     Agrupamento lógico de produtos (Categorias).

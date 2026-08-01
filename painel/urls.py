@@ -96,9 +96,12 @@ urlpatterns = [
     # --- MÓDULO: INTEGRAÇÃO OMIE ---
     path('dashboard/omie/sincronizar/', views_admin.omie_sincronizar_view, name='omie_sincronizar'),
     path('dashboard/omie/validacao/<int:sync_id>/', views_admin.omie_validacao_view, name='omie_validacao'),
+    path('dashboard/omie/validacao/<int:sync_id>/ignorar-familia/', views_admin.omie_ignorar_familia_view, name='omie_ignorar_familia'),
     path('dashboard/omie/efetivar/<int:sync_id>/', views_admin.omie_efetivar_view, name='omie_efetivar'),
     path('dashboard/omie/denylist/', views_admin.DenyListListView.as_view(), name='omie_denylist'),
     path('dashboard/omie/denylist/<int:pk>/excluir/', views_admin.DenyListDeleteView.as_view(), name='omie_denylist_delete'),
+    path('dashboard/omie/familias-ignoradas/', views_admin.FamiliasIgnoradasListView.as_view(), name='omie_familias_ignoradas'),
+    path('dashboard/omie/familias-ignoradas/<int:pk>/excluir/', views_admin.FamiliaIgnoradaDeleteView.as_view(), name='omie_familias_ignoradas_delete'),
 
 
     # --- MÓDULO: FAMÍLIAS DE PRODUTOS ---

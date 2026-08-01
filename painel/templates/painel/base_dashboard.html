@@ -144,6 +144,12 @@
                     <i class="{% if 'denylist' in request.resolver_match.url_name %}ph-fill{% else %}ph{% endif %} ph-shield-slash text-xl"></i>
                     <span>Deny List de Produtos</span>
                 </a>
+
+                <a href="{% url 'omie_familias_ignoradas' %}" 
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'familias_ignoradas' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-lg shadow-indigo-600/20{% else %}text-slate-400 hover:bg-slate-800/50 hover:text-white{% endif %}">
+                    <i class="{% if 'familias_ignoradas' in request.resolver_match.url_name %}ph-fill{% else %}ph{% endif %} ph-prohibit text-xl"></i>
+                    <span>Famílias Ignoradas</span>
+                </a>
             {% endif %}
 
             <p class="px-3 mt-8 mb-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Legal & LGPD</p>

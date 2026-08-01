@@ -43,6 +43,9 @@
                             </span>
                         </div>
                         <div class="flex items-center gap-4 text-sm font-medium text-slate-500 dark:text-slate-400">
+                            <button type="submit" formaction="{% url 'omie_ignorar_familia' sync_obj.id %}" name="familia_nome" value="{{ familia }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-red-600 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors" title="Ignorar permanentemente todas as sincronizações desta família">
+                                <i class="ph-bold ph-prohibit"></i> Ignorar Família
+                            </button>
                             <label class="flex items-center gap-2 hover:text-slate-900 dark:text-white cursor-pointer">
                                 <input type="checkbox" class="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-600 checkbox-familia" checked>
                                 Aprovar Todos

@@ -40,6 +40,7 @@ from .models import (
     Convite,
     SincronizacaoOmie,
     ProdutoIgnoradoOmie,
+    FamiliaIgnoradaOmie,
     Empresa,
     gerar_codigo_curto
 )
@@ -708,6 +709,65 @@ class DenyListDeleteView(LoginRequiredMixin, SuccessMessageMixin, TenantQuerySet
     
     def get(self, request, *args, **kwargs):
         # Permitir deletar via POST apenas, redirecionar se for GET ou implementar soft delete
+        return self.post(request, *args, **kwargs)
+
+@login_required
+@require_POST
+def omie_ignorar_familia_view(request: HttpRequest, sync_id: int) -> HttpResponse:
+    """
+    Ignora permanentemente uma família do Omie.
+    Cria a regra no banco e expurga a família do preview atual.
+    """
+    empresa = request.user.perfil.empresa
+    familia_nome = request.POST.get('familia_nome')
+    
+    if not familia_nome:
+        messages.error(request, "Nome da família não fornecido.")
+        return redirect('omie_validacao', sync_id=sync_id)
+
+    # 1. Cria a regra no banco
+    FamiliaIgnoradaOmie.objects.get_or_create(empresa=empresa, nome=familia_nome)
+    
+    # 2. Expurga a família do sync_obj atual (para sumir da tela imediatamente)
+    sync_obj = get_object_or_404(SincronizacaoOmie, id=sync_id, empresa=empresa)
+    dados = sync_obj.dados
+    
+    if 'novos' in dados:
+        dados['novos'] = [item for item in dados['novos'] if item.get('familia') != familia_nome]
+    if 'alterados' in dados:
+        dados['alterados'] = [item for item in dados['alterados'] if item.get('familia') != familia_nome]
+        
+    sync_obj.dados = dados
+    sync_obj.save()
+    
+    messages.success(request, f"Família '{familia_nome}' ignorada com sucesso. Ela não aparecerá mais.")
+    return redirect('omie_validacao', sync_id=sync_id)
+
+class FamiliasIgnoradasListView(LoginRequiredMixin, TenantQuerySetMixin, ListView):
+    """
+    Lista todas as famílias ignoradas permanentemente da empresa.
+    """
+    model = FamiliaIgnoradaOmie
+    template_name = 'painel/omie/familias_ignoradas.html'
+    context_object_name = 'ignoradas'
+    paginate_by = 30
+    
+    def get_queryset(self):
+        qs = super().get_queryset()
+        q = self.request.GET.get('q')
+        if q:
+            qs = qs.filter(nome__icontains=q)
+        return qs.order_by('-created_at')
+
+class FamiliaIgnoradaDeleteView(LoginRequiredMixin, SuccessMessageMixin, TenantQuerySetMixin, DeleteView):
+    """
+    Remove uma família da Deny List, permitindo que ela volte a aparecer nas próximas sincronizações.
+    """
+    model = FamiliaIgnoradaOmie
+    success_url = reverse_lazy('omie_familias_ignoradas')
+    success_message = "Família removida da Deny List. Ela aparecerá na próxima sincronização."
+    
+    def get(self, request, *args, **kwargs):
         return self.post(request, *args, **kwargs)
 
 

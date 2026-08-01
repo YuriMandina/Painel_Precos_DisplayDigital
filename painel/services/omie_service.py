@@ -2,7 +2,7 @@ import requests
 from django.db import transaction
 from decimal import Decimal, InvalidOperation
 
-from ..models import Empresa, Produto, FamiliaProduto, ProdutoIgnoradoOmie, SincronizacaoOmie
+from ..models import Empresa, Produto, FamiliaProduto, ProdutoIgnoradoOmie, FamiliaIgnoradaOmie, SincronizacaoOmie
 import logging
 
 logger = logging.getLogger(__name__)
@@ -101,6 +101,7 @@ class OmieService:
         # 2. Buscar locais
         produtos_locais = {p.codigo: p for p in Produto.objects.filter(empresa=self.empresa)}
         ignorados = set(ProdutoIgnoradoOmie.objects.filter(empresa=self.empresa).values_list('codigo', flat=True))
+        familias_ignoradas = set(FamiliaIgnoradaOmie.objects.filter(empresa=self.empresa).values_list('nome', flat=True))
 
         novos = []
         alterados = []
@@ -125,6 +126,14 @@ class OmieService:
                 ignorados_count += 1
                 continue
 
+            # Nome da família
+            codigo_familia = str(po.get('codigo_familia', ''))
+            familia_nome = familias_map.get(codigo_familia, 'Sem Categoria')
+
+            if familia_nome in familias_ignoradas:
+                ignorados_count += 1
+                continue
+
             descricao = po.get('descricao', '').strip()
             
             # Formatar preço
@@ -134,10 +143,6 @@ class OmieService:
             except (InvalidOperation, ValueError):
                 preco_novo = Decimal('0.00')
 
-            # Nome da família
-            codigo_familia = str(po.get('codigo_familia', ''))
-            familia_nome = familias_map.get(codigo_familia, 'Sem Categoria')
-            
             # Não importar se o preço for zero (Regra de negócio usual)
             if preco_novo <= 0:
                 continue

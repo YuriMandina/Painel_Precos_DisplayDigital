@@ -1,0 +1,116 @@
+{% extends "painel/base_dashboard.html" %}
+
+{% block title %}Famílias Ignoradas | DisplayDigital{% endblock %}
+{% block header_title %}Famílias Ignoradas (Omie){% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    
+    <header class="bg-gradient-to-r from-red-600 to-red-800 rounded-3xl p-8 mb-8 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg shadow-red-200 dark:shadow-red-900/50">
+        <div class="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')]"></div>
+        <div class="relative z-10">
+            <h1 class="text-3xl font-bold text-white tracking-tight">Famílias Ignoradas</h1>
+            <p class="text-sm text-red-200 mt-1">Categorias e Famílias bloqueadas para importação no DisplayDigital.</p>
+        </div>
+    </header>
+
+    <section class="bg-white dark:bg-slate-900 p-2.5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 mb-8">
+        <form method="GET" action="{% url 'omie_familias_ignoradas' %}" class="flex flex-col md:flex-row gap-3">
+            
+            <div class="relative flex-1 group">
+                <i class="ph-bold ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg group-focus-within:text-red-600 transition-colors"></i>
+                <input type="text" name="q" value="{{ request.GET.q }}" 
+                       placeholder="Buscar por nome da família..." 
+                       class="w-full pl-11 pr-4 py-3 border-none rounded-xl bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-950 dark:bg-slate-900 focus:ring-2 focus:ring-red-600 transition-all text-sm text-slate-900 dark:text-white">
+            </div>
+            
+            <button type="submit" class="px-6 py-3 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all shadow-md hover:-translate-y-0.5 whitespace-nowrap">
+                Buscar
+            </button>
+            
+            {% if request.GET.q %}
+            <a href="{% url 'omie_familias_ignoradas' %}" class="px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors flex items-center justify-center border border-transparent hover:border-red-100" title="Limpar Filtros">
+                <i class="ph-bold ph-x text-lg"></i>
+            </a>
+            {% endif %}
+        </form>
+    </section>
+
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden">
+        
+        {% if ignoradas %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+                <thead class="bg-slate-50 dark:bg-slate-800">
+                    <tr>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Família</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Data de Bloqueio</th>
+                        <th scope="col" class="relative px-6 py-4 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/50 bg-white dark:bg-slate-900">
+                    {% for item in ignoradas %}
+                    <tr class="hover:bg-slate-50 dark:bg-slate-900/50 transition-colors group">
+                        
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex flex-col">
+                                <span class="font-bold text-slate-900 dark:text-white"><i class="ph-fill ph-tag text-red-500 mr-2"></i> {{ item.nome }}</span>
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
+                            {{ item.created_at|date:"d/m/Y H:i" }}
+                        </td>
+
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                <form method="post" action="{% url 'omie_familias_ignoradas_delete' item.id %}" onsubmit="return confirm('Tem certeza que deseja remover esta família da Deny List? Seus produtos aparecerão na próxima sincronização.')">
+                                    {% csrf_token %}
+                                    <button type="submit" 
+                                       class="flex items-center gap-2 text-slate-400 hover:text-emerald-600 p-2 rounded-lg hover:bg-emerald-50 dark:bg-emerald-900/20 transition-colors" 
+                                       title="Permitir Sincronização">
+                                        <i class="ph-bold ph-arrow-counter-clockwise text-xl"></i>
+                                        <span class="text-xs font-bold">Restaurar</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
+            <div class="text-xs font-medium text-slate-500 dark:text-slate-400">
+                Mostrando <span class="font-bold text-slate-900 dark:text-white">{{ page_obj.start_index }}</span> a <span class="font-bold text-slate-900 dark:text-white">{{ page_obj.end_index }}</span> de <span class="font-bold text-slate-900 dark:text-white">{{ page_obj.paginator.count }}</span> resultados
+            </div>
+            
+            <div class="flex gap-2">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}&q={{ request.GET.q }}" class="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-800 transition-colors shadow-sm">
+                        Anterior
+                    </a>
+                {% endif %}
+                
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}&q={{ request.GET.q }}" class="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-800 transition-colors shadow-sm">
+                        Próxima
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% else %}
+        <div class="text-center py-20 px-6">
+            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-full h-24 w-24 flex items-center justify-center mx-auto mb-6 border border-slate-100 dark:border-slate-800 shadow-inner">
+                <i class="ph-bold ph-shield-check text-4xl text-slate-300"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 dark:text-white">Nenhuma Família Bloqueada</h3>
+            <p class="text-slate-500 dark:text-slate-400 mt-2 max-w-sm mx-auto">Nenhuma família de produtos foi marcada para ser ignorada nas sincronizações com o Omie.</p>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}
