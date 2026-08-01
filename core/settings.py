@@ -22,12 +22,9 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
 # Em produção, configure esta variável no painel de Environment Variables do Render.
 SITE_URL = config('SITE_URL', default='http://localhost:8000').rstrip('/')
 
-# Configurações de Proxy/HTTPS para deploys em serviços de PaaS (ex: Render)
+# Configurações de Proxy/HTTPS para deploys em serviços de PaaS/VPS via Nginx
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-CSRF_TRUSTED_ORIGINS = [
-    'https://*.onrender.com',
-    'https://*.cloudinary.com',
-]
+CSRF_TRUSTED_ORIGINS = []
 
 # Garante que SITE_URL também está nas origens confiáveis (CSRF)
 if SITE_URL and SITE_URL.startswith('https://'):
@@ -65,8 +62,6 @@ THIRD_PARTY_APPS = [
     'anymail',
     'rest_framework',
     'corsheaders',
-    'cloudinary',
-    'cloudinary_storage',
 ]
 
 LOCAL_APPS = [
@@ -208,14 +203,12 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 MB
 
-# Ativa o Cloudinary em Produção com o nosso Storage Inteligente
+# Storage local para Produção e Whitenoise para arquivos estáticos
 if not DEBUG:
-    import cloudinary # Importação necessária para configurar o SDK Global
-
     # Configuração de Storages obrigatória para Django >= 4.2 (incluindo 5.x e 6.x)
     STORAGES = {
         "default": {
-            "BACKEND": "painel.storage.MidiaCloudinaryStorage",
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
         },
         "staticfiles": {
             "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
@@ -225,23 +218,6 @@ if not DEBUG:
     # Desabilita o erro estrito do Whitenoise para evitar problemas no collectstatic 
     # com os decorators do Tailwind v4 (ex: @import "tailwindcss";)
     WHITENOISE_MANIFEST_STRICT = False
-    
-    # 1. Configuração para a biblioteca django-cloudinary-storage (Uploads)
-    CLOUDINARY_STORAGE = {
-        'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default=''),
-        'API_KEY': config('CLOUDINARY_API_KEY', default=''),
-        'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
-        'SECURE': True, # Garante HTTPS
-    }
-
-    # 2. CORREÇÃO: Injeção Global para o SDK do Cloudinary (Leitura e Exclusão)
-    # Isto resolve a exigência do "CLOUDINARY_URL" usando as suas variáveis separadas
-    cloudinary.config(
-        cloud_name=config('CLOUDINARY_CLOUD_NAME', default=''),
-        api_key=config('CLOUDINARY_API_KEY', default=''),
-        api_secret=config('CLOUDINARY_API_SECRET', default=''),
-        secure=True
-    )
 
 
 # ==============================================================================

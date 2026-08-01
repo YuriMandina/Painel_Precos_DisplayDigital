@@ -6,16 +6,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
-    <!-- Libera autoplay e mídia do Cloudinary sem prompts do browser -->
+    <!-- Libera autoplay e mídia local sem prompts do browser -->
     <meta http-equiv="Feature-Policy" content="autoplay *; fullscreen *">
-    <!-- CSP: permite carregar mídia do Cloudinary e fontes do Google -->
+    <!-- CSP: permite carregar mídia local e fontes do Google -->
     <meta http-equiv="Content-Security-Policy" 
           content="default-src 'self'; 
                    script-src 'self' 'unsafe-inline'; 
                    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
                    font-src 'self' https://fonts.gstatic.com; 
-                   img-src 'self' data: https://res.cloudinary.com blob:; 
-                   media-src 'self' https://res.cloudinary.com blob:;
+                   img-src 'self' data: blob:; 
+                   media-src 'self' blob:;
                    connect-src 'self';">
     <title>Painel Digital | Display</title>
     

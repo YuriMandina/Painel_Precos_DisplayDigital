@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=displaydigital
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    restart: always
+
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    # Para produção na VPS, mude para:
+    # command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=django-insecure-key-for-dev-only-change-in-prod
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/displaydigital
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+    depends_on:
+      - db
+    restart: always
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:

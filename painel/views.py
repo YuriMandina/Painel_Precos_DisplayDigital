@@ -43,9 +43,9 @@ def media_stream_view(request: HttpRequest, file_path: str) -> HttpResponse:
     nativamente — ele retorna o arquivo inteiro (200 OK) ignorando o header
     `Range`, o que causa "broken pipe" e falha silenciosa de reprodução nas TVs.
     
-    Em produção (Render + Cloudinary), as URLs são absolutas e o Cloudinary
-    suporta Range Requests nativamente, então esta view NÃO é necessária lá.
-    Esta view é registrada APENAS quando DEBUG=True.
+    Em produção (VPS + Nginx), o Nginx suporta Range Requests nativamente,
+    então esta view NÃO é necessária lá.
+    Esta view é registrada APENAS para desenvolvimento (quando DEBUG=True).
     
     Como funciona:
     -------------

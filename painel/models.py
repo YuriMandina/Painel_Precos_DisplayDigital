@@ -298,10 +298,10 @@ class Midia(models.Model):
     def delete(self, *args, **kwargs) -> None:
         """
         Gatilho ativado ao excluir a mídia. 
-        Força a exclusão física do arquivo lá no Cloudinary para não gerar lixo.
+        Força a exclusão física do arquivo do storage local.
         """
         if self.arquivo:
-            self.arquivo.delete(save=False) # Dispara o delete() do nosso storage.py
+            self.arquivo.delete(save=False)
         super().delete(*args, **kwargs)
 
     def __str__(self) -> str:

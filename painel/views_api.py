@@ -104,8 +104,6 @@ def dados_painel(request: Request, device_uuid: str) -> Response:
 def debug_midias(request: Request, device_uuid: str) -> Response:
     """
     Endpoint de diagnóstico: inspeciona as URLs reais geradas para as mídias do dispositivo.
-    Útil para verificar se o Cloudinary está retornando URLs acessíveis.
-    Disponível em produção temporariamente para diagnóstico.
     """
     dispositivo = get_object_or_404(Dispositivo, uuid=device_uuid)
     empresa = dispositivo.empresa
@@ -115,7 +113,6 @@ def debug_midias(request: Request, device_uuid: str) -> Response:
 
     for m in midias:
         raw_url = m.arquivo.url if m.arquivo else ''
-        is_absolute = raw_url.startswith(('http://', 'https://'))
 
         resultado.append({
             'id': m.id,
@@ -124,8 +121,7 @@ def debug_midias(request: Request, device_uuid: str) -> Response:
             'duracao': m.duracao,
             'arquivo_name': m.arquivo.name if m.arquivo else '',
             'url_raw': raw_url,
-            'url_is_absolute': is_absolute,
-            'url_final': request.build_absolute_uri(raw_url) if not is_absolute and raw_url else raw_url,
+            'url_final': request.build_absolute_uri(raw_url) if request and raw_url else raw_url,
         })
 
     return Response({
@@ -201,16 +197,11 @@ def _construir_playlist(playlist_config: Optional[List[Dict[str, Any]]], empresa
                 midia = Midia.objects.get(id=item_id, empresa=empresa)
                 
                 # Resolve a URL absoluta de forma segura:
-                # - Se a URL já for absoluta (Cloudinary em produção), usa diretamente.
-                # - Se for relativa (arquivo local em dev), constrói a URL absoluta com o host do servidor.
                 url_arquivo = ''
                 if midia.arquivo:
                     raw_url = midia.arquivo.url
-                    if raw_url.startswith(('http://', 'https://')):
-                        # URL já é absoluta (ex: Cloudinary). Usa diretamente.
-                        url_arquivo = raw_url
-                    elif request:
-                        # URL relativa em dev: constrói URL absoluta usando o host do request.
+                    if request:
+                        # Constrói URL absoluta usando o host do request.
                         # O endpoint /media/stream/ suporta Range Requests, necessário para TVs.
                         url_arquivo = request.build_absolute_uri(raw_url)
                     else:

@@ -116,20 +116,7 @@ class MidiaForm(forms.ModelForm):
             'arquivo': forms.FileInput(attrs={'class': 'hidden', 'accept': 'video/*,image/*'})
         }
 
-    def clean_arquivo(self) -> Any:
-        """
-        Intercepta o arquivo antes de enviá-lo para a nuvem.
-        Encurta o nome original do arquivo para garantir que a string devolvida 
-        pelo Cloudinary não ultrapasse o limite de 100 caracteres do banco de dados (DataError).
-        """
-        arquivo = self.cleaned_data.get('arquivo')
-        if arquivo:
-            nome_base, extensao = os.path.splitext(arquivo.name)
-            # Limita o nome original a apenas 20 caracteres
-            nome_curto = nome_base[:20].strip()
-            arquivo.name = f"{nome_curto}{extensao}"
-        return arquivo
-    
+
 class RegistroForm(forms.Form):
     premium_input_css = 'block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent sm:text-sm transition-colors'
     
