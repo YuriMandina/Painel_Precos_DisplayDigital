@@ -122,17 +122,22 @@ class EquipeConvidarView(LoginRequiredMixin, FormView):
         email = form.cleaned_data['email']
         empresa = self.request.user.perfil.empresa
         
-        # Evitar convites duplicados
-        if Convite.objects.filter(empresa=empresa, email=email, status=Convite.Status.PENDENTE).exists():
-            messages.warning(self.request, f"Um convite já está pendente para {email}.")
-            return redirect(self.success_url)
+        # Evitar convites duplicados e permitir reenvio
+        convite_existente = Convite.objects.filter(empresa=empresa, email=email, status=Convite.Status.PENDENTE).first()
+        if convite_existente:
+            convite_existente.delete()
+            messages.info(self.request, f"Reenviando convite para {email}.")
 
         convite = Convite.objects.create(empresa=empresa, email=email)
         
         # Enviar E-mail
         link = self.request.build_absolute_uri(reverse_lazy('aceitar_convite', kwargs={'token': convite.token}))
+        from django.template.loader import render_to_string
+        from django.utils.html import strip_tags
+        
         assunto = f"Convite para acessar {empresa.nome} no DisplayDigital"
-        mensagem = f"Olá!\n\nVocê foi convidado para acessar o painel administrativo de {empresa.nome}.\n\nClique no link abaixo para criar sua senha e acessar:\n{link}\n\nBem-vindo à equipe!"
+        html_message = render_to_string('painel/emails/convite.html', {'empresa': empresa, 'link': link})
+        mensagem = strip_tags(html_message)
         
         try:
             send_mail(
@@ -140,6 +145,7 @@ class EquipeConvidarView(LoginRequiredMixin, FormView):
                 message=mensagem,
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[email],
+                html_message=html_message,
                 fail_silently=False,
             )
             messages.success(self.request, f"Convite enviado com sucesso para {email}!")
