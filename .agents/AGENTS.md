@@ -34,5 +34,9 @@ Para não sobrecarregar a VPS com processos de build ou comandos pesados durante
 - **Diretório do Projeto na VPS:** `/root/app_prod`
 - **Procedimento de Atualização:**
   1. Realize as alterações no código local e valide a sintaxe.
-  2. Transfira **apenas** os arquivos alterados utilizando `scp` para o caminho equivalente dentro de `/root/app_prod` na VPS.
-  3. Conecte-se via SSH (`ssh root@45.234.92.169`) e reinicie os containers afetados do Docker (ex: `docker compose restart web` ou `docker-compose restart web`) no diretório `/root/app_prod`.
+  2. Transfira os arquivos alterados utilizando `scp` para o caminho equivalente dentro de `/root/app_prod` na VPS.
+  3. **ATENÇÃO (PEGADINHA DO BUILD EM PRODUÇÃO):** O ambiente de produção utiliza o arquivo `docker-compose.prod.yml`. Ao contrário do ambiente local, este arquivo **não mapeia** o código-fonte como volume externo (`.:/app`). O código é "congelado" (baked) dentro da imagem.
+  4. Portanto, após usar `scp` para enviar novos arquivos `.py` ou `.html`, rodar apenas `docker compose restart web` **não surtirá efeito**.
+  5. Você deve **obrigatoriamente** reconstruir a imagem do container web e reiniciá-lo com os comandos:
+     - `docker compose -f docker-compose.prod.yml build web`
+     - `docker compose -f docker-compose.prod.yml up -d web`

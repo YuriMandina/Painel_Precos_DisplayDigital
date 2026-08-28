@@ -5,15 +5,10 @@ from django.urls import path
 from django.views.generic import RedirectView
 from django.contrib.auth import views as auth_views
 from django.conf import settings
-from urllib.parse import urlparse
 
 from . import views, views_api, views_admin
 from .forms import EmailLoginForm
 
-# Extrai protocolo e domínio do SITE_URL para injetar nos e-mails
-_site = urlparse(settings.SITE_URL)
-_site_protocol = _site.scheme          # 'http' ou 'https'
-_site_domain = _site.netloc            # 'displaydigital.onrender.com' ou 'localhost:8000'
 
 # ==============================================================================
 #                                 URL PATTERNS
@@ -39,12 +34,6 @@ urlpatterns = [
         html_email_template_name='painel/password_reset_email.html',
         subject_template_name='painel/password_reset_subject.txt',
         success_url='/recuperar-senha/enviado/',
-        # Sobrescreve domain e protocol com os valores do SITE_URL
-        # para que o link no e-mail aponte para o domínio correto em produção.
-        extra_email_context={
-            'protocol': _site_protocol,
-            'domain': _site_domain,
-        },
     ), name='password_reset'),
     
     path('recuperar-senha/enviado/', auth_views.PasswordResetDoneView.as_view(

@@ -35,7 +35,7 @@ def send_lockout_alert(sender, request, username, ip_address, **kwargs):
     
     # Cria os links dinamicamente
     from django.urls import reverse
-    base_unlock_url = f"{settings.SITE_URL}{reverse('unlock_ip', kwargs={'token': token})}"
+    base_unlock_url = request.build_absolute_uri(reverse('unlock_ip', kwargs={'token': token}))
     unlock_url = base_unlock_url
     reset_url = f"{base_unlock_url}?action=reset"
 

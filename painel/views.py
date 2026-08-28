@@ -155,11 +155,11 @@ logger = logging.getLogger(__name__)
 def _enviar_email_verificacao(request, user, token_obj):
     """
     Dispara o e-mail de verificação de conta para o usuário recém-cadastrado.
-    Usa settings.SITE_URL para garantir que o link aponte para o domínio correto
-    (produção ou desenvolvimento), independente do host da requisição.
+    Usa request.build_absolute_uri() para garantir que o link aponte para o domínio correto
+    usado na requisição (produção ou desenvolvimento).
     """
     path = reverse('verificar_email', kwargs={'token': str(token_obj.token)})
-    link = f"{settings.SITE_URL}{path}"
+    link = request.build_absolute_uri(path)
 
     assunto = 'Confirme seu e-mail — DisplayDigital'
     contexto = {
