@@ -26,3 +26,13 @@ Você deve **obrigatoriamente** invocar os contextos das seguintes Skills Globai
 3. **Padrões de Engenharia de Código (via django-pro):** Siga PEP 8 para Python, utilize tipagem forte (Type Hints) e modularize o código. É **proibido o uso do comando `print()`** para debugar; todo e qualquer log deve utilizar a biblioteca `logging` oficial do Python com os níveis adequados (`INFO`, `ERROR`, etc). Trate erros de rede (try/except) agressivamente e valide o ORM contra N+1 queries.
 4. **Infraestrutura Imutável e Segura:** Mantenha os arquivos de infraestrutura (Dockerfile, docker-compose) e variáveis de ambiente limpos. É **proibido** salvar dados persistentes (como uploads de mídia ou banco de dados SQLite) diretamente dentro do contêiner sem o uso de mapeamento de Volumes (`volumes:`). Variáveis sensíveis jamais podem estar hardcoded no código fonte, devendo vir do `.env`.
 5. **Strict Planning Mode (Plano Iterativo Obrigatório):** Para QUALQUER nova feature ou alteração, você deve **obrigatoriamente** gerar um Artefato de Plano de Implementação (`implementation_plan.md`). O plano **deve listar explicitamente quais Skills serão utilizadas** durante a execução do trabalho. Se o usuário fizer uma revisão (review) solicitando mudanças, você NÃO deve iniciar o código. Você deve *reescrever o plano completo* com os ajustes e pedir uma nova aprovação. A fase de execução/código só pode ser iniciada quando o plano for aprovado sem nenhuma revisão pendente (Zero-Execution Without Approval).
+
+## Ambiente de Produção (VPS) e Deploy
+Para não sobrecarregar a VPS com processos de build ou comandos pesados durante a atualização de rotina, o processo de deploy deve seguir o fluxo de transferência leve (SCP):
+- **IP / Host:** `45.234.92.169`
+- **Usuário SSH:** `root`
+- **Diretório do Projeto na VPS:** `/root/app_prod`
+- **Procedimento de Atualização:**
+  1. Realize as alterações no código local e valide a sintaxe.
+  2. Transfira **apenas** os arquivos alterados utilizando `scp` para o caminho equivalente dentro de `/root/app_prod` na VPS.
+  3. Conecte-se via SSH (`ssh root@45.234.92.169`) e reinicie os containers afetados do Docker (ex: `docker compose restart web` ou `docker-compose restart web`) no diretório `/root/app_prod`.
