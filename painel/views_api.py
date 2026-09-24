@@ -135,87 +135,92 @@ def debug_midias(request: Request, device_uuid: str) -> Response:
 #                            HELPER FUNCTIONS
 # ==============================================================================
 
-def _construir_playlist(playlist_config: Optional[List[Dict[str, Any]]], empresa: Any, request: Request = None) -> List[Dict[str, Any]]:
+def _construir_playlist(playlist_config: Any, empresa: Any, request: Request = None) -> Any:
     """
     Processa o dicionário de configuração da playlist bruto armazenado no banco,
     resolvendo referências de banco de dados (Tabelas e Mídias) e gerando um 
     array padronizado pronto para consumo pelo front-end da TV.
+    Suporta playlists simples (List) e layouts asimétricos (Dict).
     """
     if not playlist_config:
         return []
 
-    playlist_processada = []
-    
-    for item in playlist_config:
-        tipo = item.get('type')
-        item_id = item.get('id')
+    # Helper function to process a list of items
+    def process_items(items):
+        processed = []
+        if not items: return processed
         
-        # Extrai listas de produtos ocultos e forçados (exceções de exibição)
-        hidden_products = item.get('hidden_products', [])
-        forced_products = item.get('forced_products', [])
-        
-        # Garante a conversão segura do tempo de exibição com fallback padrão
-        try:
-            tempo_custom = int(item.get('tempo', 15))
-        except (TypeError, ValueError):
-            tempo_custom = 15
-
-        # Processamento de blocos do tipo 'tabela_familia'
-        if tipo == 'tabela_familia':
+        for item in items:
+            tipo = item.get('type')
+            item_id = item.get('id')
+            
+            hidden_products = item.get('hidden_products', [])
+            forced_products = item.get('forced_products', [])
+            
             try:
-                familia = FamiliaProduto.objects.get(id=item_id, empresa=empresa)
-                playlist_processada.append({
-                    'tipo': 'tabela',
-                    'familia_id': familia.id,
-                    'descricao': f"Tabela: {familia.nome}",
-                    'tempo_pagina': tempo_custom,
-                    'hidden_products': hidden_products,
-                    'forced_products': forced_products 
-                })
-            except FamiliaProduto.DoesNotExist:
-                logger.debug(f"FamiliaProduto (ID: {item_id}) ignorada na playlist: Não encontrada.")
-                continue
+                tempo_custom = int(item.get('tempo', 15))
+            except (TypeError, ValueError):
+                tempo_custom = 15
 
-        # Processamento de blocos do tipo 'lista_personalizada'
-        elif tipo == 'lista_personalizada':
-            try:
-                lista = ListaPersonalizada.objects.get(id=item_id, empresa=empresa)
-                produtos_ids = list(lista.itens.order_by('ordem').values_list('produto_id', flat=True))
-                playlist_processada.append({
-                    'tipo': 'tabela',
-                    'descricao': lista.nome,
-                    'tempo_pagina': tempo_custom,
-                    'produtos_ordenados': produtos_ids
-                })
-            except ListaPersonalizada.DoesNotExist:
-                logger.debug(f"ListaPersonalizada (ID: {item_id}) ignorada na playlist: Não encontrada.")
-                continue
-                
-        # Processamento de blocos do tipo 'midia'
-        elif tipo == 'midia':
-            try:
-                midia = Midia.objects.get(id=item_id, empresa=empresa)
-                
-                # Resolve a URL absoluta de forma segura:
-                url_arquivo = ''
-                if midia.arquivo:
-                    raw_url = midia.arquivo.url
-                    if request:
-                        # Constrói URL absoluta usando o host do request.
-                        # O endpoint /media/stream/ suporta Range Requests, necessário para TVs.
-                        url_arquivo = request.build_absolute_uri(raw_url)
-                    else:
-                        url_arquivo = raw_url
+            if tipo == 'tabela_familia':
+                try:
+                    familia = FamiliaProduto.objects.get(id=item_id, empresa=empresa)
+                    processed.append({
+                        'tipo': 'tabela',
+                        'familia_id': familia.id,
+                        'descricao': f"Tabela: {familia.nome}",
+                        'tempo_pagina': tempo_custom,
+                        'hidden_products': hidden_products,
+                        'forced_products': forced_products 
+                    })
+                except FamiliaProduto.DoesNotExist:
+                    continue
 
-                playlist_processada.append({
-                    'tipo': 'propaganda',
-                    'url': url_arquivo,
-                    'duracao': midia.duracao, 
-                    'descricao': midia.nome,
-                    'tipo_midia': midia.tipo
-                })
-            except Midia.DoesNotExist:
-                logger.debug(f"Mídia (ID: {item_id}) ignorada na playlist: Não encontrada.")
-                continue
+            elif tipo == 'lista_personalizada':
+                try:
+                    lista = ListaPersonalizada.objects.get(id=item_id, empresa=empresa)
+                    produtos_ids = list(lista.itens.order_by('ordem').values_list('produto_id', flat=True))
+                    processed.append({
+                        'tipo': 'tabela',
+                        'descricao': lista.nome,
+                        'tempo_pagina': tempo_custom,
+                        'produtos_ordenados': produtos_ids
+                    })
+                except ListaPersonalizada.DoesNotExist:
+                    continue
+                    
+            elif tipo == 'midia':
+                try:
+                    midia = Midia.objects.get(id=item_id, empresa=empresa)
+                    
+                    url_arquivo = ''
+                    if midia.arquivo:
+                        raw_url = midia.arquivo.url
+                        if request:
+                            url_arquivo = request.build_absolute_uri(raw_url)
+                        else:
+                            url_arquivo = raw_url
 
-    return playlist_processada
+                    processed.append({
+                        'tipo': 'propaganda',
+                        'url': url_arquivo,
+                        'duracao': midia.duracao, 
+                        'descricao': midia.nome,
+                        'tipo_midia': midia.tipo
+                    })
+                except Midia.DoesNotExist:
+                    continue
+        return processed
+
+    if isinstance(playlist_config, dict) and playlist_config.get('layout') == 'split_asimetrico':
+        return {
+            'layout': 'split_asimetrico',
+            'zones': {
+                'left': process_items(playlist_config.get('zones', {}).get('left', [])),
+                'right': process_items(playlist_config.get('zones', {}).get('right', []))
+            }
+        }
+    elif isinstance(playlist_config, list):
+        return process_items(playlist_config)
+    else:
+        return []

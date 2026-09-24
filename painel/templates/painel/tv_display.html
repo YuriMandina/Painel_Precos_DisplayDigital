@@ -176,15 +176,35 @@
         </div>
     </section>
 
-    <main class="tv-wrapper" id="app-screen" style="display:none;">
+        <main class="tv-wrapper" id="app-screen" style="display:none;">
         
-        <header class="painel-header">
-            <h1 class="painel-titulo" id="titulo-painel">Carregando...</h1>
-        </header>
+        <!-- Zona unificada (default) -->
+        <div id="zone-single" style="width: 100%; height: 100%; position: relative;">
+            <header class="painel-header">
+                <h1 class="painel-titulo" id="titulo-painel">Carregando...</h1>
+            </header>
+            <div class="painel-conteudo" id="painel-conteudo"></div>
+            <div id="video-overlay-container"></div>
+        </div>
 
-        <div class="painel-conteudo" id="painel-conteudo"></div>
-        
-        <div id="video-overlay-container"></div>
+        <!-- Zona Dividida (Esquerda / Direita) -->
+        <div id="zone-split" style="display: none; width: 100%; height: 100%; flex-direction: row; align-items: stretch;">
+            <div id="zone-left" style="position: relative; overflow: hidden; height: 100%; flex: 1;">
+                <header class="painel-header">
+                    <h1 class="painel-titulo" id="titulo-painel-left">Carregando...</h1>
+                </header>
+                <div class="painel-conteudo" id="painel-conteudo-left"></div>
+                <div id="video-overlay-container-left" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:black; z-index:50;"></div>
+            </div>
+            
+            <div id="zone-right" style="position: relative; overflow: hidden; height: 100%; flex: 1;">
+                <header class="painel-header">
+                    <h1 class="painel-titulo" id="titulo-painel-right">Carregando...</h1>
+                </header>
+                <div class="painel-conteudo" id="painel-conteudo-right"></div>
+                <div id="video-overlay-container-right" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:black; z-index:50;"></div>
+            </div>
+        </div>
         
     </main>
 

@@ -318,3 +318,15 @@ body.rotacao-270 .coluna {
 .painel-conteudo.layout-vertical .item-produto .preco {
     font-size: 4.5vh;
 }
+
+/* Modificadores para Lado Único (Split Mode) */
+.painel-conteudo.layout-single-column {
+    display: block;
+    width: 100%;
+}
+
+.painel-conteudo.layout-single-column .coluna {
+    width: 100%;
+    border-right: none;
+    padding: 0 1vw;
+}

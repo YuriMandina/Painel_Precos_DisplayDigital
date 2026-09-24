@@ -2,19 +2,10 @@
                                 BOOTSTRAP DA APLICAÇÃO
    ========================================================================== */
 
-/**
- * Ponto de entrada da Single Page Application (SPA).
- * Inicializa a instância principal do TVApp assim que o DOM for carregado.
- */
 document.addEventListener('DOMContentLoaded', () => {
     const app = new TVApp();
     app.init();
 });
-
-
-/* ==========================================================================
-                                CONFIGURAÇÕES GERAIS
-   ========================================================================== */
 
 const CONFIG = {
     API_BASE: '/api/painel',
@@ -29,23 +20,11 @@ const CONFIG = {
         SETUP_SCREEN: 'setup-screen',
         APP_SCREEN: 'app-screen',
         INPUT_UUID: 'input-uuid',
-        BTN_SAVE: 'btn-salvar',
-        TITLE: 'titulo-painel',
-        CONTENT: 'painel-conteudo',
-        VIDEO_CONTAINER: 'video-overlay-container'
+        BTN_SAVE: 'btn-salvar'
     }
 };
 
-
-/* ==========================================================================
-                                CORE: CONTROLLER PRINCIPAL
-   ========================================================================== */
-
 class TVApp {
-    /**
-     * Gerencia o ciclo de vida da aplicação, estado do dispositivo e a 
-     * orquestração entre a interface de pareamento e o player.
-     */
     constructor() {
         this.elements = this._mapElements();
         this.state = {
@@ -55,7 +34,7 @@ class TVApp {
             playlistHash: ''
         };
 
-        this.playlistManager = new PlaylistManager(this);
+        this.managers = {};
         this.pollingInterval = null;
     }
 
@@ -151,9 +130,53 @@ class TVApp {
             console.log("Mutação de playlist detectada. Reconstruindo fila de reprodução.");
             this.state.playlistHash = newHash;
             this.state.data = newData;
-            this.playlistManager.updatePlaylist(newData.playlist_final, newData.produtos);
+            
+            // Stop existing managers
+            Object.values(this.managers).forEach(m => m.stop());
+            this.managers = {};
+
+            if (newData.playlist_final && newData.playlist_final.layout === 'split_asimetrico') {
+                document.getElementById('zone-single').style.display = 'none';
+                document.getElementById('zone-split').style.display = 'flex';
+                
+                this.managers.left = new PlaylistManager(this, 'left');
+                this.managers.right = new PlaylistManager(this, 'right');
+                
+                this.managers.left.updatePlaylist(newData.playlist_final.zones.left || [], newData.produtos);
+                this.managers.right.updatePlaylist(newData.playlist_final.zones.right || [], newData.produtos);
+                
+                this._adjustSplitWidths(newData.playlist_final.zones);
+            } else {
+                document.getElementById('zone-split').style.display = 'none';
+                document.getElementById('zone-single').style.display = 'block';
+                
+                this.managers.single = new PlaylistManager(this, 'single');
+                this.managers.single.updatePlaylist(newData.playlist_final || [], newData.produtos);
+            }
+
         } else {
-            this.playlistManager.updateCatalog(newData.produtos);
+            Object.values(this.managers).forEach(m => m.updateCatalog(newData.produtos));
+        }
+    }
+
+    _adjustSplitWidths(zones) {
+        const leftHasMedia = zones.left && zones.left.some(i => i.tipo === 'propaganda');
+        const rightHasMedia = zones.right && zones.right.some(i => i.tipo === 'propaganda');
+        const leftHasTable = zones.left && zones.left.some(i => i.tipo === 'tabela');
+        const rightHasTable = zones.right && zones.right.some(i => i.tipo === 'tabela');
+        
+        const zoneLeft = document.getElementById('zone-left');
+        const zoneRight = document.getElementById('zone-right');
+        
+        if (leftHasMedia && !leftHasTable && rightHasTable) {
+            zoneLeft.style.flex = "0 0 31.64%";
+            zoneRight.style.flex = "1";
+        } else if (rightHasMedia && !rightHasTable && leftHasTable) {
+            zoneRight.style.flex = "0 0 31.64%";
+            zoneLeft.style.flex = "1";
+        } else {
+            zoneLeft.style.flex = "1";
+            zoneRight.style.flex = "1";
         }
     }
 
@@ -161,29 +184,37 @@ class TVApp {
         if (this.state.orientation === orientation) return;
 
         document.body.classList.remove('rotacao-90', 'rotacao-270');
-        this.elements.CONTENT.classList.remove('layout-vertical');
+        document.querySelectorAll('.painel-conteudo').forEach(el => el.classList.remove('layout-vertical'));
 
         if (orientation === 'VERTICAL_DIR') {
             document.body.classList.add('rotacao-90');
-            this.elements.CONTENT.classList.add('layout-vertical');
+            document.querySelectorAll('.painel-conteudo').forEach(el => el.classList.add('layout-vertical'));
         } else if (orientation === 'VERTICAL_ESQ') {
             document.body.classList.add('rotacao-270');
-            this.elements.CONTENT.classList.add('layout-vertical');
+            document.querySelectorAll('.painel-conteudo').forEach(el => el.classList.add('layout-vertical'));
         }
 
         this.state.orientation = orientation;
     }
 
-    setTitle(text) {
-        if (this.elements.TITLE) this.elements.TITLE.innerText = text || "";
+    setTitle(text, zoneId = 'single') {
+        let elId = 'titulo-painel';
+        if (zoneId === 'left') elId = 'titulo-painel-left';
+        if (zoneId === 'right') elId = 'titulo-painel-right';
+        const el = document.getElementById(elId);
+        if (el) el.innerText = text || "";
     }
 
-    getContainer() {
-        return this.elements.CONTENT;
+    getContainer(zoneId = 'single') {
+        if (zoneId === 'left') return document.getElementById('painel-conteudo-left');
+        if (zoneId === 'right') return document.getElementById('painel-conteudo-right');
+        return document.getElementById('painel-conteudo');
     }
 
-    getVideoContainer() {
-        return this.elements.VIDEO_CONTAINER;
+    getVideoContainer(zoneId = 'single') {
+        if (zoneId === 'left') return document.getElementById('video-overlay-container-left');
+        if (zoneId === 'right') return document.getElementById('video-overlay-container-right');
+        return document.getElementById('video-overlay-container');
     }
 
     isVertical() {
@@ -191,37 +222,37 @@ class TVApp {
     }
 }
 
-
-/* ==========================================================================
-                                GERENCIADOR DE PLAYLIST
-   ========================================================================== */
-
 class PlaylistManager {
-    /**
-     * Máquina de estados responsável pela iteração do array de mídia/tabelas.
-     * Instancia os renderizadores adequados para cada tipo de nó da playlist.
-     */
-    constructor(app) {
+    constructor(app, zoneId) {
         this.app = app;
+        this.zoneId = zoneId;
         this.queue = [];
         this.products = [];
         this.currentIndex = 0;
         this.isPlaying = false;
         this.timeoutId = null;
 
-        this.gridRenderer = new GridRenderer(app);
-        this.videoPlayer = new VideoPlayer(app);
+        this.gridRenderer = new GridRenderer(app, zoneId);
+        this.videoPlayer = new VideoPlayer(app, zoneId);
+        
+        this.isStopped = false;
+    }
+    
+    stop() {
+        this.isStopped = true;
+        this.isPlaying = false;
+        if (this.timeoutId) clearTimeout(this.timeoutId);
+        this.gridRenderer.stop();
+        this.videoPlayer.stop();
     }
 
     updatePlaylist(playlist, products) {
+        if (this.isStopped) return;
         const orderChanged = this.queue.length > 0 && JSON.stringify(this.queue) !== JSON.stringify(playlist);
-
         this.queue = playlist;
         this.products = products;
 
-        if (orderChanged) {
-            this.currentIndex = 0;
-        }
+        if (orderChanged) this.currentIndex = 0;
 
         if (!this.isPlaying && this.queue.length > 0) {
             if (this.timeoutId) clearTimeout(this.timeoutId);
@@ -230,10 +261,12 @@ class PlaylistManager {
     }
 
     updateCatalog(products) {
+        if (this.isStopped) return;
         this.products = products;
     }
 
     playNext() {
+        if (this.isStopped) return;
         if (!this.app.state.uuid) {
             this.isPlaying = false;
             return;
@@ -243,12 +276,12 @@ class PlaylistManager {
 
         if (!this.queue || this.queue.length === 0) {
             this.isPlaying = false;
-            this.app.setTitle("AGUARDANDO");
-            this.app.getContainer().innerHTML =
-                "<h2 style='color:#666; text-align:center; margin-top:20vh;'>Aguardando configuração de playlist...</h2>";
+            this.app.setTitle("AGUARDANDO", this.zoneId);
+            this.app.getContainer(this.zoneId).innerHTML =
+                "<h2 style='color:#666; text-align:center; margin-top:20vh; width:100%;'>Aguardando configuração de playlist...</h2>";
 
             this.timeoutId = setTimeout(() => {
-                if (!this.isPlaying) this.playNext();
+                if (!this.isPlaying && !this.isStopped) this.playNext();
             }, CONFIG.RETRY_DELAY_MS);
             return;
         }
@@ -270,55 +303,44 @@ class PlaylistManager {
     }
 }
 
-
-/* ==========================================================================
-                                ENGINE: RENDERIZADOR DE GRADE
-   ========================================================================== */
-
 class GridRenderer {
-    /**
-     * Responsável pela construção algorítmica do layout de tabelas de preço,
-     * incluindo lógica de paginação e filtragem de visibilidade por item.
-     */
-    constructor(app) {
+    constructor(app, zoneId) {
         this.app = app;
+        this.zoneId = zoneId;
+        this.isStopped = false;
+        this.currentTimeout = null;
+    }
+    
+    stop() {
+        this.isStopped = true;
+        if (this.currentTimeout) clearTimeout(this.currentTimeout);
     }
 
     async render(itemPlaylist, allProducts, onComplete) {
+        if (this.isStopped) return;
         const titulo = itemPlaylist.descricao ? itemPlaylist.descricao.replace('Tabela: ', '').toUpperCase() : '';
-        const container = this.app.getContainer();
+        const container = this.app.getContainer(this.zoneId);
 
         container.style.opacity = '0';
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(r => { this.currentTimeout = setTimeout(r, 300); });
+        if (this.isStopped) return;
 
-        this.app.setTitle(titulo);
+        this.app.setTitle(titulo, this.zoneId);
 
-        // 1. FILTRO GLOBAL: Remove produtos ocultados na página de Produtos
         let productsToShow = allProducts.filter(p => p.exibir_no_painel === true);
 
         if (itemPlaylist.produtos_ordenados && Array.isArray(itemPlaylist.produtos_ordenados)) {
-            // RENDERIZAÇÃO DE LISTA PERSONALIZADA
-            // Mapeia estritamente os IDs na ordem definida, ignorando filtros de família e ocultos locais
             const orderedIds = itemPlaylist.produtos_ordenados.map(String);
             productsToShow = orderedIds
                 .map(id => productsToShow.find(p => String(p.id) === id))
-                .filter(p => p !== undefined); // Remove se algum produto da lista foi apagado
-
+                .filter(p => p !== undefined);
         } else {
-            // RENDERIZAÇÃO TRADICIONAL (POR FAMÍLIA)
-            // 2. FILTRO DE FAMÍLIA: Aplica a categoria selecionada na Playlist
             if (itemPlaylist.familia_id) {
                 productsToShow = productsToShow.filter(p => p.familia === itemPlaylist.familia_id);
             }
-
-            // 3. FILTRO LOCAL (BLINDAGEM DA TV): Remove produtos ocultados especificamente nesta Playlist
             if (itemPlaylist.hidden_products && Array.isArray(itemPlaylist.hidden_products)) {
                 const hiddenIds = itemPlaylist.hidden_products.map(String);
-
-                productsToShow = productsToShow.filter(p => {
-                    const productId = String(p.id);
-                    return !hiddenIds.includes(productId);
-                });
+                productsToShow = productsToShow.filter(p => !hiddenIds.includes(String(p.id)));
             }
         }
 
@@ -326,7 +348,7 @@ class GridRenderer {
             container.innerHTML = "<h2 style='text-align:center; color:#666; width:100%; margin-top:20vh;'>Nenhum produto indexado para exibição.</h2>";
             container.style.opacity = '1';
             this._hideVideoOverlay();
-            setTimeout(onComplete, 3000);
+            this.currentTimeout = setTimeout(() => { if (!this.isStopped) onComplete(); }, 3000);
             return;
         }
 
@@ -334,30 +356,38 @@ class GridRenderer {
     }
 
     async _paginate(products, durationSec, onComplete) {
-        const itemsPerPage = this.app.isVertical() ? CONFIG.ITEMS_PER_PAGE.VERTICAL : CONFIG.ITEMS_PER_PAGE.HORIZONTAL;
+        let itemsPerPage = this.app.isVertical() ? CONFIG.ITEMS_PER_PAGE.VERTICAL : CONFIG.ITEMS_PER_PAGE.HORIZONTAL;
+        if (!this.app.isVertical() && this.zoneId !== 'single') {
+            itemsPerPage = Math.ceil(itemsPerPage / 2);
+        }
         const totalPages = Math.ceil(products.length / itemsPerPage);
 
         for (let i = 0; i < totalPages; i++) {
-            if (!this.app.state.uuid) return onComplete();
+            if (!this.app.state.uuid || this.isStopped) return;
 
             const start = i * itemsPerPage;
             const pageProducts = products.slice(start, start + itemsPerPage);
 
             await this._drawPage(pageProducts, itemsPerPage);
-            await new Promise(r => setTimeout(r, durationSec * 1000));
+            if (this.isStopped) return;
+            
+            await new Promise(r => { this.currentTimeout = setTimeout(r, durationSec * 1000); });
+            if (this.isStopped) return;
         }
 
-        this.app.getContainer().style.opacity = '0';
-        await new Promise(r => setTimeout(r, 300));
+        this.app.getContainer(this.zoneId).style.opacity = '0';
+        await new Promise(r => { this.currentTimeout = setTimeout(r, 300); });
+        if (this.isStopped) return;
 
         onComplete();
     }
 
     _hideVideoOverlay() {
-        const videoContainer = this.app.getVideoContainer();
+        const videoContainer = this.app.getVideoContainer(this.zoneId);
         if (videoContainer.style.display !== 'none' && videoContainer.style.opacity !== '0') {
             videoContainer.style.opacity = '0';
             setTimeout(() => {
+                if (this.isStopped) return;
                 Array.from(videoContainer.children).forEach(child => {
                     if (child.tagName === 'VIDEO') {
                         child.pause();
@@ -372,15 +402,18 @@ class GridRenderer {
     }
 
     async _drawPage(products, itemsPerPage) {
-        const container = this.app.getContainer();
+        const container = this.app.getContainer(this.zoneId);
 
         container.style.opacity = '0';
-        await new Promise(r => setTimeout(r, 400));
+        await new Promise(r => { this.currentTimeout = setTimeout(r, 400); });
+        if (this.isStopped) return;
 
         container.innerHTML = '';
-        if (this.app.isVertical()) {
+        if (this.app.isVertical() || this.zoneId !== 'single') {
+            container.classList.add('layout-single-column');
             container.appendChild(this._createColumn(products, itemsPerPage));
         } else {
+            container.classList.remove('layout-single-column');
             const itemsPerCol = Math.ceil(itemsPerPage / 2);
             container.appendChild(this._createColumn(products.slice(0, itemsPerCol), itemsPerCol));
             container.appendChild(this._createColumn(products.slice(itemsPerCol), itemsPerCol));
@@ -388,7 +421,7 @@ class GridRenderer {
 
         container.style.opacity = '1';
         this._hideVideoOverlay();
-        await new Promise(r => setTimeout(r, 400));
+        await new Promise(r => { this.currentTimeout = setTimeout(r, 400); });
     }
 
     _createColumn(products, capacity) {
@@ -421,35 +454,41 @@ class GridRenderer {
     }
 }
 
-
-/* ==========================================================================
-                                ENGINE: RENDERIZADOR DE MÍDIA
-   ========================================================================== */
-
 class VideoPlayer {
-    /**
-     * Manipula a injeção e ciclo de vida de nós de imagem/vídeo no DOM.
-     * 
-     * Implementa múltiplas camadas de proteção contra falhas silenciosas em Smart TVs
-     * (WebOS/Tizen/Android TV), que frequentemente:
-     *  - Não disparam `onerror` em broken pipe — apenas travam silenciosamente
-     *  - Rejeitam `video.play()` via Promise se a política de autoplay bloqueia
-     *  - Emitem `onstalled` / `onsuspend` quando o buffer congela
-     *  - Não suportam Range Requests (resolvido pelo media_stream_view no backend)
-     */
-    constructor(app) {
+    constructor(app, zoneId) {
         this.app = app;
+        this.zoneId = zoneId;
+        this.isStopped = false;
         this._stallCount = 0;
+        this.timeouts = [];
+    }
+    
+    stop() {
+        this.isStopped = true;
+        this.timeouts.forEach(t => clearTimeout(t));
+        const container = this.app.getVideoContainer(this.zoneId);
+        if (container) {
+            Array.from(container.children).forEach(child => {
+                if (child.tagName === 'VIDEO') {
+                    child.pause();
+                    child.removeAttribute('src');
+                    child.load();
+                }
+            });
+            container.innerHTML = '';
+            container.style.display = 'none';
+        }
     }
 
     play(item, onComplete) {
+        if (this.isStopped) return;
         if (!this.app.state.uuid || !item.url) {
             console.warn('[VideoPlayer] Item inválido ou sem URL. Avançando playlist.');
             onComplete();
             return;
         }
 
-        const container = this.app.getVideoContainer();
+        const container = this.app.getVideoContainer(this.zoneId);
         container.style.display = 'block';
 
         const durationMs = (item.duracao || 15) * 1000;
@@ -459,22 +498,20 @@ class VideoPlayer {
         let loadTimeout = null;
 
         const finish = async (reason) => {
-            if (isFinished) return;
+            if (isFinished || this.isStopped) return;
             isFinished = true;
 
-            // Limpa todos os timers pendentes
             if (safetyTimeout) clearTimeout(safetyTimeout);
             if (stallTimeout) clearTimeout(stallTimeout);
             if (loadTimeout) clearTimeout(loadTimeout);
 
-            console.log(`[VideoPlayer] Finalizando: "${item.descricao}" (motivo: ${reason})`);
+            console.log(`[VideoPlayer ${this.zoneId}] Finalizando: "${item.descricao}" (motivo: ${reason})`);
             
-            // Passa para o próximo sem destruir agora (transição suave dupla)
             onComplete();
         };
 
         const finalizeTransition = (newElement) => {
-            if (isFinished) return;
+            if (isFinished || this.isStopped) return;
             Array.from(container.children).forEach(child => {
                 if (child !== newElement) {
                     if (child.tagName === 'VIDEO') {
@@ -489,7 +526,6 @@ class VideoPlayer {
         };
 
         if (item.tipo_midia === 'IMAGEM') {
-            // --- PLAYER DE IMAGEM ---
             const img = document.createElement('img');
             img.id = 'video-bg';
             img.style.cssText = 'position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;';
@@ -497,93 +533,82 @@ class VideoPlayer {
             img.onload = () => finalizeTransition(img);
             img.onerror = () => finish('image-error');
             safetyTimeout = setTimeout(() => finish('image-duration'), durationMs);
+            this.timeouts.push(safetyTimeout);
             container.appendChild(img);
-            setTimeout(() => finalizeTransition(img), 1000);
+            
+            const transTimeout = setTimeout(() => finalizeTransition(img), 1000);
+            this.timeouts.push(transTimeout);
 
         } else {
-            // --- PLAYER DE VÍDEO ---
             const video = document.createElement('video');
             video.id = 'video-bg';
             video.style.cssText = 'position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;';
 
-            // Atributos mandatórios para autoplay em engines de TV restritivas (Tizen/WebOS)
             video.setAttribute('muted', 'true');
             video.setAttribute('autoplay', 'true');
             video.setAttribute('playsinline', 'true');
             video.setAttribute('preload', 'auto');
-            
-            // Poster transparente para evitar ícone de 'play' nativo do Android WebView
             video.setAttribute('poster', 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
             
             video.muted = true;
             video.autoplay = true;
 
-            // Quando o vídeo termina naturalmente → avança imediatamente
             video.onended = () => finish('video-ended');
 
-            // Erro de decodificação / URL inválida → avança
             video.onerror = (e) => {
-                console.error('[VideoPlayer] Erro no elemento <video>:', e, video.error);
+                console.error(`[VideoPlayer ${this.zoneId}] Erro no elemento <video>:`, e, video.error);
                 finish('video-error');
             };
 
-            // Timeout de carregamento inicial: se não iniciar reprodução em 8s, desiste.
-            // TVs lentas podem demorar no primeiro buffer, então usamos 8s de tolerância.
             loadTimeout = setTimeout(() => {
-                if (!isFinished && video.readyState < 3) { // < HAVE_FUTURE_DATA
-                    console.warn('[VideoPlayer] Timeout de carregamento inicial. URL:', item.url);
+                if (!isFinished && video.readyState < 3) {
+                    console.warn(`[VideoPlayer ${this.zoneId}] Timeout inicial. URL:`, item.url);
                     finish('load-timeout');
                 }
             }, 8000);
+            this.timeouts.push(loadTimeout);
 
-            // Quando começar a reproduzir: cancela o loadTimeout e arma o safetyTimeout
             const handlePlaying = () => {
                 finalizeTransition(video);
                 if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
-                // Safety timeout: garante avanço mesmo se onended não disparar
                 if (!safetyTimeout) {
                     safetyTimeout = setTimeout(() => finish('safety-duration'), durationMs + 3000);
+                    this.timeouts.push(safetyTimeout);
                 }
             };
             video.oncanplay = handlePlaying;
             video.onplaying = handlePlaying;
 
-            // Detecta buffer travado (stalled) — comum em TVs Android e WebOS
             const handleStall = () => {
-                if (isFinished) return;
-                // Dá 5s de tolerância para o buffer se recuperar antes de desistir
+                if (isFinished || this.isStopped) return;
                 if (stallTimeout) clearTimeout(stallTimeout);
                 stallTimeout = setTimeout(() => {
                     if (!isFinished && video.paused) {
-                        console.warn('[VideoPlayer] Buffer travado e vídeo pausado. Tentando retomar...');
+                        console.warn(`[VideoPlayer ${this.zoneId}] Buffer travado. Tentando retomar...`);
                         video.play().catch(() => finish('stall-unrecoverable'));
                     }
                 }, 5000);
+                this.timeouts.push(stallTimeout);
             };
 
             video.onstalled = handleStall;
             video.onsuspend = () => {
-                // onsuspend também pode indicar que o browser parou o download
                 if (!isFinished && video.readyState < 2) handleStall();
             };
 
-            // Safety timeout de emergência: garante que a playlist SEMPRE avança
-            // Ativado imediatamente como última barreira — usando duracao + 15s de buffer total
             safetyTimeout = setTimeout(() => finish('emergency-timeout'), durationMs + 15000);
+            this.timeouts.push(safetyTimeout);
 
             container.appendChild(video);
 
-            // Injeta a URL e força o carregamento
             video.src = item.url;
             video.load();
 
-            // Tenta reproduzir. Em TVs, play() retorna uma Promise que pode ser rejeitada.
             const playPromise = video.play();
             if (playPromise !== undefined) {
                 playPromise.catch(err => {
-                    console.warn('[VideoPlayer] video.play() rejeitado:', err.message);
-                    // Se a política de autoplay bloqueou, tenta silenciosamente com muted
-                    if (!isFinished) {
+                    console.warn(`[VideoPlayer ${this.zoneId}] video.play() rejeitado:`, err.message);
+                    if (!isFinished && !this.isStopped) {
                         video.muted = true;
                         video.play().catch(() => finish('autoplay-blocked'));
                     }
@@ -593,15 +618,7 @@ class VideoPlayer {
     }
 }
 
-
-/* ==========================================================================
-                                CLIENTE HTTP (API)
-   ========================================================================== */
-
 const API = {
-    /**
-     * Wrapper estático para requisições de pareamento e pull de estado via Fetch API.
-     */
     async pairDevice(code) {
         const response = await fetch(`${CONFIG.API_BASE}/parear/`, {
             method: 'POST',

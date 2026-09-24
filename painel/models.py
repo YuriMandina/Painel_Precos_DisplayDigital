@@ -336,6 +336,7 @@ class Dispositivo(models.Model):
     """
     class Orientacao(models.TextChoices):
         HORIZONTAL = 'HORIZONTAL', 'Horizontal (Padrão 16:9)'
+        HORIZONTAL_CUSTOM = 'HORIZONTAL_CUSTOM', 'Horizontal Customizada (16:9 Dividida)'
         VERTICAL_DIR = 'VERTICAL_DIR', 'Vertical 9:16 (Giro 90° Direita)'
         VERTICAL_ESQ = 'VERTICAL_ESQ', 'Vertical 9:16 (Giro 90° Esquerda)'
 

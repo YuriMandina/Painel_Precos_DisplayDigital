@@ -169,7 +169,7 @@
                     </button>
                 </div>
 
-                <div class="flex-1 bg-slate-100 dark:bg-slate-800/50 p-6 relative overflow-y-auto custom-scrollbar">
+                <div id="playlist-container-single" class="flex-1 bg-slate-100 dark:bg-slate-800/50 p-6 relative overflow-y-auto custom-scrollbar">
                     <div id="playlist-target" class="space-y-3 min-h-full pb-20"></div>
                     
                     <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 pointer-events-none transition-opacity duration-200">
@@ -178,6 +178,17 @@
                         </div>
                         <p class="text-lg font-bold text-slate-700 dark:text-slate-300">Sua playlist está vazia</p>
                         <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Arraste itens da biblioteca (à esquerda) para cá</p>
+                    </div>
+                </div>
+                
+                <div id="playlist-container-split" class="hidden flex-1 grid grid-cols-2 bg-slate-100 dark:bg-slate-800/50 divide-x divide-slate-200 dark:divide-slate-700">
+                    <div class="p-4 relative overflow-y-auto custom-scrollbar flex flex-col">
+                        <h4 class="text-xs font-bold text-slate-500 mb-3 uppercase tracking-widest text-center">Lado Esquerdo</h4>
+                        <div id="playlist-target-left" class="space-y-3 min-h-[300px] flex-1 pb-20 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-2 bg-white/50 dark:bg-slate-900/50"></div>
+                    </div>
+                    <div class="p-4 relative overflow-y-auto custom-scrollbar flex flex-col">
+                        <h4 class="text-xs font-bold text-slate-500 mb-3 uppercase tracking-widest text-center">Lado Direito</h4>
+                        <div id="playlist-target-right" class="space-y-3 min-h-[300px] flex-1 pb-20 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-2 bg-white/50 dark:bg-slate-900/50"></div>
                     </div>
                 </div>
             </section>
@@ -386,9 +397,12 @@
         config: {
             sources: ['library-families', 'library-midias', 'library-listas'],
             targetId: 'playlist-target',
+            targetLeftId: 'playlist-target-left',
+            targetRightId: 'playlist-target-right',
             emptyId: 'empty-state',
             inputHiddenId: 'id_playlist', 
             formId: 'form-dispositivo',
+            orientacaoId: 'id_orientacao',
             types: {
                 'tabela_familia': { icon: 'ph-list-dashes', color: 'text-blue-600 bg-blue-50 border-blue-100', label: 'Seg / Pág' },
                 'midia': { icon: 'ph-film-strip', color: 'text-pink-600 bg-pink-50 border-pink-100', label: 'Duração' },
@@ -398,10 +412,37 @@
 
         init() {
             this.targetEl = document.getElementById(this.config.targetId);
+            this.targetLeftEl = document.getElementById(this.config.targetLeftId);
+            this.targetRightEl = document.getElementById(this.config.targetRightId);
             this.emptyEl = document.getElementById(this.config.emptyId);
+            this.orientacaoSelect = document.getElementById(this.config.orientacaoId);
+            
             this.initSortables();
             this.loadExistingData();
-            this.toggleEmptyState();
+            
+            if(this.orientacaoSelect) {
+                this.orientacaoSelect.addEventListener('change', () => this.toggleLayout());
+                this.toggleLayout();
+            }
+        },
+
+        toggleLayout() {
+            const isSplit = this.orientacaoSelect.value === 'HORIZONTAL_CUSTOM';
+            const containerSingle = document.getElementById('playlist-container-single');
+            const containerSplit = document.getElementById('playlist-container-split');
+            
+            if (isSplit) {
+                containerSingle.classList.add('hidden');
+                containerSingle.classList.remove('flex-1');
+                containerSplit.classList.remove('hidden');
+                containerSplit.classList.add('flex-1');
+            } else {
+                containerSplit.classList.add('hidden');
+                containerSplit.classList.remove('flex-1');
+                containerSingle.classList.remove('hidden');
+                containerSingle.classList.add('flex-1');
+                this.toggleEmptyState();
+            }
         },
 
         initSortables() {
@@ -420,20 +461,27 @@
                 }
             });
 
-            new Sortable(this.targetEl, {
-                group: 'shared',
-                animation: 150,
-                ghostClass: 'sortable-ghost',
-                filter: 'button',
-                preventOnFilter: false,
-                onAdd: (evt) => {
-                    const item = evt.item;
-                    const data = this.extractDataFromElement(item);
-                    const newElement = this.createPlaylistItem(data);
-                    item.parentNode.replaceChild(newElement, item);
-                    this.toggleEmptyState();
-                },
-                onRemove: () => this.toggleEmptyState()
+            const onAddHandler = (evt) => {
+                const item = evt.item;
+                const data = this.extractDataFromElement(item);
+                const newElement = this.createPlaylistItem(data);
+                item.parentNode.replaceChild(newElement, item);
+                this.toggleEmptyState();
+            };
+
+            const targets = [this.targetEl, this.targetLeftEl, this.targetRightEl];
+            targets.forEach(target => {
+                if (target) {
+                    new Sortable(target, {
+                        group: 'shared',
+                        animation: 150,
+                        ghostClass: 'sortable-ghost',
+                        filter: 'button',
+                        preventOnFilter: false,
+                        onAdd: onAddHandler,
+                        onRemove: () => this.toggleEmptyState()
+                    });
+                }
             });
         },
 
@@ -441,12 +489,12 @@
             return {
                 type: el.dataset.type,
                 id: el.dataset.id,
-                descricao: el.dataset.nome,
-                tempo: el.dataset.duracao || 15,
+                descricao: el.dataset.nome || el.dataset.descricao,
+                tempo: el.dataset.duracao || el.dataset.tempo || 15,
                 url: el.dataset.url || null,
-                tipo_midia: el.dataset.tipomidia || null,
-                hidden_products: [],
-                configured: 'false'
+                tipo_midia: el.dataset.tipomidia || el.dataset.tipo_midia || null,
+                hidden_products: el.dataset.hiddenProducts ? JSON.parse(el.dataset.hiddenProducts) : [],
+                configured: el.dataset.configured || 'false'
             };
         },
 
@@ -457,6 +505,10 @@
             
             div.dataset.type = data.type;
             div.dataset.id = data.id;
+            div.dataset.descricao = data.descricao;
+            div.dataset.tempo = data.tempo;
+            if(data.url) div.dataset.url = data.url;
+            if(data.tipo_midia) div.dataset.tipo_midia = data.tipo_midia;
             div.dataset.configured = data.configured || 'false';
             div.dataset.hiddenProducts = JSON.stringify(data.hidden_products || []);
             
@@ -474,8 +526,9 @@
             } else {
                 let filterBtn = '';
                 if (data.type === 'tabela_familia') {
+                    let desc = data.descricao ? data.descricao.replace(/'/g, "\'") : '';
                     filterBtn = `
-                        <button type="button" onclick="openProductsModal('${data.id}', '${data.descricao.replace(/'/g, "\\'")}', this)" 
+                        <button type="button" onclick="openProductsModal('${data.id}', '${desc}', this)" 
                                 class="flex items-center justify-center w-8 h-8 mr-3 rounded-lg text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-600 hover:text-white transition-colors border border-indigo-100 dark:border-indigo-800/50 shadow-sm" title="Ver/Filtrar Produtos">
                             <i class="ph-bold ph-list-magnifying-glass text-lg"></i>
                         </button>
@@ -492,12 +545,14 @@
                 `;
             }
             
+            let labelType = data.type ? data.type.replace('_', ' ').replace('tabela familia', 'Tabela de Preços') : 'Desconhecido';
+            
             div.innerHTML = `
                 <div class="cursor-grab text-slate-300 hover:text-slate-500 dark:text-slate-400"><i class="ph-bold ph-dots-six-vertical text-2xl"></i></div>
                 <div class="w-12 h-12 rounded-xl border flex items-center justify-center ${configType.color} shadow-sm"><i class="ph-bold ${configType.icon} text-2xl"></i></div>
                 <div class="flex-1 min-w-0">
                     <h5 class="text-base font-bold text-slate-800 dark:text-slate-200 truncate">${data.descricao}</h5>
-                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">${data.type.replace('_', ' ').replace('tabela familia', 'Tabela de Preços')}</p>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">${labelType}</p>
                 </div>
                 ${previewBtn}
                 <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 group-hover:bg-white dark:bg-slate-900 group-hover:border-indigo-200 transition-colors shadow-inner">
@@ -509,8 +564,7 @@
         },
 
         loadExistingData() {
-            let rawData = [];
-            
+            let rawData = null;
             try {
                 const inputElement = document.getElementById(this.config.inputHiddenId);
                 if (inputElement && inputElement.value) {
@@ -520,33 +574,41 @@
                 console.error("Erro ao carregar a playlist salva:", error);
             }
 
-            if (Array.isArray(rawData) && rawData.length > 0) {
-                rawData.forEach(item => {
-                    let url = null;
-                    let tipo_midia = null;
-                    if (item.type === 'midia' || item.tipo === 'midia') {
-                        const sourceEl = document.querySelector(`.draggable-source[data-id="${item.id}"]`);
-                        if (sourceEl) { url = sourceEl.dataset.url; tipo_midia = sourceEl.dataset.tipomidia; }
-                    }
+            if (!rawData) return;
 
-                    const el = this.createPlaylistItem({
-                        type: item.type || item.tipo,
-                        id: item.id,
-                        descricao: item.descricao,
-                        tempo: item.tempo || item.duracao || 15,
-                        url: url,
-                        tipo_midia: tipo_midia,
-                        hidden_products: item.hidden_products || [],
-                        configured: item.configured !== undefined ? String(item.configured) : 'true' 
-                    });
-                    this.targetEl.appendChild(el);
+            const processItem = (item, targetContainer) => {
+                if (!targetContainer) return;
+                let url = null;
+                let tipo_midia = null;
+                if (item.type === 'midia' || item.tipo === 'midia') {
+                    const sourceEl = document.querySelector(`.draggable-source[data-id="${item.id}"]`);
+                    if (sourceEl) { url = sourceEl.dataset.url; tipo_midia = sourceEl.dataset.tipomidia; }
+                }
+
+                const el = this.createPlaylistItem({
+                    type: item.type || item.tipo,
+                    id: item.id,
+                    descricao: item.descricao,
+                    tempo: item.tempo || item.duracao || 15,
+                    url: url,
+                    tipo_midia: tipo_midia,
+                    hidden_products: item.hidden_products || [],
+                    configured: item.configured !== undefined ? String(item.configured) : 'true' 
                 });
+                targetContainer.appendChild(el);
+            };
+
+            if (Array.isArray(rawData)) {
+                rawData.forEach(item => processItem(item, this.targetEl));
+            } else if (rawData.layout === 'split_asimetrico' && rawData.zones) {
+                if (rawData.zones.left) rawData.zones.left.forEach(item => processItem(item, this.targetLeftEl));
+                if (rawData.zones.right) rawData.zones.right.forEach(item => processItem(item, this.targetRightEl));
             }
             this.toggleEmptyState();
         },
 
         toggleEmptyState() {
-            if (this.targetEl.children.length > 0) {
+            if (this.targetEl && this.targetEl.children.length > 0) {
                 this.emptyEl.style.opacity = '0';
                 setTimeout(() => this.emptyEl.classList.add('hidden'), 200);
             } else {
@@ -556,34 +618,58 @@
         },
 
         clearAll() {
-            if(confirm('Tem certeza? Isso irá esvaziar a playlist.')) { this.targetEl.innerHTML = ''; this.toggleEmptyState(); }
+            if(confirm('Tem certeza? Isso irá esvaziar a playlist atual.')) { 
+                const isSplit = this.orientacaoSelect && this.orientacaoSelect.value === 'HORIZONTAL_CUSTOM';
+                if (isSplit) {
+                    this.targetLeftEl.innerHTML = '';
+                    this.targetRightEl.innerHTML = '';
+                } else {
+                    this.targetEl.innerHTML = ''; 
+                    this.toggleEmptyState(); 
+                }
+            }
         },
 
-        saveAndSubmit() {
+        serializeContainer(container) {
             const playlist = [];
-            const items = this.targetEl.querySelectorAll('.playlist-item');
-            
+            if (!container) return playlist;
+            const items = container.querySelectorAll('.playlist-item');
             items.forEach(item => {
                 const input = item.querySelector('.input-tempo');
-                const titleEl = item.querySelector('h5');
-                
                 let tempoFinal = 15; 
                 if (input && input.value) {
                     const parsed = parseInt(input.value);
                     if (!isNaN(parsed) && parsed > 0) tempoFinal = parsed;
                 }
-
                 playlist.push({
                     type: item.dataset.type,
                     id: item.dataset.id,
-                    descricao: titleEl ? titleEl.innerText : 'Item',
+                    descricao: item.dataset.descricao || 'Item',
                     tempo: tempoFinal,
                     hidden_products: JSON.parse(item.dataset.hiddenProducts || '[]'),
                     configured: item.dataset.configured === 'true'
                 });
             });
+            return playlist;
+        },
 
-            document.getElementById(this.config.inputHiddenId).value = JSON.stringify(playlist);
+        saveAndSubmit() {
+            const isSplit = this.orientacaoSelect && this.orientacaoSelect.value === 'HORIZONTAL_CUSTOM';
+            let finalData;
+
+            if (isSplit) {
+                finalData = {
+                    layout: 'split_asimetrico',
+                    zones: {
+                        left: this.serializeContainer(this.targetLeftEl),
+                        right: this.serializeContainer(this.targetRightEl)
+                    }
+                };
+            } else {
+                finalData = this.serializeContainer(this.targetEl);
+            }
+
+            document.getElementById(this.config.inputHiddenId).value = JSON.stringify(finalData);
             document.getElementById(this.config.formId).submit();
         }
     };
