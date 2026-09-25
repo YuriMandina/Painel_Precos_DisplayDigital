@@ -24,6 +24,12 @@ const CONFIG = {
     }
 };
 
+/* Parâmetros de rolagem horizontal (marquee) dos nomes de produto. */
+const MARQUEE_TOLERANCIA_PX = 4;      // Ignora overflow residual de arredondamento.
+const MARQUEE_VELOCIDADE_PX_S = 45;   // Velocidade de leitura alvo.
+const MARQUEE_DURACAO_MIN_S = 3;
+const MARQUEE_DURACAO_MAX_S = 10;
+
 class TVApp {
     constructor() {
         this.elements = this._mapElements();
@@ -31,6 +37,7 @@ class TVApp {
             uuid: localStorage.getItem('tv_device_uuid'),
             data: null,
             orientation: 'HORIZONTAL',
+            escalaFonte: 1,
             playlistHash: ''
         };
 
@@ -60,6 +67,16 @@ class TVApp {
         if (this.elements.BTN_SAVE) {
             this.elements.BTN_SAVE.addEventListener('click', () => this._handlePairing());
         }
+
+        // A tipografia é dimensionada em vh: mudar a resolução altera a largura
+        // ocupada pelos nomes e exige remedir o overflow do marquee.
+        let resizeTimer = null;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                Object.values(this.managers).forEach(m => m.refreshMarquee());
+            }, 250);
+        });
     }
 
     _showSetupScreen() {
@@ -123,6 +140,7 @@ class TVApp {
 
     _processDataUpdate(newData) {
         this._updateOrientation(newData.config.orientacao);
+        this._updateEscalaFonte(newData.config.escala_fonte);
 
         const newHash = JSON.stringify(newData.playlist_final);
 
@@ -178,6 +196,24 @@ class TVApp {
             zoneLeft.style.flex = "1";
             zoneRight.style.flex = "1";
         }
+    }
+
+    /**
+     * Converte o percentual configurado no dispositivo em multiplicador de
+     * tipografia da tabela. Cada TV tem tamanho e distância de leitura próprios,
+     * então a escala é parametrizada por endpoint e não fixada no CSS.
+     */
+    _updateEscalaFonte(percentual) {
+        const valor = parseInt(percentual, 10);
+        const escala = Number.isFinite(valor) ? valor / 100 : 1;
+
+        if (this.state.escalaFonte === escala) return;
+        this.state.escalaFonte = escala;
+
+        document.documentElement.style.setProperty('--escala-fonte', escala);
+
+        // A escala altera a largura ocupada pelos nomes: remede o overflow.
+        Object.values(this.managers).forEach(m => m.refreshMarquee());
     }
 
     _updateOrientation(orientation) {
@@ -419,9 +455,49 @@ class GridRenderer {
             container.appendChild(this._createColumn(products.slice(itemsPerCol), itemsPerCol));
         }
 
+        this._applyMarquee(container);
+
         container.style.opacity = '1';
         this._hideVideoOverlay();
         await new Promise(r => { this.currentTimeout = setTimeout(r, 400); });
+    }
+
+    /**
+     * Ativa o marquee apenas nos nomes que realmente excedem o espaço disponível,
+     * medindo o overflow já com os nós renderizados no DOM.
+     *
+     * A distância da animação é injetada como --marquee-shift para que o texto
+     * pare exatamente no fim da string, e a duração acompanha a distância para
+     * manter a velocidade de leitura constante entre itens curtos e longos.
+     */
+    _applyMarquee(container) {
+        container.querySelectorAll('.nome-container').forEach(nomeContainer => {
+            const nome = nomeContainer.querySelector('.nome');
+            if (!nome) return;
+
+            nomeContainer.classList.remove('marquee');
+            nomeContainer.style.removeProperty('--marquee-shift');
+            nomeContainer.style.removeProperty('--marquee-duration');
+
+            const overflow = Math.ceil(nome.scrollWidth - nomeContainer.clientWidth);
+            if (overflow <= MARQUEE_TOLERANCIA_PX) return;
+
+            // Velocidade fixa em px/s, limitada para não ficar lenta nem abrupta.
+            const duracao = Math.min(
+                MARQUEE_DURACAO_MAX_S,
+                Math.max(MARQUEE_DURACAO_MIN_S, overflow / MARQUEE_VELOCIDADE_PX_S)
+            );
+
+            nomeContainer.style.setProperty('--marquee-shift', `${overflow}px`);
+            nomeContainer.style.setProperty('--marquee-duration', `${duracao.toFixed(2)}s`);
+            nomeContainer.classList.add('marquee');
+        });
+    }
+
+    /** Remede o overflow da página já renderizada, após mudanças de layout. */
+    refreshMarquee() {
+        const container = this.app.getContainer(this.zoneId);
+        if (container) this._applyMarquee(container);
     }
 
     _createColumn(products, capacity) {
@@ -439,10 +515,9 @@ class GridRenderer {
         div.className = `item-produto ${product.em_oferta ? 'em-oferta' : ''}`;
 
         const priceFormatted = parseFloat(product.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        const charLimit = this.app.isVertical() ? 28 : 22;
-        const nameClass = product.descricao.length > charLimit ? 'nome-container marquee' : 'nome-container';
 
-        div.innerHTML = `<div class="${nameClass}"><span class="nome">${product.descricao}</span></div><div class="preco">${priceFormatted}</div>`;
+        // O marquee é decidido por _applyMarquee(), após a medição real no DOM.
+        div.innerHTML = `<div class="nome-container"><span class="nome">${product.descricao}</span></div><div class="preco">${priceFormatted}</div>`;
         return div;
     }
 

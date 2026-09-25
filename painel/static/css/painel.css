@@ -17,6 +17,9 @@
     /* Matriz de Grid (Variáveis injetadas/manipuladas via JS) */
     --grid-rows-horizontal: 9;
     --grid-rows-vertical: 15;
+
+    /* Multiplicador de tipografia da tabela, configurável por dispositivo. */
+    --escala-fonte: 1;
     
     /* Pilha de Contexto de Empilhamento (Z-Index) */
     --z-background: 0;
@@ -88,9 +91,14 @@ body {
     transition: opacity 0.4s ease-in-out;
 }
 
+/* O título acompanha a escala de fonte com amortecimento: a faixa do header tem
+   altura fixa (12%), então escalar 1:1 com os produtos estouraria o espaço.
+   O amortecimento mantém o título sempre maior que os nomes, sem transbordar.
+*/
 .painel-titulo {
     font-family: var(--font-primary);
-    font-size: 6.5vh;
+    font-size: calc(6.5vh * (1 + (var(--escala-fonte) - 1) * 0.6));
+    line-height: 1.1;
     color: var(--color-highlight);
     text-transform: uppercase;
     text-align: center;
@@ -136,11 +144,10 @@ body {
 .item-produto {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
+    align-items: center;
     width: 100%;
     height: 100%;
-    border-bottom: 1px dashed #222;
-    padding-bottom: 0.8vh;
+    border-bottom: 1px dashed var(--color-border);
     overflow: hidden;
     position: relative;
 }
@@ -159,7 +166,8 @@ body {
 .nome {
     font-family: var(--font-primary);
     font-weight: 700;
-    font-size: 4.8vh;
+    font-size: calc(4.8vh * var(--escala-fonte));
+    line-height: 1.1;
     color: var(--color-text-primary);
     text-transform: uppercase;
     display: inline-block;
@@ -173,7 +181,8 @@ body {
     flex-shrink: 0;
     font-family: var(--font-primary);
     font-weight: 700;
-    font-size: 4.8vh;
+    font-size: calc(4.8vh * var(--escala-fonte));
+    line-height: 1.1;
     color: var(--color-highlight);
     text-align: right;
     white-space: nowrap;
@@ -250,15 +259,19 @@ body {
     transition: opacity 0.5s ease-in-out;
 }
 
-/* Gatilho de translação lateral para strings com overflow detectado no JS */
+/* Gatilho de translação lateral para strings com overflow detectado no JS.
+   O deslocamento (--marquee-shift) é medido em runtime e injetado por item,
+   correspondendo exatamente ao excedente da string sobre o seu container.
+   Sem essa medição a animação extrapola e trunca o início do texto.
+*/
 .marquee .nome {
     padding-left: 0;
-    animation: scroll-bounce 6s ease-in-out infinite alternate;
+    animation: scroll-bounce var(--marquee-duration, 6s) ease-in-out infinite alternate;
 }
 
 @keyframes scroll-bounce {
     0%, 15% { transform: translateX(0); }
-    85%, 100% { transform: translateX(calc(-100% + 25vw)); }
+    85%, 100% { transform: translateX(calc(var(--marquee-shift, 0px) * -1)); }
 }
 
 
@@ -312,11 +325,11 @@ body.rotacao-270 .coluna {
 
 /* Tipografia adaptada para o viewport com proporção de retrato */
 .painel-conteudo.layout-vertical .item-produto .nome {
-    font-size: 3.8vh;
+    font-size: calc(3.8vh * var(--escala-fonte));
 }
 
 .painel-conteudo.layout-vertical .item-produto .preco {
-    font-size: 4.5vh;
+    font-size: calc(4.5vh * var(--escala-fonte));
 }
 
 /* Modificadores para Lado Único (Split Mode) */

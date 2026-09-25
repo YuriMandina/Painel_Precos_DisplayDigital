@@ -57,6 +57,19 @@
                     <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Orientação da Tela</label>
                     {{ form.orientacao }}
                 </div>
+                <div class="md:col-span-2">
+                    <label for="id_escala_fonte" class="flex items-center justify-between text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">
+                        <span>Tamanho da Fonte da Tabela</span>
+                        <span id="escala-fonte-valor" class="text-indigo-600 dark:text-indigo-400 font-mono tabular-nums">{{ form.escala_fonte.value|default:100 }}%</span>
+                    </label>
+                    {{ form.escala_fonte }}
+                    <div class="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 px-0.5">
+                        <span>Menor</span>
+                        <span>Padrão</span>
+                        <span>Maior</span>
+                    </div>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-2"><i class="ph-fill ph-info text-indigo-400"></i> Ajuste conforme o tamanho da TV e a distância de leitura. A quantidade de produtos por página não muda.</p>
+                </div>
             </div>
         </section>
 
@@ -424,6 +437,19 @@
                 this.orientacaoSelect.addEventListener('change', () => this.toggleLayout());
                 this.toggleLayout();
             }
+
+            this.initEscalaFonte();
+        },
+
+        /* Espelha o valor do slider de escala de fonte no label, em tempo real. */
+        initEscalaFonte() {
+            const slider = document.getElementById('id_escala_fonte');
+            const output = document.getElementById('escala-fonte-valor');
+            if (!slider || !output) return;
+
+            const sync = () => { output.textContent = `${slider.value}%`; };
+            slider.addEventListener('input', sync);
+            sync();
         },
 
         toggleLayout() {

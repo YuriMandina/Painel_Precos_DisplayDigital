@@ -54,5 +54,6 @@ class DispositivoConfigSerializer(serializers.ModelSerializer):
             'nome',
             'modo_exibicao',
             'uuid',
-            'orientacao'
+            'orientacao',
+            'escala_fonte'
         ]

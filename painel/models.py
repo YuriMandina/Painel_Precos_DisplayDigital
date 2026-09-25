@@ -8,6 +8,7 @@ import string
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 # ==============================================================================
@@ -380,9 +381,18 @@ class Dispositivo(models.Model):
         default=Orientacao.HORIZONTAL
     )
     modo_exibicao = models.CharField(
-        max_length=20, 
-        choices=ModoExibicao.choices, 
+        max_length=20,
+        choices=ModoExibicao.choices,
         default=ModoExibicao.PLAYLIST
+    )
+    escala_fonte = models.PositiveSmallIntegerField(
+        default=100,
+        validators=[MinValueValidator(60), MaxValueValidator(170)],
+        help_text=(
+            "Percentual aplicado ao tamanho da fonte da tabela de preços. "
+            "Permite compensar diferenças de tamanho e distância de cada TV. "
+            "O teto de 170% é o limite em que o texto ainda cabe na altura da linha."
+        )
     )
 
     created_at = models.DateTimeField(auto_now_add=True)

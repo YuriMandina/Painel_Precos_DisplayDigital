@@ -98,11 +98,19 @@ class DispositivoForm(forms.ModelForm):
     """Formulário de parametrização de endpoints físicos de exibição."""
     class Meta:
         model = Dispositivo
-        fields = ['nome', 'titulo_exibicao', 'orientacao', 'playlist'] 
+        fields = ['nome', 'titulo_exibicao', 'orientacao', 'escala_fonte', 'playlist']
         widgets = {
             'nome': forms.TextInput(attrs={'class': CSS_INPUT, 'placeholder': 'Ex: TV do Açougue'}),
             'titulo_exibicao': forms.TextInput(attrs={'class': CSS_INPUT, 'placeholder': 'Opcional'}),
             'orientacao': forms.Select(attrs={'class': CSS_INPUT}),
+            'escala_fonte': forms.NumberInput(attrs={
+                'type': 'range',
+                'min': 60,
+                'max': 170,
+                'step': 5,
+                'class': 'w-full accent-indigo-600 cursor-pointer',
+                'id': 'id_escala_fonte'
+            }),
             'playlist': forms.HiddenInput()
         }
 
